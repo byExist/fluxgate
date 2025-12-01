@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
   workflow_dispatch:
     inputs:
       version:
@@ -41,8 +46,12 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            # master push: get version from pyproject.toml
+            VERSION=$(grep -m1 'version = ' pyproject.toml | cut -d'"' -f2)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy docs

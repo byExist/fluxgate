@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.json
+
+# Type checking
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# MkDocs
+site/
+
+# OS
+.DS_Store
+
+# IDEs
+.vscode/
+
+# Python version
+.python-version
+
+# Lock file
+uv.lock

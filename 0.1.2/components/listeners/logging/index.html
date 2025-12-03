@@ -1672,6 +1672,8 @@
 </code></pre></div>
 <h2 id="file-logging">Configuring File Logging<a class="headerlink" href="#file-logging" title="Permanent link">&para;</a></h2>
 <p>To send circuit breaker logs to a file, configure a suitable handler in your application's logging setup. <code>LogListener</code> will automatically use this configuration.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging.handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotatingFileHandler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>

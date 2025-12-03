@@ -1,0 +1,2082 @@
+
+<!doctype html>
+<html lang="ko" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modern, composable circuit breaker library for Python">
+      
+      
+      
+        <link rel="canonical" href="https://byExist.github.io/fluxgate/0.1.2/ko/components/trippers/">
+      
+      
+        <link rel="prev" href="../trackers/">
+      
+      
+        <link rel="next" href="../retries/">
+      
+      
+        
+          <link rel="alternate" href="../../../components/trippers/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="ko">
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Trippers - Fluxgate</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tripper" class="md-skip">
+          콘텐츠로 이동
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="상단/헤더">
+    <a href="../../" title="Fluxgate" class="md-header__button md-logo" aria-label="Fluxgate" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fluxgate
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Trippers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="blue"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="언어설정">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../components/trippers/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="ko" class="md-select__link">
+              한국어
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="검색" placeholder="검색" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="검색">
+        
+        <button type="reset" class="md-search__icon md-icon" title="지우기" aria-label="지우기" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            검색 초기화
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/byExist/fluxgate" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    byExist/fluxgate
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="탭" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../circuit-breaker/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Circuit Breaker
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/design/" class="md-tabs__link">
+          
+  
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/core/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="네비게이션" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../" title="Fluxgate" class="md-nav__button md-logo" aria-label="Fluxgate" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fluxgate
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/byExist/fluxgate" title="저장소로 이동" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    byExist/fluxgate
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../circuit-breaker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Circuit Breaker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trackers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trackers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trippers
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trippers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        상태 기반 Tripper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        메트릭 기반 Tripper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="메트릭 기반 Tripper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minrequests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MinRequests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failurerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FailureRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#avglatency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AvgLatency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slowrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SlowRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        논리 연산자를 이용한 Tripper 결합
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="논리 연산자를 이용한 Tripper 결합">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#and" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AND (&amp;)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#or" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OR (|)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        복합 예제
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        올바른 Tripper 선택하기
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="올바른 Tripper 선택하기">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        비교
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-minrequests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        항상 MinRequests 사용하기
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-vs-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FailureRate vs. AvgLatency vs. SlowRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combining-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        종합하기
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        다음 단계
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../permits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Listeners
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Listeners
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../listeners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../listeners/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../listeners/prometheus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    (opt) Prometheus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../listeners/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    (opt) Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design & Inspiration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/trackers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trackers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/trippers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trippers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/retries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/permits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/listeners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Listeners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="목차">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      목차
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        상태 기반 Tripper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        메트릭 기반 Tripper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="메트릭 기반 Tripper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minrequests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MinRequests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failurerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FailureRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#avglatency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AvgLatency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slowrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SlowRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        논리 연산자를 이용한 Tripper 결합
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="논리 연산자를 이용한 Tripper 결합">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#and" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AND (&amp;)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#or" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OR (|)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        복합 예제
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tripper_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        올바른 Tripper 선택하기
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="올바른 Tripper 선택하기">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        비교
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-minrequests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        항상 MinRequests 사용하기
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-vs-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FailureRate vs. AvgLatency vs. SlowRate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#combining-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        종합하기
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        다음 단계
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tripper">Tripper<a class="headerlink" href="#tripper" title="Permanent link">&para;</a></h1>
+<p>Tripper는 Circuit Breaker의 상태 전환 조건을 제어합니다. <code>Window</code>에서 제공하는 Metric을 기반으로 회로가 상태를 변경해야 하는지(예: <code>CLOSED</code>에서 <code>OPEN</code>으로) 결정합니다. 각 Tripper 컴포넌트를 논리 연산자(<code>&amp;</code>, <code>|</code>)와 결합함으로써, 브레이커가 언제 트립해야 하는지에 대한 규칙을 정의할 수 있습니다.</p>
+<table>
+<thead>
+<tr>
+<th>Tripper 유형</th>
+<th>조건</th>
+<th>사용 사례</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Closed</strong> / <strong>HalfOpened</strong></td>
+<td>회로가 특정 상태인지 확인합니다.</td>
+<td>특정 상태에서만 적용되는 조건을 구성합니다.</td>
+</tr>
+<tr>
+<td><strong>MinRequests</strong></td>
+<td>호출 수가 최소값을 초과하는지 확인합니다.</td>
+<td>통계적으로 유의미하지 않은 적은 수의 호출로 인해 트립되는 것을 방지합니다.</td>
+</tr>
+<tr>
+<td><strong>FailureRate</strong></td>
+<td>실패율이 너무 높은지 확인합니다.</td>
+<td>오류율이 허용할 수 없을 정도로 높아지면 트립됩니다.</td>
+</tr>
+<tr>
+<td><strong>AvgLatency</strong></td>
+<td>평균 응답 시간이 너무 느린지 확인합니다.</td>
+<td>전반적인 성능이 저하될 때 트립됩니다.</td>
+</tr>
+<tr>
+<td><strong>SlowRate</strong></td>
+<td>느린 호출의 비율이 너무 높은지 확인합니다.</td>
+<td>느린 요청의 비율을 기반으로 트립됩니다.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="tripper_1">상태 기반 Tripper<a class="headerlink" href="#tripper_1" title="Permanent link">&para;</a></h2>
+<p>이 Tripper는 Circuit Breaker의 현재 상태를 확인하여 <code>CLOSED</code> 또는 <code>HALF_OPEN</code> 상태에서만 적용되는 규칙을 만들 수 있도록 합니다.</p>
+<ul>
+<li><code>Closed()</code>: 회로가 <code>CLOSED</code> 상태일 때만 <code>True</code>를 반환합니다.</li>
+<li><code>HalfOpened()</code>: 회로가 <code>HALF_OPEN</code> 상태일 때만 <code>True</code>를 반환합니다.</li>
+</ul>
+<p>이들은 거의 항상 다른 조건을 범위 지정하기 위해 <code>&amp;</code> 연산자와 함께 사용됩니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">HalfOpened</span><span class="p">,</span> <span class="n">FailureRate</span>
+
+<span class="c1"># CLOSED 및 HALF_OPEN 상태에 대해 다른 실패율 임계값을 사용합니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="n">Closed</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">|</span>
+    <span class="p">(</span><span class="n">HalfOpened</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">))</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="tripper_2">메트릭 기반 Tripper<a class="headerlink" href="#tripper_2" title="Permanent link">&para;</a></h2>
+<p>이 Tripper는 <code>window</code>가 수집한 메트릭을 평가합니다.</p>
+<h3 id="minrequests">MinRequests<a class="headerlink" href="#minrequests" title="Permanent link">&para;</a></h3>
+<p><code>MinRequests(count)</code>는 Window가 최소한 <code>count</code> 호출을 기록한 후에만 <code>True</code>를 반환합니다. 이는 통계적으로 중요하지 않은 적은 수의 실패(예: 2개 호출 중 1개 실패는 50% 실패율이지만, 통계적으로 충분한 데이터가 아님)로 인해 브레이커가 트립되는 것을 방지하는 데 매우 중요합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
+
+<span class="c1"># 최소 10개의 호출이 기록될 때까지 브레이커는 트립되지 않습니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="failurerate">FailureRate<a class="headerlink" href="#failurerate" title="Permanent link">&para;</a></h3>
+<p><code>FailureRate(rate)</code>는 실패한 호출 대 총 호출 수의 비율이 <code>rate</code>를 초과하면(<code>0.5</code>는 50%) <code>True</code>를 반환합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">FailureRate</span>
+
+<span class="c1"># 호출의 50% 이상이 실패하는 경우 트립됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="avglatency">AvgLatency<a class="headerlink" href="#avglatency" title="Permanent link">&para;</a></h3>
+<p><code>AvgLatency(seconds)</code>는 Window 내 모든 호출의 평균 응답 시간이 <code>seconds</code>를 초과하면 <code>True</code>를 반환합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AvgLatency</span>
+
+<span class="c1"># 평균 응답 시간이 2초를 초과하면 트립됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">AvgLatency</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="slowrate">SlowRate<a class="headerlink" href="#slowrate" title="Permanent link">&para;</a></h3>
+<p><code>SlowRate(rate)</code>는 느린 호출의 비율이 <code>rate</code>를 초과하면 <code>True</code>를 반환합니다.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>slow_threshold</code>가 필요합니다</p>
+<p><code>SlowRate</code>를 사용하려면 메인 <code>CircuitBreaker</code>에 <code>slow_threshold</code> 매개변수(초 단위)를 <strong>반드시</strong> 설정해야 합니다. 이 값보다 오래 걸리는 모든 호출은 "느린" 것으로 간주됩니다. 이 값을 설정하지 않으면 <code>SlowRate</code>는 항상 <code>0.0</code>이 됩니다.</p>
+</div>
+<!--pytest.mark.skip-->
+
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlowRate</span>
+
+<span class="c1"># 호출의 30% 이상이 &quot;느린&quot; 경우 트립됩니다.</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
+    <span class="n">tripper</span><span class="o">=</span><span class="n">SlowRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">),</span>
+    <span class="n">slow_threshold</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># 1초 이상 걸리는 호출은 느린 것으로 간주됩니다.</span>
+    <span class="o">...</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="operators">논리 연산자를 이용한 Tripper 결합<a class="headerlink" href="#operators" title="Permanent link">&para;</a></h2>
+<p>논리 연산자를 사용하여 Tripper를 결합함으로써 강력하고 정밀한 규칙을 만들 수 있습니다.</p>
+<h3 id="and">AND (<code>&amp;</code>)<a class="headerlink" href="#and" title="Permanent link">&para;</a></h3>
+<p><code>&amp;</code> 연산자는 <strong>모든</strong> 조건이 참이어야 합니다. Tripper를 결합하는 가장 일반적인 방법입니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
+
+<span class="c1"># Window에 최소 10개의 요청이 있고 실패율이 50%를 초과하는 경우에만 trip됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="or">OR (<code>|</code>)<a class="headerlink" href="#or" title="Permanent link">&para;</a></h3>
+<p><code>|</code> 연산자는 <strong>어느 하나라도</strong> 조건이 참이어야 합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">FailureRate</span><span class="p">,</span> <span class="n">SlowRate</span>
+
+<span class="c1"># 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">|</span> <span class="n">SlowRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_1">복합 예제<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<p>다음은 <code>CLOSED</code> 및 <code>HALF_OPEN</code> 상태에 대해 다른 규칙을 만드는 방법입니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">HalfOpened</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
+
+<span class="c1"># - 상태가 CLOSED이면, 최소 10개의 요청이 있고 실패율이 50%를 초과할 때 trip됩니다.</span>
+<span class="c1"># - 또는 상태가 HALF_OPEN이면, 최소 5개의 요청이 있고 실패율이 30%를 초과할 때 trip됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="n">Closed</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">|</span>
+    <span class="p">(</span><span class="n">HalfOpened</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">))</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="tripper_3">올바른 Tripper 선택하기<a class="headerlink" href="#tripper_3" title="Permanent link">&para;</a></h2>
+<h3 id="comparison">비교<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th><code>Closed</code>/<code>HalfOpened</code></th>
+<th><code>MinRequests</code></th>
+<th><code>FailureRate</code></th>
+<th><code>AvgLatency</code></th>
+<th><code>SlowRate</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>목적</strong></td>
+<td>특정 상태에 규칙 적용</td>
+<td>의미 있는 샘플 크기 보장</td>
+<td>실패한 호출의 비율 확인</td>
+<td>평균 성능 확인</td>
+<td>느린 호출의 비율 확인</td>
+</tr>
+<tr>
+<td><strong>단독 사용</strong></td>
+<td>X</td>
+<td>X</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+</tr>
+</tbody>
+</table>
+<h3 id="use-minrequests">항상 <code>MinRequests</code> 사용하기<a class="headerlink" href="#use-minrequests" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">강력 추천</p>
+<p>거의 모든 Tripper 조합에 <code>MinRequests</code>를 포함해야 합니다. 이는 회로가 통계적으로 유의미하지 않은 적은 수의 호출 샘플을 기반으로 성급한 결정을 내리는 것을 방지합니다. Window 크기의 10-20% 정도의 값이 좋은 시작점입니다.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
+
+<span class="c1"># CountWindow(size=100)의 경우, MinRequests를 10-20으로 설정하는 것이 합리적입니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="rate-vs-latency"><code>FailureRate</code> vs. <code>AvgLatency</code> vs. <code>SlowRate</code><a class="headerlink" href="#rate-vs-latency" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>명시적인 오류(예외)를 가장 중요하게 생각한다면 <strong><code>FailureRate</code>를 선택하세요</strong>. 가장 일반적이고 직관적인 선택입니다.</p>
+</li>
+<li>
+<p>전반적인 속도 저하로부터 보호하고 싶을 때는 <strong><code>AvgLatency</code>를 선택하세요</strong>. 주의: 몇 개의 매우 느린 호출이 평균을 왜곡할 수 있습니다.</p>
+</li>
+<li>
+<p>이상치(outlier)로부터 보호하고 싶을 때는 <strong><code>SlowRate</code>를 선택하세요</strong>. 단 하나의 극도로 느린 호출에 덜 민감하기 때문에 <code>AvgLatency</code>보다 종종 더 견고합니다. 이는 평균적인 느림이 아닌, 느린 호출의 <em>비율</em>을 측정합니다.</p>
+</li>
+</ul>
+<h3 id="combining-conditions">종합하기<a class="headerlink" href="#combining-conditions" title="Permanent link">&para;</a></h3>
+<p>일반적으로 여러 조건을 결합하여 사용하기를 권장합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span><span class="p">,</span> <span class="n">SlowRate</span>
+
+<span class="c1"># 최소 10개의 호출 이후, 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.</span>
+<span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">|</span> <span class="n">SlowRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">))</span>
+</code></pre></div>
+<h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../retries/">Retries</a>: <code>OPEN</code> 상태에서 복구하기 위한 정책을 정의합니다.</li>
+<li><a href="../permits/">Permits</a>: <code>HALF_OPEN</code> 상태에서 복구를 테스트하는 방법을 구성합니다.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  맨위로
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ub428", "clipboard.copy": "\ud074\ub9bd\ubcf4\ub4dc\ub85c \ubcf5\uc0ac", "search.result.more.one": "\uc774 \ubb38\uc11c\uc5d0\uc11c 1\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.more.other": "\uc774 \ubb38\uc11c\uc5d0\uc11c #\uac1c\uc758 \uac80\uc0c9 \uacb0\uacfc \ub354 \ubcf4\uae30", "search.result.none": "\uac80\uc0c9\uc5b4\uc640 \uc77c\uce58\ud558\ub294 \ubb38\uc11c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4", "search.result.one": "1\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.other": "#\uac1c\uc758 \uc77c\uce58\ud558\ub294 \ubb38\uc11c", "search.result.placeholder": "\uac80\uc0c9\uc5b4\ub97c \uc785\ub825\ud558\uc138\uc694", "search.result.term.missing": "\ud3ec\ud568\ub418\uc9c0 \uc54a\uc740 \uac80\uc0c9\uc5b4", "select.version": "\ubc84\uc804 \uc120\ud0dd"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

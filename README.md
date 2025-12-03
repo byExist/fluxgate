@@ -2,7 +2,7 @@
 
 A modern, composable circuit breaker library for Python with full support for both synchronous and asynchronous code.
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/pypi/pyversions/fluxgate.svg)](https://pypi.org/project/fluxgate/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## Features
@@ -101,8 +101,8 @@ Track call history over a sliding window:
 
 | Component | Purpose | Available Implementations |
 |-----------|---------|---------------------------|
-| **Trackers** | Define what exceptions to track | `All()`, `TypeOf(*types)`, `Custom(func)` (composable: `&`, `\|`, `~`) |
-| **Trippers** | When to open the circuit | `Closed()`, `HalfOpened()`, `MinRequests(count)`, `FailureRate(ratio)`, `AvgLatency(threshold)`, `SlowCallRate(ratio)` (composable: `&`, `\|`) |
+| **Trackers** | Define what exceptions to track | `All()`, `TypeOf(*types)`, `Custom(func)` — composable: `&`, `\|`, `~` |
+| **Trippers** | When to open the circuit | `Closed()`, `HalfOpened()`, `MinRequests(n)`, `FailureRate(ratio)`, `AvgLatency(sec)`, `SlowRate(ratio)` — composable: `&`, `\|` |
 | **Retries** | When to retry from OPEN → HALF_OPEN | `Never()`, `Always()`, `Cooldown(duration, jitter_ratio=0.0)`, `Backoff(initial, multiplier=2.0, max_duration=300.0, jitter_ratio=0.0)` |
 | **Permits** | Which calls allowed in HALF_OPEN | `Random(ratio)`, `RampUp(initial, final, duration)` |
 
@@ -132,9 +132,9 @@ print(f"State: {info.state}")
 print(f"Failures: {info.metrics.failure_count}/{info.metrics.total_count}")
 
 # Manual transitions
-cb.disable()      # -> DISABLED
-cb.enable()       # -> CLOSED
-cb.force_open()   # -> FORCED_OPEN
+cb.disable()      # -> DISABLED (pass-through, no tracking)
+cb.metrics_only() # -> METRICS_ONLY (pass-through, with tracking)
+cb.force_open()   # -> FORCED_OPEN (block all calls)
 cb.reset()        # -> CLOSED (clears metrics)
 ```
 

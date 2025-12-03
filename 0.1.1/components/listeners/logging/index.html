@@ -869,6 +869,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Logger
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-log-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Log Levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1472,6 +1494,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Logger
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-log-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Log Levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1551,6 +1595,54 @@
 <div class="highlight"><pre><span></span><code>[2025-01-15 10:30:45] Circuit Breaker &#39;payment_api&#39; transitioned from CLOSED to OPEN
 [2025-01-15 10:31:45] Circuit Breaker &#39;payment_api&#39; transitioned from OPEN to HALF_OPEN
 [2025-01-15 10:31:50] Circuit Breaker &#39;payment_api&#39; transitioned from HALF_OPEN to CLOSED
+</code></pre></div>
+<hr />
+<h2 id="custom-logger">Custom Logger<a class="headerlink" href="#custom-logger" title="Permanent link">&para;</a></h2>
+<p>By default, <code>LogListener</code> uses the root logger. You can inject your own logger for better control over log routing and formatting.</p>
+<!--pytest.mark.skip-->
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
+
+<span class="c1"># Create a dedicated logger for circuit breaker events</span>
+<span class="n">cb_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;myapp.circuit_breaker&quot;</span><span class="p">)</span>
+<span class="n">cb_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;payment_api&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">cb_logger</span><span class="p">)],</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="custom-log-levels">Custom Log Levels<a class="headerlink" href="#custom-log-levels" title="Permanent link">&para;</a></h2>
+<p>Use <code>level_map</code> to customize the log level for each state transition. By default, transitions to <code>OPEN</code> and <code>FORCED_OPEN</code> are logged at <code>WARNING</code> level, while others are logged at <code>INFO</code>.</p>
+<!--pytest.mark.skip-->
+
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
+
+<span class="c1"># Log OPEN transitions as ERROR for alerting</span>
+<span class="n">level_map</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">StateEnum</span><span class="o">.</span><span class="n">OPEN</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+    <span class="n">StateEnum</span><span class="o">.</span><span class="n">HALF_OPEN</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+    <span class="n">StateEnum</span><span class="o">.</span><span class="n">CLOSED</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;payment_api&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">(</span><span class="n">level_map</span><span class="o">=</span><span class="n">level_map</span><span class="p">)],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>You can also combine both options:</p>
+<!--pytest.mark.skip-->
+
+<div class="highlight"><pre><span></span><code><span class="n">cb_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;myapp.circuit_breaker&quot;</span><span class="p">)</span>
+<span class="n">listener</span> <span class="o">=</span> <span class="n">LogListener</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">cb_logger</span><span class="p">,</span> <span class="n">level_map</span><span class="o">=</span><span class="n">level_map</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="structured-logging">Implementing Structured (JSON) Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>

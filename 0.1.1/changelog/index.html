@@ -1087,15 +1087,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#011-2024-xx-xx" class="md-nav__link">
+  <a href="#012-20251203" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [0.1.1] - 2024-XX-XX
+        [0.1.2] - 2025.12.03
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[0.1.1] - 2024-XX-XX">
+    <nav class="md-nav" aria-label="[0.1.2] - 2025.12.03">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-20251201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.1] - 2025.12.01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.1] - 2025.12.01">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1440,15 +1468,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#011-2024-xx-xx" class="md-nav__link">
+  <a href="#012-20251203" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [0.1.1] - 2024-XX-XX
+        [0.1.2] - 2025.12.03
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[0.1.1] - 2024-XX-XX">
+    <nav class="md-nav" aria-label="[0.1.2] - 2025.12.03">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-20251201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.1] - 2025.12.01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.1] - 2025.12.01">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1489,7 +1545,16 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project will be documented in this file.</p>
-<h2 id="011-2024-xx-xx">[0.1.1] - 2024-XX-XX<a class="headerlink" href="#011-2024-xx-xx" title="Permanent link">&para;</a></h2>
+<h2 id="012-20251203">[0.1.2] - 2025.12.03<a class="headerlink" href="#012-20251203" title="Permanent link">&para;</a></h2>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>LogListener</strong>: Added <code>logger</code> and <code>level_map</code> parameters for flexible logging configuration.<ul>
+<li><code>logger</code>: Inject a custom logger instance instead of using the root logger.</li>
+<li><code>level_map</code>: Customize log levels per state (default: <code>OPEN</code>/<code>FORCED_OPEN</code> → <code>WARNING</code>, others → <code>INFO</code>).</li>
+</ul>
+</li>
+</ul>
+<h2 id="011-20251201">[0.1.1] - 2025.12.01<a class="headerlink" href="#011-20251201" title="Permanent link">&para;</a></h2>
 <p>This is the initial public release of Fluxgate.</p>
 <h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
 <ul>

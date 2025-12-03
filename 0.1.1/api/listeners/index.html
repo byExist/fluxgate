@@ -1365,6 +1365,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#fluxgate.listeners.log.LogListener.DEFAULT_LEVEL_MAP" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DEFAULT_LEVEL_MAP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fluxgate.listeners.log.LogListener.__call__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1580,6 +1591,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#fluxgate.listeners.log.LogListener.DEFAULT_LEVEL_MAP" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DEFAULT_LEVEL_MAP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fluxgate.listeners.log.LogListener.__call__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1737,7 +1759,11 @@
 
 
 <a href="#fluxgate.listeners.log.LogListener" class="headerlink" title="Permanent link">&para;</a></h2>
-
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">LogListener</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">level_map</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -1746,26 +1772,84 @@
 
 
         <p>Listener that logs circuit breaker state transitions.</p>
-<p>Logs state changes at INFO level using Python's standard logging module.
+<p>Logs state changes using Python's standard logging module.
 Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logger</code>
+            </td>
+            <td>
+                  <code><span title="logging.Logger">Logger</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Custom logger instance. If None, uses the root logger.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>level_map</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Mapping from new_state to log level (logging.INFO, etc.).
+Default levels: OPEN/FORCED_OPEN -&gt; WARNING, others -&gt; INFO.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <details class="note" open>
   <summary>Note</summary>
-  <p>logging.info is thread-safe and can be safely used in async contexts.</p>
+  <p>logging methods are thread-safe and can be safely used in async contexts.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
+    <p>Basic usage with default logger:</p>
     <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span><span class="p">,</span> <span class="n">AsyncCircuitBreaker</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="gp">&gt;&gt;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">async_cb</span> <span class="o">=</span> <span class="n">AsyncCircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
-<span class="gp">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Logs: [2025-01-15 10:30:45] Circuit Breaker &#39;api&#39; transitioned from CLOSED to OPEN</span>
+</code></pre></div>
+    <p>With custom logger:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;my_app.circuit_breaker&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)])</span>
+</code></pre></div>
+    <p>With custom level_map:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">level_map</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>    <span class="n">StateEnum</span><span class="o">.</span><span class="n">OPEN</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">StateEnum</span><span class="o">.</span><span class="n">HALF_OPEN</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">StateEnum</span><span class="o">.</span><span class="n">CLOSED</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">(</span><span class="n">level_map</span><span class="o">=</span><span class="n">level_map</span><span class="p">)])</span>
 </code></pre></div>
 
 
@@ -1775,6 +1859,23 @@ Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
 
 
 
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>fluxgate/listeners/log.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">level_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">StateEnum</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="ow">or</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_level_map</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_LEVEL_MAP</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">level_map</span> <span class="ow">or</span> <span class="p">{})}</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
 
 
 
@@ -1785,6 +1886,72 @@ Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="fluxgate.listeners.log.LogListener.DEFAULT_LEVEL_MAP" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">DEFAULT_LEVEL_MAP</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#fluxgate.listeners.log.LogListener.DEFAULT_LEVEL_MAP" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">DEFAULT_LEVEL_MAP</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            CLOSED
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.CLOSED)" href="../core/#fluxgate.state.StateEnum.CLOSED">CLOSED</a></span><span class="p">:</span> <span class="n"><span title="logging.INFO">INFO</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            OPEN
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.OPEN)" href="../core/#fluxgate.state.StateEnum.OPEN">OPEN</a></span><span class="p">:</span> <span class="n"><span title="logging.WARNING">WARNING</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            HALF_OPEN
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.HALF_OPEN)" href="../core/#fluxgate.state.StateEnum.HALF_OPEN">HALF_OPEN</a></span><span class="p">:</span> <span class="n"><span title="logging.INFO">INFO</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            METRICS_ONLY
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.METRICS_ONLY)" href="../core/#fluxgate.state.StateEnum.METRICS_ONLY">METRICS_ONLY</a></span><span class="p">:</span> <span class="n"><span title="logging.INFO">INFO</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            DISABLED
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.DISABLED)" href="../core/#fluxgate.state.StateEnum.DISABLED">DISABLED</a></span><span class="p">:</span> <span class="n"><span title="logging.INFO">INFO</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="            FORCED_OPEN
+
+
+  
+      class-attribute
+      instance-attribute
+   (fluxgate.state.StateEnum.FORCED_OPEN)" href="../core/#fluxgate.state.StateEnum.FORCED_OPEN">FORCED_OPEN</a></span><span class="p">:</span> <span class="n"><span title="logging.WARNING">WARNING</span></span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
 
 
 
@@ -1805,16 +1972,26 @@ Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>fluxgate/listeners/log.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">timestamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">))</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">] Circuit Breaker &#39;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;transitioned from </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_level_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+        <span class="n">level</span><span class="p">,</span>
+        <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] Circuit Breaker &#39;</span><span class="si">%s</span><span class="s2">&#39; transitioned from </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">timestamp</span><span class="p">,</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

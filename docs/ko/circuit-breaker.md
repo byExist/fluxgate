@@ -63,6 +63,8 @@ cb = CircuitBreaker(
 
 애플리케이션이 실패하는 서비스에 리소스를 낭비하는 것을 방지하고 서비스가 복구될 시간을 제공합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.errors import CallNotPermittedError
 
@@ -89,6 +91,11 @@ Retry로 일정 시간을 대기한 후 회로는 이 상태로 전환되어 서
 이 점진적인 복구 접근 방식은 아직 불안정한 서비스에 "동시다발적인 요청"이 쇄도하는 것을 방지합니다.
 
 ```python
+from fluxgate import CircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import All
+from fluxgate.trippers import MinRequests, FailureRate
+from fluxgate.retries import Cooldown
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
@@ -111,6 +118,8 @@ cb = CircuitBreaker(
 
 활성 보호를 활성화하기 전에 새 서비스에서 또는 로드 테스트 중에 안전하게 Metric을 수집합니다.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # 프로덕션에서 브레이커를 활성화하기 전에 Metric을 수집합니다.
 cb.metrics_only()
@@ -128,6 +137,8 @@ cb.reset()
 
 디버깅, 특정 테스트 실행 또는 브레이커를 완전히 우회해야 하는 긴급 상황에 유용합니다.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # 긴급 상황 시 circuit breaker를 비활성화합니다.
 cb.disable()
@@ -144,6 +155,8 @@ cb.reset()
 - **복구**: 자동으로 복구되지 않습니다. 수동 `reset()` 호출이 필요합니다.
 
 계획된 유지보수 또는 서비스를 수동으로 오프라인으로 전환하는 데 사용합니다.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 # 계획된 배포 중에 회로를 강제로 엽니다.
@@ -180,20 +193,18 @@ cb = CircuitBreaker(
 
 @cb
 def charge_payment(amount: float):
-    response = requests.post("https://payment.example.com/charge", json={"amount": amount})
-    response.raise_for_status()
-    return response.json()
+    pass  # In production: call payment API
 ```
 
 ### 직접 호출 방식 {#call-usage}
 
 `call` 메서드는 데코레이터로 수정할 수 없는 함수(예: 서드파티 라이브러리의 함수)를 보호해야 할 때 유용합니다.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 def process_payment(amount: float):
-    response = requests.post("https://payment.example.com/charge", json={"amount": amount})
-    response.raise_for_status()
-    return response.json()
+    pass  # In production: call payment API
 
 # .call()로 함수를 감싸서 보호합니다.
 result = cb.call(process_payment, amount=100.0)
@@ -207,8 +218,14 @@ Fluxgate는 `AsyncCircuitBreaker`를 통해 최신 `asyncio` 애플리케이션�
     복구 중인 서비스에 과부하가 걸리는 것을 방지하기 위해 `AsyncCircuitBreaker`는 `HALF_OPEN` 상태에서 허용되는 동시 호출 수를 제한합니다. 이는 `max_half_open_calls` 매개변수(기본값은 10)에 의해 제어되며, 내부적으로 `asyncio.Semaphore`에 의해 관리됩니다.
 
 ```python
+import asyncio
 import httpx
 from fluxgate import AsyncCircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import TypeOf
+from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.retries import Cooldown
+from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
@@ -222,18 +239,20 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def fetch_data():
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://api.example.com/data")
-        response.raise_for_status()
-        return response.json()
+    pass  # In production: async HTTP call
 
 # await를 사용하여 비동기 함수를 호출합니다.
-result = await fetch_data()
+async def main():
+    result = await fetch_data()
+
+asyncio.run(main())
 ```
 
 ## 브레이커 상태 확인 {#info}
 
 `.info()` 메서드를 사용하여 circuit breaker의 현재 상태와 Metric을 언제든지 확인할 수 있습니다.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 info = cb.info()
@@ -254,6 +273,8 @@ print(f"Current metrics: {info.metrics}")
 ## 수동 제어 {#manual-control}
 
 circuit breaker의 상태를 수동으로 제어해야 하는 경우가 있을 수 있습니다.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 # CLOSED 상태로 재설정하고 모든 Metric을 지웁니다.
@@ -280,6 +301,8 @@ cb.reset(notify=False)
 
 가장 쉬운 방법은 데코레이터에 직접 Fallback 함수를 제공하는 것입니다. 이 함수는 보호된 함수에서 **모든** 예외가 발생할 때마다 자동으로 호출됩니다. Fallback 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 # Fallback 함수는 예외를 인수로 받습니다.
 def handle_error(e: Exception) -> dict:
@@ -301,6 +324,8 @@ result = api_call()
 
 단일 호출에 대해 Fallback을 명시적으로 지정할 수도 있습니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
@@ -311,6 +336,8 @@ result = cb.call_with_fallback(
 ### 수동 `try...except` 처리 {#manual-try-except}
 
 최대한의 제어를 위해 표준 `try...except` 블록을 사용할 수 있습니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -331,6 +358,8 @@ except Exception as e:
 ```
 
 ## 완전한 프로덕션 예제 {#complete-example}
+
+<!--pytest.mark.skip-->
 
 ```python
 import httpx

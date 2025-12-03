@@ -22,6 +22,8 @@ For every call that arrives in the `HALF_OPEN` state, `Random` generates a rando
 
 This is a good choice for simple traffic limiting, especially when you want to start testing recovery at a constant rate immediately.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.permits import Random
@@ -43,6 +45,8 @@ This strategy provides a smoother, more gentle recovery by gradually increasing 
 ### How It Works {#rampup-how-it-works}
 
 `RampUp` linearly increases the allowed traffic ratio from an `initial` value to a `final` value over a set `duration`. The calculation is based on the time elapsed since the breaker entered the `HALF_OPEN` state.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -86,6 +90,8 @@ This strategy is excellent for protecting load-sensitive services like databases
 **Recommended Settings:**
 
 ```python
+from fluxgate.permits import Random
+
 # Conservative (prioritizes stability)
 permit = Random(ratio=0.3)
 
@@ -103,6 +109,8 @@ permit = Random(ratio=0.8)
 **Recommended Settings:**
 
 ```python
+from fluxgate.permits import RampUp
+
 # Conservative recovery
 permit = RampUp(initial=0.1, final=0.5, duration=120.0)
 
@@ -121,6 +129,8 @@ The `retry` and `permit` strategies work together to define your complete recove
 
 - **Retry**: Decides **when** to attempt recovery (the cooling-off period).
 - **Permit**: Decides **how** to attempt recovery (the traffic allowance).
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

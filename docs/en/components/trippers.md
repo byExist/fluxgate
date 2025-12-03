@@ -78,6 +78,8 @@ tripper = AvgLatency(2.0)
 !!! warning "Requires `slow_threshold`"
     To use `SlowRate`, you **must** set the `slow_threshold` parameter (in seconds) on the main `CircuitBreaker`. Any call that takes longer than this value is considered "slow". If you don't set it, `SlowRate` will always be `0.0`.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate
@@ -153,6 +155,8 @@ tripper = (
     You should include `MinRequests` in almost every tripper combination. It prevents the circuit from making hasty decisions based on a small, statistically insignificant sample of calls. A good starting point is a value that is 10-20% of your window's size.
 
 ```python
+from fluxgate.trippers import MinRequests, FailureRate
+
 # For a CountWindow(size=100), a MinRequests of 10-20 is a sensible choice.
 tripper = MinRequests(10) & FailureRate(0.5)
 ```

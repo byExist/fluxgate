@@ -28,6 +28,8 @@ window = TimeWindow(size=60)    # 마지막 60초 동안의 호출을 추적합�
 
 [Django의 권한 시스템](https://www.django-rest-framework.org/api-guide/permissions/#how-permissions-are-determined)은 논리 연산자(`&`, `|`, `~`)와 결합된 **조합 가능한 객체\(composable objects\)**라는 훌륭하고 매우 유연한 패턴을 사용합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 # Django REST Framework에서는 간단한 권한 클래스를 조합하여 복잡한 규칙을 구축합니다.
 from rest_framework.permissions import IsAuthenticated, IsAdminUser

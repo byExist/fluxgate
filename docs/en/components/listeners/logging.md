@@ -8,6 +8,8 @@ It works identically for both `CircuitBreaker` and `AsyncCircuitBreaker`.
 
 Simply add `LogListener` to the `listeners` list of your circuit breaker.
 
+<!--pytest.mark.skip-->
+
 ```python
 import logging
 from fluxgate import CircuitBreaker
@@ -62,8 +64,7 @@ class JsonLogListener(IListener):
 
 # Usage
 json_logger = logging.getLogger("json_logger")
-# ... (configure json_logger with a JSON formatter)
-cb = CircuitBreaker(..., listeners=[JsonLogListener(json_logger)])
+cb_listener = JsonLogListener(json_logger)
 ```
 
 ## Configuring File Logging {#file-logging}
@@ -92,7 +93,7 @@ root_logger.addHandler(handler)
 root_logger.setLevel(logging.INFO)
 
 # LogListener will now write to the file via the root logger.
-cb = CircuitBreaker(..., listeners=[LogListener()])
+log_listener = LogListener()
 ```
 
 ## Next Steps {#next-steps}

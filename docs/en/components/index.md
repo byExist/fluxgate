@@ -102,6 +102,8 @@ Detect state transitions and notify external systems.
 - **PrometheusListener** - Prometheus metrics (opt)
 - **SlackListener** - Slack notifications (opt)
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.listeners.log import LogListener
 
@@ -120,6 +122,9 @@ from fluxgate.trackers import Custom
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
+
+def is_server_error(e: Exception) -> bool:
+    return isinstance(e, ConnectionError)
 
 cb = CircuitBreaker(
     name="api",

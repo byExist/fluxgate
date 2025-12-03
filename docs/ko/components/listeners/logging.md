@@ -8,6 +8,8 @@
 
 `LogListener`를 Circuit Breaker의 `listeners` 목록에 추가합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 import logging
 from fluxgate import CircuitBreaker
@@ -62,8 +64,7 @@ class JsonLogListener(IListener):
 
 # 사용
 json_logger = logging.getLogger("json_logger")
-# ... (JSON 포맷터로 json_logger 구성)
-cb = CircuitBreaker(..., listeners=[JsonLogListener(json_logger)])
+cb_listener = JsonLogListener(json_logger)
 ```
 
 ## 파일 로깅 구성 {#file-logging}
@@ -92,7 +93,7 @@ root_logger.addHandler(handler)
 root_logger.setLevel(logging.INFO)
 
 # LogListener는 이제 루트 로거를 통해 파일에 기록합니다.
-cb = CircuitBreaker(..., listeners=[LogListener()])
+log_listener = LogListener()
 ```
 
 ## 다음 단계 {#next-steps}

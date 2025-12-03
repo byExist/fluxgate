@@ -46,6 +46,8 @@ It is highly recommended to store your Slack token and channel ID as environment
 
 Use `SlackListener` with a standard `CircuitBreaker`.
 
+<!--pytest.mark.skip-->
+
 ```python
 import os
 from fluxgate import CircuitBreaker
@@ -66,6 +68,8 @@ cb = CircuitBreaker(
 ### Asynchronous (`AsyncSlackListener`)
 
 Use `AsyncSlackListener` with an `AsyncCircuitBreaker`. The underlying HTTP calls will be made asynchronously.
+
+<!--pytest.mark.skip-->
 
 ```python
 import os
@@ -111,6 +115,8 @@ The listener sends threaded messages to keep conversations organized.
 
 You may not want to be notified of every state change. To filter notifications, you can write a simple wrapper around the listener.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.interfaces import IListener
 from fluxgate.signal import Signal
@@ -133,6 +139,8 @@ class CriticalAlertListener(IListener):
 ### Custom Messages {#custom-messages}
 
 To completely customize the message format, you can write your own listener using the `slack_sdk`.
+
+<!--pytest.mark.skip-->
 
 ```python
 from slack_sdk import WebClient
@@ -157,7 +165,6 @@ class CustomSlackListener(IListener):
             # It's important to handle errors so a listener failure
             # doesn't crash the main application.
             print(f"Error sending Slack notification: {e}")
-
 ```
 
 ---

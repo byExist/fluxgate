@@ -46,6 +46,8 @@ Slack 토큰과 채널 ID를 소스 코드에 하드 코딩하는 대신 환경 
 
 표준 `CircuitBreaker`와 함께 `SlackListener`를 사용합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 import os
 from fluxgate import CircuitBreaker
@@ -66,6 +68,8 @@ cb = CircuitBreaker(
 ### 비동기 (`AsyncSlackListener`)
 
 `AsyncCircuitBreaker`와 함께 `AsyncSlackListener`를 사용합니다. 기본 HTTP 호출은 비동기적으로 이루어집니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 import os
@@ -134,6 +138,8 @@ class CriticalAlertListener(IListener):
 
 메시지 형식을 완전히 사용자 정의하려면 `slack_sdk`를 사용하여 자신만의 Listener를 작성할 수 있습니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -152,7 +158,6 @@ class CustomSlackListener(IListener):
 
         message = f"'{signal.circuit_name}' 브레이커가 Trip되었습니다!"
         self.client.chat_postMessage(channel=self.channel, text=message)
-
 ```
 
 ---

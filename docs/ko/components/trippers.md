@@ -78,6 +78,8 @@ tripper = AvgLatency(2.0)
 !!! warning "`slow_threshold`가 필요합니다"
     `SlowRate`를 사용하려면 메인 `CircuitBreaker`에 `slow_threshold` 매개변수(초 단위)를 **반드시** 설정해야 합니다. 이 값보다 오래 걸리는 모든 호출은 "느린" 것으로 간주됩니다. 이 값을 설정하지 않으면 `SlowRate`는 항상 `0.0`이 됩니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate
@@ -151,6 +153,8 @@ tripper = (
     거의 모든 Tripper 조합에 `MinRequests`를 포함해야 합니다. 이는 회로가 통계적으로 유의미하지 않은 적은 수의 호출 샘플을 기반으로 성급한 결정을 내리는 것을 방지합니다. Window 크기의 10-20% 정도의 값이 좋은 시작점입니다.
 
 ```python
+from fluxgate.trippers import MinRequests, FailureRate
+
 # CountWindow(size=100)의 경우, MinRequests를 10-20으로 설정하는 것이 합리적입니다.
 tripper = MinRequests(10) & FailureRate(0.5)
 ```

@@ -76,6 +76,8 @@ pip install fluxgate[prometheus]
 
 간단한 스크립트나 백그라운드 워커의 경우, Prometheus 클라이언트의 HTTP 서버를 별도의 스레드에서 시작할 수 있습니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from prometheus_client import start_http_server
 from fluxgate import CircuitBreaker
@@ -98,6 +100,8 @@ cb = CircuitBreaker(
 ### 웹 프레임워크와의 통합 \(FastAPI\)
 
 FastAPI 또는 Flask와 같은 웹 프레임워크를 사용할 때는 별도의 서버를 시작하는 대신 Prometheus 메트릭 엔드포인트를 애플리케이션에 직접 통합해야 합니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fastapi import FastAPI
@@ -132,6 +136,8 @@ async def root():
 ## 여러 Circuit Breaker 모니터링 {#multiple-circuits}
 
 동일한 애플리케이션에서 여러 Circuit Breaker를 모니터링하려면, 동일한 `PrometheusListener` 인스턴스를 재사용하기만 하면 됩니다. 각 브레이커에 대해 메트릭은 `circuit_name`으로 올바르게 라벨링됩니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from prometheus_client import start_http_server

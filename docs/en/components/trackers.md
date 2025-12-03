@@ -14,6 +14,8 @@ Trackers are crucial for defining what a "failure" means for your service. While
 
 This is the simplest tracker. It counts every exception as a failure.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trackers import All
@@ -31,6 +33,8 @@ cb = CircuitBreaker(
 ## TypeOf
 
 This tracker checks if an exception is an instance of one or more specified types. It's perfect for tracking known, common failure classes.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -50,6 +54,8 @@ cb = CircuitBreaker(
 ## Custom
 
 For maximum flexibility, `Custom` lets you provide your own function to inspect the exception and decide if it's a failure. This is essential for cases where you need to check an exception's attributes, such as an HTTP status code.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

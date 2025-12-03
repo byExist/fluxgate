@@ -43,7 +43,7 @@ cb = CircuitBreaker(
 
 @cb
 def call_payment_api(amount: float):
-    return requests.post("https://api.example.com/pay", json={"amount": amount})
+    pass  # In production: call payment API
 ```
 
 ### 작동 방식
@@ -83,7 +83,14 @@ Fluxgate의 강점은 조합 가능한 컴포넌트에서 나옵니다. 컴포�
 Asyncio 애플리케이션을 완벽하게 지원합니다.
 
 ```python
+import asyncio
+import httpx
 from fluxgate import AsyncCircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import TypeOf
+from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.retries import Cooldown
+from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
@@ -97,13 +104,19 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def call_async_api():
-    async with httpx.AsyncClient() as client:
-        return await client.get("https://api.example.com/data")
+    pass  # In production: async HTTP call
+
+async def main():
+    result = await call_async_api()
+
+asyncio.run(main())
 ```
 
 ## 프로덕션 예제
 
 외부 결제 API를 위한 예제입니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 import httpx

@@ -14,6 +14,8 @@ Tracker는 "실패"가 무엇을 의미하는지 정의합니다. 모든 예외�
 
 가장 간단한 Tracker입니다. 모든 예외를 실패로 간주합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trackers import All
@@ -31,6 +33,8 @@ cb = CircuitBreaker(
 ## TypeOf
 
 이 Tracker는 예외가 하나 이상의 지정된 유형의 인스턴스인지 확인합니다. 예외 유형을 특정할 수 있을 때 유용합니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -50,6 +54,8 @@ cb = CircuitBreaker(
 ## Custom
 
 최대한의 유연성을 위해 `Custom`은 예외를 검사하고 실패 여부를 결정하는 자체 함수를 제공할 수 있도록 합니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

@@ -20,6 +20,8 @@ Permit은 `HALF_OPEN` 상태에서 호출의 허용 여부를 결정합니다. H
 - `Random\(ratio=0.1\)`은 대략 10%의 호출을 허용합니다.
 - `Random\(ratio=0.8\)`은 대략 80%의 호출을 허용합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.permits import Random
@@ -41,6 +43,8 @@ cb = CircuitBreaker(
 ### 작동 방식 {#rampup-how-it-works}
 
 `HALF_OPEN` 상태에 진입한 이후 경과된 시간을 기반으로, 설정된 `duration` 동안 `initial` 값에서 `final` 값까지 허용되는 트래픽 비율을 선형적으로 증가시킵니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -82,6 +86,8 @@ cb = CircuitBreaker(
 **권장 설정:**
 
 ```python
+from fluxgate.permits import Random
+
 # 보수적 (안정성 우선)
 permit = Random(ratio=0.3)
 
@@ -96,6 +102,8 @@ permit = Random(ratio=0.8)
 **권장 설정:**
 
 ```python
+from fluxgate.permits import RampUp
+
 # 보수적 복구
 permit = RampUp(initial=0.1, final=0.5, duration=120.0)
 
@@ -111,6 +119,8 @@ permit = RampUp(initial=0.5, final=1.0, duration=30.0)
 
 - **Retry**: Half Open 상태로의 전환 시점을 결정합니다.
 - **Permit**: Half Open 상태에서 요청의 허용 여부를 결정합니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

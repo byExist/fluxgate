@@ -50,6 +50,8 @@ def charge_payment(amount: float):
 
 When integrating with a web framework, you typically want to catch a `CallNotPermittedError` and return a user-friendly error response, like a `503 Service Unavailable`.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fastapi import FastAPI, HTTPException
 import httpx
@@ -107,6 +109,7 @@ from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import Closed, MinRequests, FailureRate
 from fluxgate.retries import Backoff
+from fluxgate.permits import Random
 
 # More conservative policy for the critical payment service.
 payment_cb = AsyncCircuitBreaker(
@@ -115,6 +118,7 @@ payment_cb = AsyncCircuitBreaker(
     tracker=TypeOf(httpx.HTTPError),
     tripper=Closed() & MinRequests(20) & FailureRate(0.4),
     retry=Backoff(initial=30.0, max_duration=600.0),
+    permit=Random(ratio=0.5),
 )
 
 # More aggressive policy for the less critical inventory service.
@@ -124,16 +128,15 @@ inventory_cb = AsyncCircuitBreaker(
     tracker=TypeOf(httpx.HTTPError),
     tripper=Closed() & MinRequests(10) & FailureRate(0.6),
     retry=Backoff(initial=10.0, max_duration=300.0),
+    permit=Random(ratio=0.5),
 )
 
 @payment_cb
 async def charge_payment(amount: float):
-    # ...
     pass
 
 @inventory_cb
 async def check_inventory(product_id: str):
-    # ...
     pass
 ```
 
@@ -146,6 +149,8 @@ When a call is blocked or fails, you often want to execute alternative logic, su
 ### Using the `fallback` Decorator Argument (Recommended)
 
 This is the cleanest approach. The provided function is called automatically whenever the protected function raises **any** exception. Your fallback function receives the exception instance, so you can decide how to handle it.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker, CallNotPermittedError
@@ -169,6 +174,8 @@ result = fetch_data_with_fallback() # Returns {"source": "cache"}
 
 This is useful when you can't use a decorator. It works just like the `fallback` argument.
 
+<!--pytest.mark.skip-->
+
 ```python
 def fetch_from_api():
     # ...
@@ -184,6 +191,8 @@ result = cb.call_with_fallback(
 ### Manual `try...except`
 
 For maximum control, you can use a standard `try...except` block. This gives you the most flexibility but is also more verbose.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CallNotPermittedError
@@ -213,6 +222,8 @@ except httpx.HTTPError as e:
 
 A `tracker` lets you define precisely what counts as a failure. For example, you can ignore 4xx client errors while tracking 5xx server errors.
 
+<!--pytest.mark.skip-->
+
 ```python
 import httpx
 from fluxgate.trackers import Custom
@@ -236,6 +247,8 @@ cb = CircuitBreaker(
 
 You can use `Closed()` and `HalfOpened()` trippers to create stricter rules for recovery attempts.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
@@ -258,7 +271,9 @@ A factory function is a powerful pattern for creating and managing many similar 
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Cooldown
 from fluxgate.windows import CountWindow
+from fluxgate.trackers import All
 from fluxgate.trippers import MinRequests, FailureRate
+from fluxgate.permits import Random
 
 def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
     """Creates a circuit breaker based on a predefined policy name."""
@@ -266,15 +281,19 @@ def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
         return CircuitBreaker(
             name=name,
             window=CountWindow(100),
+            tracker=All(),
             tripper=MinRequests(20) & FailureRate(0.4),
-            retry=Cooldown(60.0)
+            retry=Cooldown(60.0),
+            permit=Random(ratio=0.5),
         )
     elif policy == "lenient":
         return CircuitBreaker(
             name=name,
             window=CountWindow(50),
+            tracker=All(),
             tripper=MinRequests(10) & FailureRate(0.7),
-            retry=Cooldown(30.0)
+            retry=Cooldown(30.0),
+            permit=Random(ratio=0.5),
         )
     else:
         raise ValueError(f"Unknown policy: {policy}")

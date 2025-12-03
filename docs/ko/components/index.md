@@ -105,6 +105,8 @@ Listeners는 상태 변경 이벤트에 등록하여 로깅, 모니터링 또는
 - **PrometheusListener**: Prometheus 스크래핑을 위한 메트릭을 노출합니다. (optional)
 - **SlackListener**: Slack 채널로 상태 변경 알림을 보냅니다. (optional)
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.listeners.log import LogListener
 
@@ -122,8 +124,8 @@ from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
-# is_server_error는 정의된 함수라고 가정합니다.
-# def is_server_error(e: Exception) -> bool: ...
+def is_server_error(e: Exception) -> bool:
+    return isinstance(e, ConnectionError)
 
 cb = CircuitBreaker(
     name="api",

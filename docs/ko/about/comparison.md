@@ -29,6 +29,8 @@ Fluxgate는 **슬라이딩 윈도우를 통한 실패율**을 사용하며, 이�
 
 - **다른 라이브러리:**
 
+    <!--pytest.mark.skip-->
+
     ```python
     # 5번 연속 실패 후 열립니다.
     @circuit(failure_threshold=5)
@@ -38,10 +40,21 @@ Fluxgate는 **슬라이딩 윈도우를 통한 실패율**을 사용하며, 이�
 - **Fluxgate:**
 
     ```python
+    from fluxgate import CircuitBreaker
+    from fluxgate.windows import CountWindow
+    from fluxgate.trackers import All
+    from fluxgate.trippers import MinRequests, FailureRate
+    from fluxgate.retries import Cooldown
+    from fluxgate.permits import Random
+
     # 지난 100개 호출에서 실패율이 50%를 초과하면 열립니다.
     cb = CircuitBreaker(
+        name="api",
         window=CountWindow(size=100),
+        tracker=All(),
         tripper=MinRequests(10) & FailureRate(0.5),
+        retry=Cooldown(duration=60.0),
+        permit=Random(ratio=0.5),
     )
     ```
 
@@ -73,14 +86,24 @@ Fluxgate는 예외뿐만 아니라 응답 시간을 기반으로 트립할 수 �
 - **Fluxgate:**
 
     ```python
-    from fluxgate.trippers import AvgLatency, SlowRate
+    from fluxgate import CircuitBreaker
+    from fluxgate.windows import CountWindow
+    from fluxgate.trackers import All
+    from fluxgate.trippers import MinRequests, AvgLatency, SlowRate
+    from fluxgate.retries import Cooldown
+    from fluxgate.permits import Random
 
     # 평균 지연 시간이 2초를 초과하면 트립됩니다.
     tripper = MinRequests(10) & AvgLatency(2.0)
 
     # 호출의 30% 이상이 1초보다 느리면 트립됩니다.
     cb = CircuitBreaker(
+        name="api",
+        window=CountWindow(size=100),
+        tracker=All(),
         tripper=MinRequests(10) & SlowRate(0.3),
+        retry=Cooldown(duration=60.0),
+        permit=Random(ratio=0.5),
         slow_threshold=1.0,
     )
     ```
@@ -91,6 +114,8 @@ Fluxgate는 예외뿐만 아니라 응답 시간을 기반으로 트립할 수 �
 
 - **다른 라이브러리:** 하나의 호출을 허용하고, 성공하면 회로를 닫습니다.
 - **Fluxgate:**
+
+    <!--pytest.mark.skip-->
 
     ```python
     from fluxgate.permits import RampUp

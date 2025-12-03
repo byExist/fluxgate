@@ -28,6 +28,8 @@ window = TimeWindow(size=60)    # Tracks calls in the last 60 seconds.
 
 [Django's permission system](https://www.django-rest-framework.org/api-guide/permissions/#how-permissions-are-determined) uses a brilliant and highly flexible pattern of **composable objects** combined with logical operators (`&`, `|`, `~`).
 
+<!--pytest.mark.skip-->
+
 ```python
 # In Django REST Framework, complex rules are built by combining simple permission classes.
 from rest_framework.permissions import IsAuthenticated, IsAdminUser

@@ -62,6 +62,8 @@ When the failure threshold is exceeded, the circuit opens. In this state, it imm
 - **Benefit**: Prevents an application from wasting resources on a failing service and gives the service time to recover.
 - **Transition**: Moves to `HALF_OPEN` after the timeout defined by the `retry` strategy.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate.errors import CallNotPermittedError
 
@@ -88,6 +90,11 @@ After the retry timeout, the circuit moves to this state to test if the service 
 This gradual recovery approach prevents a "thundering herd" from overwhelming a service that is still fragile.
 
 ```python
+from fluxgate import CircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import All
+from fluxgate.trippers import MinRequests, FailureRate
+from fluxgate.retries import Cooldown
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
@@ -109,6 +116,8 @@ In this state, the circuit breaker tracks metrics but never trips open.
 - **Operation**: Allows all calls to pass through, just like in the `CLOSED` state.
 - **Use Case**: Safely gather metrics from a new service or during a load test before enabling active protection.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # Collect metrics before enabling the breaker in production.
 cb.metrics_only()
@@ -125,6 +134,8 @@ This state completely disables the circuit breaker.
 - **Monitoring**: Does not track any metrics.
 - **Use Case**: Useful for debugging, running specific tests, or in emergency situations where you need to bypass the breaker entirely.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # Disable the circuit breaker during an emergency.
 cb.disable()
@@ -140,6 +151,8 @@ This state forces the circuit to be open and block all calls.
 - **Operation**: Rejects all calls with `CallNotPermittedError`.
 - **Recovery**: Does not automatically recover. It requires a manual `reset()` call.
 - **Use Case**: Ideal for planned maintenance or for manually taking a service offline.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 # Force the circuit open during a planned deployment.
@@ -176,20 +189,18 @@ cb = CircuitBreaker(
 
 @cb
 def charge_payment(amount: float):
-    response = requests.post("https://payment.example.com/charge", json={"amount": amount})
-    response.raise_for_status()
-    return response.json()
+    pass  # In production: call payment API
 ```
 
 ### Direct Call Style {#call-usage}
 
 The `call` method is useful for protecting functions that you can't modify with a decorator, such as functions from a third-party library.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 def process_payment(amount: float):
-    response = requests.post("https://payment.example.com/charge", json={"amount": amount})
-    response.raise_for_status()
-    return response.json()
+    pass  # In production: call payment API
 
 # Protect the function by wrapping it with .call()
 result = cb.call(process_payment, amount=100.0)
@@ -203,8 +214,14 @@ Fluxgate provides full support for modern `asyncio` applications via the `AsyncC
     To prevent a recovering service from being overwhelmed, `AsyncCircuitBreaker` limits the number of concurrent calls allowed in the `HALF_OPEN` state. This is controlled by the `max_half_open_calls` parameter (default is 10) and is managed internally by an `asyncio.Semaphore`.
 
 ```python
+import asyncio
 import httpx
 from fluxgate import AsyncCircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import TypeOf
+from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.retries import Cooldown
+from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
@@ -218,18 +235,20 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def fetch_data():
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://api.example.com/data")
-        response.raise_for_status()
-        return response.json()
+    pass  # In production: async HTTP call
 
 # Use await to call the async function
-result = await fetch_data()
+async def main():
+    result = await fetch_data()
+
+asyncio.run(main())
 ```
 
 ## Inspecting the Breaker's State {#info}
 
 You can inspect the current state and metrics of a circuit breaker at any time using the `.info()` method.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 info = cb.info()
@@ -250,6 +269,8 @@ print(f"Current metrics: {info.metrics}")
 ## Manual Control {#manual-control}
 
 There may be times when you need to control the circuit breaker's state manually.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 # Reset to CLOSED state and clear all metrics.
@@ -276,6 +297,8 @@ When a circuit is open, it raises a `CallNotPermittedError`. You can handle this
 
 The easiest method is to provide a fallback function directly to the decorator. This function will be called automatically whenever an exception occurs.
 
+<!--pytest.mark.skip-->
+
 ```python
 # The fallback function receives the exception as an argument.
 def handle_error(e: Exception) -> dict:
@@ -297,6 +320,8 @@ result = api_call()
 
 You can also specify a fallback explicitly for a single call.
 
+<!--pytest.mark.skip-->
+
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
@@ -307,6 +332,8 @@ result = cb.call_with_fallback(
 ### Manual `try...except` Handling {#manual-try-except}
 
 For the most control, you can use a standard `try...except` block.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -329,6 +356,8 @@ except Exception as e:
 ## Complete Production Example {#complete-example}
 
 Here is a complete example of a production-ready circuit breaker configured to protect a critical payment API.
+
+<!--pytest.mark.skip-->
 
 ```python
 import httpx

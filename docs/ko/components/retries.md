@@ -18,6 +18,8 @@ Retry는 Circuit Breaker의 "쿨다운" 기간을 정의합니다. `OPEN` 상태
 !!! warning "주의해서 사용하십시오"
     `Always`는 많은 클라이언트가 동시에 Retry하여 복구 중인 서비스에 과부하를 주는 "동시다발적인 요청" 문제를 야기할 수 있으므로 위험할 수 있습니다. 실패가 매우 짧은 것으로 알려진 중요하지 않은 서비스에 가장 적합합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
@@ -31,6 +33,8 @@ cb = CircuitBreaker(name="api", retry=Always(), ...)
 ## Never
 
 수동으로 재설정될 때까지 회로를 `OPEN` 상태로 무기한 유지합니다. 서비스 복구에 사람의 개입이 필요할 때 유용합니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -49,6 +53,8 @@ cb.reset()
 `HALF_OPEN`으로 이동하기 전에 고정된 `duration`\(초 단위\) 동안 기다립니다.
 
 예측 가능한 시간 내에 복구가 예상되는 서비스일 경우 선택할 수 있습니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -69,6 +75,8 @@ cb = CircuitBreaker(
 각 연속적인 실패 후에 대기 시간을 지수적으로 증가시켜, 서비스가 복구할 시간을 더 많이 제공합니다.
 
 대기 시간은 `initial * (multiplier ** consecutive_failures)`로 계산됩니다.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

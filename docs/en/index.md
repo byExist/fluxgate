@@ -83,7 +83,14 @@ Fluxgate's power comes from its composable components. You can mix and match the
 Full support for asyncio applications:
 
 ```python
+import asyncio
+import httpx
 from fluxgate import AsyncCircuitBreaker
+from fluxgate.windows import CountWindow
+from fluxgate.trackers import TypeOf
+from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.retries import Cooldown
+from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
@@ -97,13 +104,19 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def call_async_api():
-    async with httpx.AsyncClient() as client:
-        return await client.get("https://api.example.com/data")
+    pass  # In production: async HTTP call
+
+async def main():
+    result = await call_async_api()
+
+asyncio.run(main())
 ```
 
 ## Production Example
 
 A production-ready circuit breaker for an external payment API:
+
+<!--pytest.mark.skip-->
 
 ```python
 import httpx

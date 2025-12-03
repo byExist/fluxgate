@@ -18,6 +18,8 @@ This strategy moves the circuit to `HALF_OPEN` immediately after it opens. On an
 !!! warning "Use with Caution"
     `Always` can be dangerous, as it encourages a "thundering herd" problem where many clients retry simultaneously, overwhelming a service that is trying to recover. It's best used for non-critical services where failures are known to be very brief.
 
+<!--pytest.mark.skip-->
+
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
@@ -31,6 +33,8 @@ cb = CircuitBreaker(name="api", retry=Always(), ...)
 ## Never
 
 This strategy keeps the circuit in the `OPEN` state indefinitely until it is manually reset. This is useful when a service requires human intervention to be fixed.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -49,6 +53,8 @@ cb.reset()
 This is a simple and common strategy that waits for a fixed `duration` (in seconds) before moving to `HALF_OPEN`.
 
 It's a good default choice for services that tend to recover in a predictable amount of time.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker
@@ -69,6 +75,8 @@ cb = CircuitBreaker(
 This is the most robust and recommended strategy for production systems. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.
 
 The wait time is calculated as `initial * (multiplier ** consecutive_failures)`.
+
+<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

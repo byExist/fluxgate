@@ -39,6 +39,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb

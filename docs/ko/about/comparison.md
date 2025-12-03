@@ -55,6 +55,7 @@ Fluxgate는 **슬라이딩 윈도우를 통한 실패율**을 사용하며, 이�
         tripper=MinRequests(10) & FailureRate(0.5),
         retry=Cooldown(duration=60.0),
         permit=Random(ratio=0.5),
+        slow_threshold=float("inf"),
     )
     ```
 
@@ -104,7 +105,7 @@ Fluxgate는 예외뿐만 아니라 응답 시간을 기반으로 트립할 수 �
         tripper=MinRequests(10) & SlowRate(0.3),
         retry=Cooldown(duration=60.0),
         permit=Random(ratio=0.5),
-        slow_threshold=1.0,
+        slow_threshold=1.0,  # 필수: "느림"의 기준을 정의합니다
     )
     ```
 

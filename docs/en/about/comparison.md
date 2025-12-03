@@ -55,6 +55,7 @@ Fluxgate uses a **failure rate over a sliding window**, which provides a much mo
         tripper=MinRequests(10) & FailureRate(0.5),
         retry=Cooldown(duration=60.0),
         permit=Random(ratio=0.5),
+        slow_threshold=float("inf"),
     )
     ```
 
@@ -104,7 +105,7 @@ Fluxgate can trip based on response time, not just exceptions. This is critical 
         tripper=MinRequests(10) & SlowRate(0.3),
         retry=Cooldown(duration=60.0),
         permit=Random(ratio=0.5),
-        slow_threshold=1.0,
+        slow_threshold=1.0,  # Required: defines what "slow" means
     )
     ```
 

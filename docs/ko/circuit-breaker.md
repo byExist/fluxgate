@@ -51,6 +51,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 ```
 
@@ -107,6 +108,7 @@ cb = CircuitBreaker(
     retry=Cooldown(duration=60.0),
     # 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
+    slow_threshold=float("inf"),
 )
 ```
 
@@ -189,6 +191,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb
@@ -234,6 +237,7 @@ cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
     max_half_open_calls=5,  # HALF_OPEN 상태에서 동시 호출을 5개로 제한합니다.
 )
 
@@ -400,8 +404,8 @@ payment_cb = CircuitBreaker(
         final=0.5,        # 50%까지 점진적으로 증가시킵니다.
         duration=60.0     # 60초에 걸쳐 증가시킵니다.
     ),
-    listeners=[LogListener(), PrometheusListener()],
     slow_threshold=3.0,  # 3초 이상의 모든 호출을 느린 호출로 표시합니다.
+    listeners=[LogListener(), PrometheusListener()],
 )
 
 @payment_cb

@@ -2,6 +2,33 @@
 
 이 프로젝트의 모든 변경 사항은 이 파일에 문서화됩니다.
 
+## [0.2.0] - 2025.12.03
+
+### Breaking Changes
+
+- **`slow_threshold` 필수화**: `slow_threshold` 파라미터가 더 이상 기본값을 갖지 않으며, `CircuitBreaker` 또는 `AsyncCircuitBreaker` 인스턴스 생성 시 명시적으로 설정해야 합니다.
+    - `SlowRate`를 사용하지 않는 경우 `float("inf")`로 설정하여 느린 호출 추적을 비활성화하세요.
+    - Python의 원칙을 따릅니다: "Explicit is better than implicit."
+
+**마이그레이션:**
+
+```python
+# 이전 (v0.1.x)
+cb = CircuitBreaker(
+    name="api",
+    window=CountWindow(size=100),
+    ...
+)
+
+# 이후 (v0.2.0)
+cb = CircuitBreaker(
+    name="api",
+    window=CountWindow(size=100),
+    ...
+    slow_threshold=float("inf"),  # 또는 3.0과 같은 특정 값
+)
+```
+
 ## [0.1.2] - 2025.12.03
 
 ### 변경

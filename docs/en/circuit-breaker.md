@@ -51,6 +51,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 ```
 
@@ -106,6 +107,7 @@ cb = CircuitBreaker(
     retry=Cooldown(duration=60.0),
     # Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
+    slow_threshold=float("inf"),
 )
 ```
 
@@ -185,6 +187,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb
@@ -230,6 +233,7 @@ cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
     max_half_open_calls=5,  # Limit concurrent calls in HALF_OPEN to 5.
 )
 
@@ -397,8 +401,8 @@ payment_cb = CircuitBreaker(
         final=0.5,        # Gradually increase to 50%.
         duration=60.0     # Ramp up over 60 seconds.
     ),
-    listeners=[LogListener(), PrometheusListener()],
     slow_threshold=3.0,  # Mark any call over 3 seconds as slow.
+    listeners=[LogListener(), PrometheusListener()],
 )
 
 @payment_cb

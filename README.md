@@ -43,6 +43,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb
@@ -62,6 +63,7 @@ cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb
@@ -189,11 +191,11 @@ payment_cb = CircuitBreaker(
     # Which calls allowed in HALF_OPEN: gradually ramp 10% → 50% over 60s
     permit=RampUp(initial=0.1, final=0.5, duration=60.0),
 
-    # Event listeners for logging and metrics
-    listeners=[LogListener(), PrometheusListener()],
-
     # Mark calls slower than 3s as slow
     slow_threshold=3.0,
+
+    # Event listeners for logging and metrics
+    listeners=[LogListener(), PrometheusListener()],
 )
 
 @payment_cb

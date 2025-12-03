@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025.12.03
+
+### Breaking Changes
+
+- **`slow_threshold` is now required**: The `slow_threshold` parameter no longer has a default value and must be explicitly set when creating `CircuitBreaker` or `AsyncCircuitBreaker` instances.
+    - If you don't use `SlowRate`, set it to `float("inf")` to disable slow call tracking.
+    - This follows Python's principle: "Explicit is better than implicit."
+
+**Migration:**
+
+```python
+# Before (v0.1.x)
+cb = CircuitBreaker(
+    name="api",
+    window=CountWindow(size=100),
+    ...
+)
+
+# After (v0.2.0)
+cb = CircuitBreaker(
+    name="api",
+    window=CountWindow(size=100),
+    ...
+    slow_threshold=float("inf"),  # or a specific value like 3.0
+)
+```
+
 ## [0.1.2] - 2025.12.03
 
 ### Changed

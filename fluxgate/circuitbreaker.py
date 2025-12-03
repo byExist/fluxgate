@@ -87,8 +87,8 @@ class CircuitBreaker:
         tripper: Condition to open/close the circuit based on metrics
         retry: Strategy for transitioning from OPEN to HALF_OPEN
         permit: Strategy for allowing calls in HALF_OPEN state
+        slow_threshold: Duration threshold in seconds to mark calls as slow
         listeners: Event listeners for state transitions (default: empty)
-        slow_threshold: Duration threshold in seconds to mark calls as slow (default: inf)
 
     Examples:
         >>> from fluxgate import CircuitBreaker
@@ -106,8 +106,8 @@ class CircuitBreaker:
         ...     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
         ...     retry=Cooldown(60.0),
         ...     permit=Random(0.5),
-        ...     listeners=[LogListener()],
         ...     slow_threshold=1.0,
+        ...     listeners=[LogListener()],
         ... )
         >>>
         >>> @cb
@@ -128,8 +128,8 @@ class CircuitBreaker:
         tripper: ITripper,
         retry: IRetry,
         permit: IPermit,
+        slow_threshold: float,
         listeners: Iterable[IListener] = (),
-        slow_threshold: float = float("inf"),
     ) -> None:
         self._name = name
         self._window = window
@@ -474,9 +474,9 @@ class AsyncCircuitBreaker:
         tripper: Condition to open/close the circuit based on metrics
         retry: Strategy for transitioning from OPEN to HALF_OPEN
         permit: Strategy for allowing calls in HALF_OPEN state
-        listeners: Event listeners for state transitions (default: empty)
-        slow_threshold: Duration threshold in seconds to mark calls as slow (default: inf)
+        slow_threshold: Duration threshold in seconds to mark calls as slow
         max_half_open_calls: Maximum concurrent calls allowed in HALF_OPEN state (default: 10)
+        listeners: Event listeners for state transitions (default: empty)
 
     Examples:
         >>> import asyncio
@@ -495,9 +495,9 @@ class AsyncCircuitBreaker:
         ...     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
         ...     retry=Cooldown(60.0),
         ...     permit=Random(0.5),
-        ...     listeners=[],
         ...     slow_threshold=1.0,
         ...     max_half_open_calls=5,
+        ...     listeners=[],
         ... )
         >>>
         >>> @cb
@@ -518,9 +518,9 @@ class AsyncCircuitBreaker:
         tripper: ITripper,
         retry: IRetry,
         permit: IPermit,
-        listeners: Iterable[IListener | IAsyncListener] = (),
-        slow_threshold: float = float("inf"),
+        slow_threshold: float,
         max_half_open_calls: int = 10,
+        listeners: Iterable[IListener | IAsyncListener] = (),
     ) -> None:
         self._name = name
         self._window = window

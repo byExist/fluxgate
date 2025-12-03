@@ -73,10 +73,7 @@ tripper = AvgLatency(2.0)
 
 ### SlowRate
 
-`SlowRate(rate)` returns `True` if the ratio of "slow" calls exceeds the `rate`.
-
-!!! warning "Requires `slow_threshold`"
-    To use `SlowRate`, you **must** set the `slow_threshold` parameter (in seconds) on the main `CircuitBreaker`. Any call that takes longer than this value is considered "slow". If you don't set it, `SlowRate` will always be `0.0`.
+`SlowRate(rate)` returns `True` if the ratio of "slow" calls exceeds the `rate`. A call is considered "slow" if its duration exceeds the `slow_threshold` parameter (in seconds) on the `CircuitBreaker`.
 
 <!--pytest.mark.skip-->
 

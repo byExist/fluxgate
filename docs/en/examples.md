@@ -32,6 +32,7 @@ cb = CircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @cb
@@ -119,6 +120,7 @@ payment_cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(20) & FailureRate(0.4),
     retry=Backoff(initial=30.0, max_duration=600.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 # More aggressive policy for the less critical inventory service.
@@ -129,6 +131,7 @@ inventory_cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.6),
     retry=Backoff(initial=10.0, max_duration=300.0),
     permit=Random(ratio=0.5),
+    slow_threshold=float("inf"),
 )
 
 @payment_cb

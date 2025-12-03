@@ -73,10 +73,7 @@ tripper = AvgLatency(2.0)
 
 ### SlowRate
 
-`SlowRate(rate)`는 느린 호출의 비율이 `rate`를 초과하면 `True`를 반환합니다.
-
-!!! warning "`slow_threshold`가 필요합니다"
-    `SlowRate`를 사용하려면 메인 `CircuitBreaker`에 `slow_threshold` 매개변수(초 단위)를 **반드시** 설정해야 합니다. 이 값보다 오래 걸리는 모든 호출은 "느린" 것으로 간주됩니다. 이 값을 설정하지 않으면 `SlowRate`는 항상 `0.0`이 됩니다.
+`SlowRate(rate)`는 느린 호출의 비율이 `rate`를 초과하면 `True`를 반환합니다. 호출 시간이 `CircuitBreaker`의 `slow_threshold` 매개변수(초 단위)를 초과하면 "느린" 호출로 간주됩니다.
 
 <!--pytest.mark.skip-->
 

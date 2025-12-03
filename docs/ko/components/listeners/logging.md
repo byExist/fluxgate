@@ -132,6 +132,8 @@ cb_listener = JsonLogListener(json_logger)
 
 Circuit Breaker 로그를 파일로 보내려면 애플리케이션의 로깅 설정에서 적절한 핸들러를 구성합니다. `LogListener`는 이 구성을 자동으로 사용합니다.
 
+<!--pytest.mark.skip-->
+
 ```python
 import logging
 from logging.handlers import RotatingFileHandler

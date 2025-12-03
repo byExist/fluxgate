@@ -48,34 +48,35 @@ def call_payment_api(amount: float):
 
 ### How It Works
 
-The circuit breaker operates in three main states:
+A circuit breaker is a state machine that determines whether to allow or block calls to a service. It operates in three main states:
 
 ```text
-CLOSED --[tripper]--> OPEN --[retry]--> HALF_OPEN --[!tripper]--> CLOSED
-                       ^                   |
-                       +----[tripper]------+
+┌─────────┐           ┌──────┐
+│ CLOSED  │──────────>│ OPEN │<─────┐
+└─────────┘ [tripper] └──────┘      │
+     ^                    │         │
+     │                    │[retry]  │[tripper]
+     │                    v         │
+     │               ┌───────────┐  │
+     └───────────────│ HALF_OPEN │──┘
+        [!tripper]   └───────────┘
 ```
 
-- **CLOSED**: Normal operation, all calls pass through
-- **OPEN**: Failure threshold exceeded, calls are blocked
-- **HALF_OPEN**: Testing recovery, limited calls allowed
+- **CLOSED**: This is the default state. All calls are permitted and a `tracker` monitors their outcomes. If the failure rate exceeds a configured threshold (the `tripper` condition), the breaker "trips" and moves to the `OPEN` state.
+- **OPEN**: In this state, the circuit breaker blocks all calls to the service, preventing further failures. After a configured `retry` timeout, it transitions to `HALF_OPEN`.
+- **HALF_OPEN**: The breaker allows a limited number of "probe" calls (controlled by a `permit`) to test if the service has recovered. If these calls succeed, the breaker returns to `CLOSED`. If they fail, it trips again and returns to `OPEN`.
 
 ## Core Components
 
-Fluxgate uses composable components to build flexible failure detection logic:
+Fluxgate's power comes from its composable components. You can mix and match them to create precise and flexible failure detection logic tailored to your needs.
 
-| Component | Purpose | Examples |
-|-----------|---------|----------|
-| **Windows** | Track call history | `CountWindow(100)` - last 100 calls |
-|  |  | `TimeWindow(60)` - last 60 seconds |
-| **Trackers** | Define what to track | `TypeOf(ConnectionError)` - track specific errors |
-|  |  | `Custom(func)` - custom logic |
-| **Trippers** | When to open circuit | `FailureRate(0.5)` - 50% failure rate |
-|  |  | `AvgLatency(2.0)` - slow responses |
-| **Retries** | When to retry | `Cooldown(60.0)` - wait 60 seconds |
-|  |  | `Backoff(10.0)` - exponential backoff |
-| **Permits** | Control recovery | `Random(0.5)` - allow 50% of calls |
-|  |  | `RampUp(0.1, 0.8, 60)` - gradual ramp |
+| Component | Purpose | Common Implementations |
+|-----------|---------|------------------------|
+| **Windows** | Collects and stores recent call outcomes (success/failure). | `CountWindow(100)`: Stores the last 100 calls.<br/>`TimeWindow(60)`: Stores calls from the last 60 seconds. |
+| **Trackers** | Decides whether a call's outcome should be tracked as a failure. | `TypeOf(ConnectionError)`: Tracks specific exception types.<br/>`Custom(func)`: Use your own function for complex logic. |
+| **Trippers** | Defines the condition for tripping the circuit from `CLOSED` to `OPEN`. | `FailureRate(0.5)`: Trips if failure rate exceeds 50%.<br/>`AvgLatency(2.0)`: Trips if average response time is over 2 seconds. |
+| **Retries** | Determines when the circuit should transition from `OPEN` to `HALF_OPEN`. | `Cooldown(60.0)`: Waits for a fixed 60-second cooldown.<br/>`Backoff(10.0)`: Uses an exponential backoff strategy starting at 10 seconds. |
+| **Permits** | Manages how many "probe" calls are allowed in the `HALF_OPEN` state. | `Random(0.5)`: Allows 50% of calls to pass through.<br/>`RampUp(0.1, 0.8, 60)`: Gradually increases the allowed call ratio over 60 seconds. |
 
 ## Async Support
 

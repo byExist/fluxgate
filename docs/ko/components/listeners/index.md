@@ -1,6 +1,6 @@
-# Listeners
+# Listener
 
-Listener는 Circuit Breaker의 상태 전환을 감지하고 외부 시스템에 알림을 보냅니다.
+Listener는 Circuit Breaker 상태 전환을 감지하고 외부 시스템에 알림을 보냅니다.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -19,22 +19,22 @@ cb = CircuitBreaker(
 
 ## Signal {#signal}
 
-리스너는 상태 전환 시 `Signal` 객체를 받습니다:
+Listener는 상태 전환 시 `Signal` 객체를 받습니다.
 
 ```python
 @dataclass(frozen=True)
 class Signal:
     circuit_name: str     # Circuit Breaker 이름
     old_state: StateEnum  # 이전 상태
-    new_state: StateEnum  # 새로운 상태
-    timestamp: float      # 전환 시각 (Unix timestamp)
+    new_state: StateEnum  # 새 상태
+    timestamp: float      # 전환 시간 (Unix 타임스탬프)
 ```
 
 ## 동기 vs 비동기 {#sync-vs-async}
 
-### 동기 리스너 (IListener)
+### 동기 Listener (IListener)
 
-`CircuitBreaker`와 `AsyncCircuitBreaker` 모두에서 사용 가능:
+`CircuitBreaker` 및 `AsyncCircuitBreaker` 모두에서 사용할 수 있습니다.
 
 ```python
 from fluxgate.interfaces import IListener
@@ -45,11 +45,12 @@ class CustomListener(IListener):
         print(f"{signal.circuit_name}: {signal.old_state} → {signal.new_state}")
 ```
 
-> **주의**: `AsyncCircuitBreaker`에서 동기 리스너 사용 시, 블로킹 I/O 작업(네트워크 호출, 파일 쓰기 등)이 있다면 이벤트 루프를 막을 수 있습니다. 블로킹 작업이 필요한 경우 `IAsyncListener`를 사용하세요.
+!!! warning "주의"
+    `AsyncCircuitBreaker`와 함께 동기 Listener를 사용할 때, 이벤트 루프를 차단하는 블로킹 I/O 작업(네트워크 호출 등)을 피하십시오. I/O가 필요한 작업에는 `IAsyncListener`를 사용하십시오.
 
-### 비동기 리스너 (IAsyncListener)
+### 비동기 Listener (IAsyncListener)
 
-`AsyncCircuitBreaker`에서만 사용 가능:
+`AsyncCircuitBreaker`에서만 사용할 수 있습니다.
 
 ```python
 from fluxgate.interfaces import IAsyncListener
@@ -60,11 +61,11 @@ class CustomAsyncListener(IAsyncListener):
         await send_notification(signal)
 ```
 
-## 사용 가능한 리스너 {#available-listeners}
+## 사용 가능한 Listener {#available-listeners}
 
 ### [LogListener](logging.md)
 
-표준 라이브러리의 `logging` 모듈을 사용하여 상태 전환을 로깅합니다.
+Python의 표준 `logging` 모듈을 사용하여 Circuit Breaker 상태 전환을 로깅합니다.
 
 ```python
 from fluxgate.listeners.log import LogListener
@@ -74,7 +75,7 @@ cb = CircuitBreaker(..., listeners=[LogListener()])
 
 ### [PrometheusListener](prometheus.md)
 
-Prometheus 메트릭을 수집하여 모니터링 시스템과 연동합니다.
+모니터링 시스템과의 통합을 위해 Prometheus Metric을 수집합니다.
 
 ```bash
 pip install fluxgate[prometheus]
@@ -88,7 +89,7 @@ cb = CircuitBreaker(..., listeners=[PrometheusListener()])
 
 ### [SlackListener / AsyncSlackListener](slack.md)
 
-Slack 채널에 상태 전환 알림을 전송합니다.
+Circuit Breaker 상태 전환 알림을 Slack 채널로 보냅니다.
 
 ```bash
 pip install fluxgate[slack]
@@ -108,9 +109,9 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ])
 ```
 
-## 커스텀 리스너 {#custom-listeners}
+## 커스텀 Listener {#custom-listeners}
 
-### 동기 리스너
+### 동기 Listener
 
 ```python
 from fluxgate.interfaces import IListener
@@ -129,7 +130,7 @@ class DatabaseListener(IListener):
             )
 ```
 
-### 비동기 리스너
+### 비동기 Listener
 
 ```python
 import httpx
@@ -152,9 +153,9 @@ class WebhookListener(IAsyncListener):
 
 ## 에러 처리 {#error-handling}
 
-리스너에서 예외가 발생해도 Circuit Breaker의 동작에는 영향을 주지 않습니다. 예외는 자동으로 로깅되며, Circuit Breaker는 정상적으로 동작을 계속합니다.
+Listener에서 발생하는 예외는 Circuit Breaker 동작에 영향을 미치지 않습니다. 예외는 로깅되며 Circuit Breaker는 정상적으로 계속 작동합니다.
 
-## 여러 리스너 조합 {#combining-listeners}
+## 여러 Listener 조합 {#combining-listeners}
 
 ```python
 from fluxgate import CircuitBreaker
@@ -175,6 +176,7 @@ cb = CircuitBreaker(
 
 ## 다음 단계 {#next-steps}
 
-- [LogListener](logging.md) - 로깅 설정
-- [PrometheusListener](prometheus.md) - Prometheus 연동
+- [LogListener](logging.md) - 로깅 구성
+- [PrometheusListener](prometheus.md) - Prometheus 통합
 - [SlackListener](slack.md) - Slack 알림 설정
+- [개요](index.md) - Listener 개요로 돌아가기

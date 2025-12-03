@@ -1,141 +1,137 @@
 # Comparison with Other Libraries
 
-This page compares Fluxgate with other Python circuit breaker libraries to help you choose the right tool for your needs.
-
-## Overview
-
-| Library | Python | License |
-|---------|--------|---------|
-| [![circuitbreaker](https://img.shields.io/github/stars/fabfuel/circuitbreaker?label=circuitbreaker&logo=github)](https://github.com/fabfuel/circuitbreaker) | ![Python](https://img.shields.io/pypi/pyversions/circuitbreaker) | ![License](https://img.shields.io/github/license/fabfuel/circuitbreaker) |
-| [![pybreaker](https://img.shields.io/github/stars/danielfm/pybreaker?label=pybreaker&logo=github)](https://github.com/danielfm/pybreaker) | ![Python](https://img.shields.io/pypi/pyversions/pybreaker) | ![License](https://img.shields.io/github/license/danielfm/pybreaker) |
-| [![aiobreaker](https://img.shields.io/github/stars/arlyon/aiobreaker?label=aiobreaker&logo=github)](https://github.com/arlyon/aiobreaker) | ![Python](https://img.shields.io/pypi/pyversions/aiobreaker) | ![License](https://img.shields.io/github/license/arlyon/aiobreaker) |
-| [![pycircuitbreaker](https://img.shields.io/github/stars/etimberg/pycircuitbreaker?label=pycircuitbreaker&logo=github)](https://github.com/etimberg/pycircuitbreaker) | ![Python](https://img.shields.io/pypi/pyversions/pycircuitbreaker) | ![License](https://img.shields.io/github/license/etimberg/pycircuitbreaker) |
+This page provides a fair comparison between Fluxgate and other popular Python circuit breaker libraries. The goal is to highlight the different design philosophies and features to help you choose the best tool for your specific needs.
 
 ## Feature Comparison
 
 | Feature | Fluxgate | circuitbreaker | pybreaker | aiobreaker |
-|---------|:--------:|:--------------:|:---------:|:----------:|
-| **Sync support** | Yes | Yes | Yes | No |
-| **Async support** | Yes (asyncio) | Yes | Tornado only | Yes (asyncio) |
-| **Trigger condition** | Failure rate | Consecutive failures | Consecutive failures | Consecutive failures |
-| **Sliding window** | Yes (Count/Time) | No | No | No |
-| **Composable conditions** | Yes (`&`, `\|`) | No | No | No |
-| **Latency-based trigger** | Yes (AvgLatency, SlowRate) | No | No | No |
-| **Fallback** | Yes | Yes | No | No |
-| **Redis storage** | No | No | Yes | Yes |
-| **Listeners/Monitoring** | Yes (Log, Prometheus, Slack) | Yes (Monitor) | Yes | Yes |
-| **Type hints** | Complete | Partial | Partial | Partial |
-| **HALF_OPEN control** | Yes (Permit) | 1 test call | success_threshold | 1 test call |
+|---|:---:|:---:|:---:|:---:|
+| **Async Support** | ✅ | ✅ | (Tornado only) | ✅ |
+| **Primary Trigger Logic** | Failure Rate | Consecutive Failures | Consecutive Failures | Consecutive Failures |
+| **Sliding Window** | ✅ (Count or Time) | ❌ | ❌ | ❌ |
+| **Latency-Based Triggers** | ✅ (`AvgLatency`, `SlowRate`) | ❌ | ❌ | ❌ |
+| **Composable Rules (&, \|)**| ✅ | ❌ | ❌ | ❌ |
+| **Gradual Recovery (`RampUp`)**| ✅ | ❌ | ❌ | ❌ |
+| **State Listeners** | ✅ | ✅ | ✅ | ✅ |
+| **Built-in Monitoring** | ✅ (Prometheus, Slack) | ❌ | ❌ | ❌ |
+| **External State Storage** | ❌ | ❌ | ✅ (Redis) | ✅ (Redis) |
+| **Typed (PEP 484)** | ✅ (Complete) | ❌ (Partial) | ❌ (Partial) | ❌ (Partial) |
+
+---
 
 ## Key Differences
 
-### Trigger Conditions
+### 1. More Robust Triggering Logic
 
-Most circuit breaker libraries use **consecutive failure count**:
+Most libraries trip based on a simple **consecutive failure count**. This can be brittle; a single successful call can reset the counter to zero, even if the service is still unhealthy.
 
-```python
-# circuitbreaker / pybreaker
-# Opens after 5 consecutive failures
-@circuit(failure_threshold=5)
-def call_api():
-    ...
-```
+Fluxgate uses a **failure rate over a sliding window**, which provides a much more accurate and stable assessment of service health.
 
-Fluxgate uses **failure rate within a sliding window**:
+- **Other Libraries:**
 
-```python
-# Fluxgate
-# Opens when failure rate exceeds 50% in the last 100 calls
-cb = CircuitBreaker(
-    window=CountWindow(size=100),
-    tripper=MinRequests(10) & FailureRate(0.5),
-    ...
-)
-```
+    ```python
+    # Opens after 5 failures in a row.
+    @circuit(failure_threshold=5)
+    def call_api(): ...
+    ```
 
-This approach is more robust because:
+- **Fluxgate:**
 
-- A single success doesn't reset the failure count
-- Handles intermittent failures better
-- Provides more accurate health assessment
+    ```python
+    # Opens if the failure rate is over 50% in the last 100 calls.
+    cb = CircuitBreaker(
+        window=CountWindow(size=100),
+        tripper=MinRequests(10) & FailureRate(0.5),
+    )
+    ```
 
-### Composable Conditions
+### 2. Composable and Flexible Rules
 
-Fluxgate allows combining multiple conditions with logical operators:
+Fluxgate allows you to build sophisticated, fine-grained rules by combining simple components with logical operators (`&`, `|`). Other libraries typically support only a single condition.
 
-```python
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
+- **Other Libraries:** A single threshold.
+- **Fluxgate:**
 
-# Different thresholds for different states
-tripper = MinRequests(10) & (
-    (Closed() & FailureRate(0.5)) |
-    (HalfOpened() & FailureRate(0.3))
-)
+    ```python
+    from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
 
-# Multiple trigger conditions
-tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
-```
+    # Use different rules for different states.
+    tripper = (
+        (Closed() & MinRequests(10) & FailureRate(0.5)) |
+        (HalfOpened() & MinRequests(5) & FailureRate(0.3))
+    )
 
-### Latency-Based Triggers
+    # Trip on high failure rate OR high slow-call rate.
+    tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
+    ```
 
-Fluxgate can open the circuit based on response time, not just errors:
+### 3. Latency-Based Triggers
 
-```python
-from fluxgate.trippers import AvgLatency, SlowRate
+Fluxgate can trip based on response time, not just exceptions. This is critical for detecting service "brownouts" (where a service is slow but not failing).
 
-# Open when average latency exceeds 2 seconds
-tripper = MinRequests(10) & AvgLatency(2.0)
+- **Other Libraries:** Can only react to exceptions.
+- **Fluxgate:**
 
-# Open when more than 30% of calls are slow (>1s)
-cb = CircuitBreaker(
-    tripper=MinRequests(10) & SlowRate(0.3),
-    slow_threshold=1.0,  # 1 second
-    ...
-)
-```
+    ```python
+    from fluxgate.trippers import AvgLatency, SlowRate
 
-### Gradual Recovery
+    # Trip when average latency is over 2 seconds.
+    tripper = MinRequests(10) & AvgLatency(2.0)
 
-Fluxgate provides fine-grained control over HALF_OPEN state recovery:
+    # Trip when more than 30% of calls are slower than 1 second.
+    cb = CircuitBreaker(
+        tripper=MinRequests(10) & SlowRate(0.3),
+        slow_threshold=1.0,
+    )
+    ```
 
-```python
-from fluxgate.permits import RampUp
+### 4. Gradual Recovery
 
-# Gradually increase traffic from 10% to 80% over 60 seconds
-cb = CircuitBreaker(
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-    ...
-)
-```
+When a service is recovering, you want to re-introduce traffic gradually to avoid overwhelming it. Fluxgate provides `RampUp` for this purpose. Other libraries typically only allow a single test call at a time.
+
+- **Other Libraries:** Allow one call, then close the circuit if it succeeds.
+- **Fluxgate:**
+
+    ```python
+    from fluxgate.permits import RampUp
+
+    # Gradually increase traffic from 10% to 80% over 60 seconds.
+    cb = CircuitBreaker(
+        permit=RampUp(initial=0.1, final=0.8, duration=60.0),
+        ...
+    )
+    ```
+
+---
 
 ## When to Choose Each Library
 
-### Choose Fluxgate when
+### When should you choose `Fluxgate`?
 
-- You need failure rate-based triggers (not just consecutive failures)
-- You want latency-based circuit breaking
-- You need composable, complex trigger conditions
-- You're building modern asyncio applications
-- You value complete type hints and IDE support
+You need the most robust and production-ready feature set.
 
-### Choose circuitbreaker when
+- You want to trigger based on **failure rates** or **latency**, not just consecutive failures.
+- You need **complex, composable rules** (e.g., different thresholds for different states).
+- You want to **gradually ramp up** traffic during recovery.
+- You are building a modern **asyncio** application.
+- You value a fully **type-hinted** API for better developer experience.
 
-- You need a simple, well-tested solution
-- Consecutive failure counting is sufficient
-- You want minimal configuration
+### When should you choose `circuitbreaker`?
 
-### Choose pybreaker when
+You need a simple, reliable, and widely-used library for basic use cases.
 
-- You need Redis storage for distributed state
-- You're using Tornado for async
-- You need the `success_threshold` feature
+- Triggering on **consecutive failures** is sufficient for your needs.
+- You value simplicity and minimal configuration.
 
-### Choose aiobreaker when
+### When should you choose `pybreaker` or `aiobreaker`?
 
-- You need Redis storage with asyncio
-- pybreaker's feature set meets your needs
+You have a hard requirement for **sharing circuit breaker state** across multiple processes or servers.
+
+- Your architecture requires a distributed state store (Redis).
+- `pybreaker` is suitable for threaded or Tornado-based applications.
+- `aiobreaker` is the `asyncio` equivalent of `pybreaker`.
 
 ## See Also
 
-- [Circuit Breaker](../circuit-breaker.md) - Core concepts and usage
-- [Components](../components/index.md) - Detailed component documentation
+- [Design & Inspiration](design.md): Learn about the philosophy behind Fluxgate.
+- [Components Overview](../components/index.md): Dive into the components that enable these features.

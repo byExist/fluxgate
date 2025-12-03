@@ -1,78 +1,86 @@
 # Design & Inspiration
 
-This document explains Fluxgate's design decisions and the projects that influenced them.
+This document explains the core design philosophy of Fluxgate, the projects that inspired it, and the rationale behind key architectural decisions.
 
 ## The Name
 
-A [fluxgate magnetometer](https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer) is a sensor that detects changes in magnetic fields by monitoring saturation states and responding at thresholds. This mirrors how a circuit breaker monitors system health and trips when thresholds are exceeded.
+A [fluxgate magnetometer](https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer) is a sensor that detects changes in magnetic fields by monitoring saturation states and responding when a threshold is exceeded. This mirrors how a circuit breaker monitors a system's health and "trips" when a failure threshold is passed.
 
 ## Inspiration
 
+Fluxgate's design is heavily influenced by two fantastic, industry-proven projects.
+
 ### Resilience4j
 
-[Resilience4j](https://resilience4j.readme.io/) is a lightweight fault tolerance library for Java, inspired by Netflix Hystrix. Fluxgate borrows several key concepts from Resilience4j:
+[Resilience4j](https://resilience4j.readme.io/) is a lightweight, popular fault tolerance library for Java. Fluxgate borrows its most critical concept: the use of **sliding windows** for tracking service health.
 
-Resilience4j tracks call outcomes using sliding windows (count-based or time-based) rather than simple consecutive failure counting. This provides more accurate health assessment of services. Fluxgate adopts this approach.
+Unlike simpler patterns that only track consecutive failures, a sliding window (either count-based or time-based) provides a much more accurate and robust assessment of a service's health over a recent period.
 
 ```python
-# Fluxgate's sliding window approach inspired by Resilience4j
+# Fluxgate's sliding window approach is directly inspired by Resilience4j.
 from fluxgate.windows import CountWindow, TimeWindow
 
-window = CountWindow(size=100)  # Last 100 calls
-window = TimeWindow(size=60)    # Last 60 seconds
+window = CountWindow(size=100)  # Tracks the last 100 calls.
+window = TimeWindow(size=60)    # Tracks calls in the last 60 seconds.
 ```
 
-### Django Permissions
+### Django REST Framework
 
-[Django's permission system](https://docs.djangoproject.com/en/stable/topics/auth/default/#permissions) supports combining permissions using bitwise operators (`&`, `|`, `~`). This elegant pattern inspired Fluxgate's composable components.
+[Django's permission system](https://www.django-rest-framework.org/api-guide/permissions/#how-permissions-are-determined) uses a brilliant and highly flexible pattern of **composable objects** combined with logical operators (`&`, `|`, `~`).
 
 ```python
-# Django REST framework's composable permissions
-from rest_framework.views import APIView
+# In Django REST Framework, complex rules are built by combining simple permission classes.
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 class MyView(APIView):
-    permission_classes = [IsAuthenticated & (IsAdminUser | IsStaff)]
+    permission_classes = [IsAuthenticated & IsAdminUser]
 ```
 
-Fluxgate applies the same pattern to Trippers and Trackers:
+Fluxgate applies this exact same philosophy to its `Tracker` and `Tripper` components. Instead of forcing users to learn a complex configuration schema or use a clunky builder pattern, it provides simple, reusable building blocks that can be combined to create sophisticated rules.
 
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
-# Composable trippers with logical operators
+# Complex tripping logic is created by combining simple trippers.
 tripper = MinRequests(10) & (
     (Closed() & FailureRate(0.5)) |
     (HalfOpened() & FailureRate(0.3))
 )
 ```
 
-```python
-from fluxgate.trackers import TypeOf
+This composable approach is at the heart of Fluxgate's flexibility.
 
-# Composable trackers
-tracker = TypeOf(ConnectionError, TimeoutError) & ~TypeOf(CancellationError)
-```
-
-This approach provides flexibility without complex configuration objects or builder patterns.
+---
 
 ## Design Decisions
 
+Fluxgate makes two intentional design choices that differ from some other libraries.
+
 ### No Distributed State Sharing
 
-Fluxgate does not support distributed state sharing (e.g., Redis storage). Each CircuitBreaker instance manages state within a single process.
+Fluxgate's circuit breakers manage their state entirely within the application's process. There is no built-in support for sharing state across multiple processes or servers (e.g., via Redis).
 
-Distributed state is not a fundamental requirement of the circuit breaker pattern. The pattern's core purpose is to prevent cascading failures by quickly stopping calls to unhealthy services.
+This was a deliberate decision based on the core purpose of the circuit breaker pattern. The goal is to protect an application from repeatedly calling an unhealthy service. This can be achieved effectively without distributed state.
 
-- Each process can independently assess the health of downstream services. If a service is unhealthy, all processes will naturally detect this through their own failures.
-- Adding distributed state introduces network latency, additional failure points, and operational complexity. These costs often outweigh the benefits.
+- **Independent Assessment**: If a downstream service is unhealthy, every instance of your application will naturally detect this through its own failed calls. The circuits will open independently and correctly on each server.
+- **Simplicity and Resilience**: Adding a dependency on a distributed state store (like Redis) introduces a new network dependency, a new point of failure, and significant operational complexity. A failure in the state store could disable the entire circuit breaking mechanism.
+- **Performance**: Relying on in-process memory is significantly faster than making a network call to check the state of the circuit on every request.
 
-### Not Thread-Safe
+By keeping state local, Fluxgate remains lightweight, fast, and resilient, with zero external dependencies.
 
-`CircuitBreaker` is not thread-safe. For concurrent workloads, use `AsyncCircuitBreaker` with asyncio.
+### `CircuitBreaker` is Not Thread-Safe
 
-Currently, Python's Global Interpreter Lock (GIL) means that multi-threaded Python code doesn't achieve true parallelism for CPU-bound tasks. As a result, most I/O-bound Python applications benefit more from asyncio than from threading. Modern Python web frameworks (FastAPI, Starlette, aiohttp) are asyncio-based, making `AsyncCircuitBreaker` the natural choice.
+For concurrent applications, Fluxgate strongly encourages using `AsyncCircuitBreaker` with `asyncio`, not multi-threading with `CircuitBreaker`.
+
+The standard `CircuitBreaker` class is **not thread-safe**. This is an intentional choice reflecting the current state of Python's concurrency ecosystem.
+
+- Due to Python's Global Interpreter Lock (GIL), multi-threading is not an effective strategy for parallelizing CPU-bound code and offers limited benefits for I/O-bound code compared to `asyncio`.
+- The modern Python ecosystem has overwhelmingly embraced `asyncio` for high-performance I/O-bound tasks. Web frameworks (FastAPI, Starlette, aiohttp), database drivers (asyncpg), and HTTP clients (httpx) are all built on the `asyncio` event loop.
+- `AsyncCircuitBreaker` is the natural, idiomatic, and most performant way to use a circuit breaker in these modern applications.
+
+Focusing on a first-class `asyncio` experience provides a safer, more efficient, and more future-proof library.
 
 ## See Also
 
-- [Comparison](comparison.md) - Compare with other Python libraries
-- [Components](../components/index.md) - Detailed component documentation
+- [Comparison](comparison.md): See how Fluxgate compares to other Python libraries.
+- [Components Overview](../components/index.md): Dive into the components that make up the library.

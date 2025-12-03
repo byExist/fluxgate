@@ -1,17 +1,19 @@
-# Release Notes
+# Changelog
 
-## 0.1.1
+All notable changes to this project will be documented in this file.
 
-Initial release.
+## [0.1.1] - 2024-XX-XX
+
+This is the initial public release of Fluxgate.
 
 ### Features
 
-- ✨ Add `CircuitBreaker` and `AsyncCircuitBreaker` for sync and async support.
-- ✨ Add sliding windows: `CountWindow` (count-based) and `TimeWindow` (time-based).
-- ✨ Add composable trackers with `&`, `|`, `~` operators: `All`, `TypeOf`, `Custom`.
-- ✨ Add composable trippers with `&`, `|` operators: `Closed`, `HalfOpened`, `MinRequests`, `FailureRate`, `AvgLatency`, `SlowRate`.
-- ✨ Add retry strategies: `Never`, `Always`, `Cooldown`, `Backoff`.
-- ✨ Add permit strategies: `Random`, `RampUp`.
-- ✨ Add listeners for monitoring: `LogListener`, `PrometheusListener`, `SlackListener`.
-- ✨ Add manual control methods: `disable()`, `enable()`, `force_open()`, `reset()`.
-- ✨ Full type hints with `py.typed` marker.
+- ✨ **Core**: Initial implementation of `CircuitBreaker` and `AsyncCircuitBreaker`.
+- ✨ **Windows**: Sliding window strategies (`CountWindow`, `TimeWindow`).
+- ✨ **Trackers**: Composable failure trackers (`All`, `TypeOf`, `Custom`) with `&`, `|`, and `~` operators.
+- ✨ **Trippers**: Composable tripping conditions (`Closed`, `HalfOpened`, `MinRequests`, `FailureRate`, `AvgLatency`, `SlowRate`) with `&` and `|` operators.
+- ✨ **Retries**: Recovery strategies (`Never`, `Always`, `Cooldown`, `Backoff`).
+- ✨ **Permits**: Gradual recovery strategies (`Random`, `RampUp`).
+- ✨ **Listeners**: Built-in monitoring and alerting integrations (`LogListener`, `PrometheusListener`, `SlackListener`).
+- ✨ **Manual Control**: Methods for manual intervention (`disable`, `metrics_only`, `force_open`, `reset`).
+- ✨ **Typing**: Full type hinting and `py.typed` compliance for excellent IDE support.

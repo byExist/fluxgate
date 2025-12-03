@@ -1,78 +1,82 @@
-# 설계와 영감
+# 설계 및 영감
 
-이 문서는 Fluxgate의 설계 결정과 영향을 준 프로젝트들을 설명합니다.
+이 문서는 Fluxgate의 핵심 설계 철학, 영감을 준 프로젝트, 그리고 주요 아키텍처 결정의 배경을 설명합니다.
 
-## 이름의 유래
+## 이름
 
-[Fluxgate magnetometer](https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer)는 자기장의 변화를 감지하는 센서로, 포화 상태를 모니터링하고 임계값에서 반응합니다. Circuit breaker가 시스템 상태를 모니터링하고 임계값을 초과하면 작동하는 방식과 유사합니다.
+[플럭스게이트 자력계(fluxgate magnetometer)](https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer)는 포화 상태를 모니터링하고 임계값을 초과할 때 반응함으로써 자기장 변화를 감지하는 센서입니다. 이는 Circuit Breaker가 시스템 상태를 모니터링하고 실패 임계값을 초과할 때 "트립(trip)"하는 방식과 유사합니다.
 
 ## 영감
 
+Fluxgate의 설계는 두 가지 훌륭한 프로젝트에서 크게 영감을 받았습니다.
+
 ### Resilience4j
 
-[Resilience4j](https://resilience4j.readme.io/)는 Netflix Hystrix에서 영감을 받은 Java용 경량 fault tolerance 라이브러리입니다. Fluxgate는 Resilience4j의 여러 핵심 개념을 차용했습니다.
+[Resilience4j](https://resilience4j.readme.io/)는 Java용 경량, 인기 있는 결함 내성 라이브러리입니다. Fluxgate는 Resilience4j의 가장 중요한 개념인 서비스 상태 추적을 위한 **슬라이딩 윈도우(sliding windows)** 사용을 차용했습니다.
 
-Resilience4j는 단순한 연속 실패 카운팅 대신 슬라이딩 윈도우(개수 기반 또는 시간 기반)를 사용하여 호출 결과를 추적합니다. 이를 통해 서비스 상태를 더 정확하게 평가할 수 있습니다. Fluxgate도 이 방식을 채택했습니다.
+단순히 연속적인 실패만 추적하는 패턴과 달리, 슬라이딩 윈도우\(카운트 기반 또는 시간 기반\)는 최근 기간 동안 서비스 상태를 훨씬 더 정확하고 견고하게 평가합니다.
 
 ```python
-# Resilience4j에서 영감을 받은 Fluxgate의 슬라이딩 윈도우
+# Fluxgate의 슬라이딩 윈도우 접근 방식은 Resilience4j에서 직접 영감을 받았습니다.
 from fluxgate.windows import CountWindow, TimeWindow
 
-window = CountWindow(size=100)  # 최근 100개 호출
-window = TimeWindow(size=60)    # 최근 60초
+window = CountWindow(size=100)  # 마지막 100개 호출을 추적합니다.
+window = TimeWindow(size=60)    # 마지막 60초 동안의 호출을 추적합니다.
 ```
 
-### Django Permissions
+### Django REST Framework
 
-[Django의 권한 시스템](https://docs.djangoproject.com/en/stable/topics/auth/default/#permissions)은 비트 연산자(`&`, `|`, `~`)를 사용하여 권한을 조합할 수 있습니다. 이 우아한 패턴이 Fluxgate의 조합 가능한 컴포넌트 설계에 영감을 주었습니다.
+[Django의 권한 시스템](https://www.django-rest-framework.org/api-guide/permissions/#how-permissions-are-determined)은 논리 연산자(`&`, `|`, `~`)와 결합된 **조합 가능한 객체\(composable objects\)**라는 훌륭하고 매우 유연한 패턴을 사용합니다.
 
 ```python
-# Django REST framework의 조합 가능한 권한
-from rest_framework.views import APIView
+# Django REST Framework에서는 간단한 권한 클래스를 조합하여 복잡한 규칙을 구축합니다.
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 class MyView(APIView):
-    permission_classes = [IsAuthenticated & (IsAdminUser | IsStaff)]
+    permission_classes = [IsAuthenticated & IsAdminUser]
 ```
 
-Fluxgate는 Tripper와 Tracker에 동일한 패턴을 적용합니다:
+Fluxgate는 `Tracker` 및 `Tripper` 컴포넌트에 이와 동일한 철학을 적용합니다. 사용자에게 복잡한 구성 스키마를 배우거나 번거로운 빌더 패턴을 사용하도록 강요하는 대신, 정교한 규칙을 만들기 위해 조합할 수 있는 간단하고 재사용 가능한 구성 요소를 제공합니다.
 
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
-# 논리 연산자로 조합 가능한 tripper
+# 간단한 Tripper를 조합하여 복잡한 트립 로직을 생성합니다.
 tripper = MinRequests(10) & (
     (Closed() & FailureRate(0.5)) |
     (HalfOpened() & FailureRate(0.3))
 )
 ```
 
-```python
-from fluxgate.trackers import TypeOf
-
-# 조합 가능한 tracker
-tracker = TypeOf(ConnectionError, TimeoutError) & ~TypeOf(CancellationError)
-```
-
-이 접근 방식은 복잡한 설정 객체나 빌더 패턴 없이도 유연성을 제공합니다.
+이 조합 가능한 접근 방식은 Fluxgate의 유연성의 핵심입니다.
 
 ## 설계 결정
 
-### 분산 상태 공유 미지원
+Fluxgate는 다른 라이브러리와는 다른 두 가지 의도적인 설계 선택을 했습니다.
 
-Fluxgate는 분산 상태 공유(예: Redis 저장소)를 지원하지 않습니다. 각 CircuitBreaker 인스턴스는 단일 프로세스 내에서 상태를 관리합니다.
+### 분산 상태 공유 없음
 
-분산 상태는 circuit breaker 패턴의 근본적인 요구사항이 아닙니다. 이 패턴의 핵심 목적은 비정상 서비스에 대한 호출을 빠르게 중단하여 연쇄 장애를 방지하는 것입니다.
+Fluxgate의 Circuit Breaker는 애플리케이션 프로세스 내에서만 상태를 관리합니다. 여러 프로세스나 서버 간에 상태를 공유하는 기능\(예: Redis를 통한\)은 내장되어 있지 않습니다.
 
-- 각 프로세스는 독립적으로 다운스트림 서비스의 상태를 평가할 수 있습니다. 서비스가 비정상이라면 모든 프로세스가 자체 실패를 통해 자연스럽게 이를 감지합니다.
-- 분산 상태를 추가하면 네트워크 지연, 추가 장애 지점, 운영 복잡성이 발생합니다. 이러한 비용이 이점을 초과하는 경우가 많습니다.
+이는 Circuit Breaker 패턴의 핵심 목적에 기반한 의도적인 결정입니다. 목표는 애플리케이션이 비정상적인 서비스를 반복적으로 호출하는 것을 방지하는 것입니다. 이는 분산 상태 없이도 효과적으로 달성할 수 있습니다.
 
-### 스레드 안전하지 않음
+- **독립적인 평가**: 하위 스트림 서비스가 비정상인 경우, 애플리케이션의 모든 인스턴스는 자체적인 실패 호출을 통해 이를 자연스럽게 감지합니다. 회로는 각 서버에서 독립적으로 올바르게 열릴 것입니다.
+- **단순성 및 탄력성**: 분산 상태 저장소\(예: Redis\)에 대한 의존성을 추가하면 새로운 네트워크 의존성, 새로운 단일 실패 지점, 그리고 상당한 운영 복잡성이 발생합니다. 상태 저장소의 실패는 전체 Circuit Breaking 메커니즘을 비활성화시킬 수 있습니다.
+- **성능**: 요청마다 회로 상태를 확인하기 위해 네트워크 호출을 하는 것보다 인프로세스 메모리에 의존하는 것이 훨씬 빠릅니다.
 
-`CircuitBreaker`는 스레드 안전하지 않습니다. 동시성 작업에는 asyncio와 함께 `AsyncCircuitBreaker`를 사용하세요.
+상태를 로컬로 유지함으로써 Fluxgate는 경량화되고 빠르며 탄력적이며, 외부 의존성이 없습니다.
 
-현재 Python의 GIL(Global Interpreter Lock)로 인해 멀티스레드 Python 코드는 CPU 바운드 작업에서 진정한 병렬성을 달성하지 못합니다. 따라서 대부분의 I/O 바운드 Python 애플리케이션은 스레딩보다 asyncio에서 더 많은 이점을 얻습니다. 현대 Python 웹 프레임워크(FastAPI, Starlette, aiohttp)는 asyncio 기반이므로 `AsyncCircuitBreaker`가 자연스러운 선택입니다.
+### `CircuitBreaker`는 스레드 안전하지 않음
 
-## 참고
+동시성 애플리케이션의 경우, Fluxgate는 `CircuitBreaker`와 함께 멀티스레딩이 아닌 `asyncio`와 함께 `AsyncCircuitBreaker`를 사용하는 것을 강력히 권장합니다.
 
-- [비교](comparison.md) - 다른 Python 라이브러리와 비교
-- [컴포넌트](../components/index.md) - 상세 컴포넌트 문서
+표준 `CircuitBreaker` 클래스는 **스레드 안전하지 않습니다**. 이는 Python의 동시성 생태계의 현재 상태를 반영하는 의도적인 선택입니다.
+
+- Python의 GIL\(Global Interpreter Lock\)로 인해 멀티스레딩은 CPU 바운드 코드를 병렬화하는 효과적인 방식이 아니며, `asyncio`에 비해 I/O 바운드 코드에 대한 이점도 제한적입니다.
+- 현대 Python 생태계는 고성능 I/O 바운드 작업에 대해 `asyncio`를 압도적으로 수용했습니다. 웹 프레임워크\(FastAPI, Starlette, aiohttp\), 데이터베이스 드라이버\(asyncpg\), HTTP 클라이언트\(httpx\) 모두 `asyncio` 이벤트 루프를 기반으로 구축됩니다.
+- `AsyncCircuitBreaker`는 이러한 현대 애플리케이션에서 Circuit Breaker를 사용하는 자연스럽고 관용적이며 가장 성능이 좋은 방법입니다.
+
+## 함께 보기
+
+- [비교](comparison.md): Fluxgate가 다른 Python 라이브러리와 어떻게 비교되는지 확인하세요.
+- [컴포넌트 개요](../components/index.md): 라이브러리를 구성하는 컴포넌트에 대해 자세히 알아보세요.

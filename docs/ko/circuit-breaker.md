@@ -1,18 +1,18 @@
 # Circuit Breaker
 
-Circuit Breaker는 분산 시스템에서 실패하는 서비스에 대한 호출을 자동으로 차단하여 연쇄 장애를 방지하는 디자인 패턴입니다.
+Circuit Breaker는 실패할 가능성이 있는 작업을 시스템이 반복적으로 실행하는 것을 방지하는 메커니즘으로, 회복력 있는 분산 시스템을 구축하는 데 필수적입니다.
 
 ## 핵심 개념 {#core-concepts}
 
-Circuit Breaker는 전기 회로의 차단기처럼 작동합니다:
+회로 차단기와 유사한 방식으로 동작합니다.
 
-- 정상 상태에서는 모든 호출을 허용 (회로가 닫혀있음)
-- 실패가 임계값을 초과하면 호출을 차단 (회로가 열림)
-- 일정 시간 후 복구를 테스트 (반개방 상태)
+- 모든 것이 정상일 때는 회로가 **Closed** 상태이며, 호출이 통과됩니다.
+- 실패가 임계값을 초과하면 회로가 **Open**으로 전환되며, 호출이 차단됩니다.
+- 타임아웃 후에 회로는 **Half Open** 상태로 진입하여 일정 호출을 통과시켜 테스트합니다.
 
 ## 상태 전환 {#state-transitions}
 
-Circuit Breaker는 6가지 상태를 가집니다:
+Circuit breaker는 `CLOSED`, `OPEN`, `HALF_OPEN`의 세 가지 주요 상태 사이를 자동으로 전환합니다. 또한 유지보수 및 테스트를 위해 수동 상태(`DISABLED`, `FORCED_OPEN`, `METRICS_ONLY`)를 제공합니다.
 
 ```text
 ┌─────────┐           ┌──────┐
@@ -26,13 +26,13 @@ Circuit Breaker는 6가지 상태를 가집니다:
         [!tripper]   └───────────┘
 ```
 
-### CLOSED (닫힘) {#state-closed}
+### CLOSED: 정상 상태 {#state-closed}
 
-**정상 작동 상태**
+이것은 모든 호출이 보호된 서비스로 전달되는 기본 작동 상태입니다. Circuit breaker는 백그라운드에서 호출을 지속적으로 모니터링합니다.
 
-- 모든 호출이 실제 서비스로 전달됨
-- 실패 메트릭을 지속적으로 모니터링
-- Tripper 조건이 만족되면 OPEN으로 전환
+- **작동**: 모든 호출을 허용합니다.
+- **모니터링**: 성공 및 실패를 추적합니다.
+- **전환**: `tripper`로 정의된 실패 임계값이 충족되면 `OPEN`으로 트립됩니다.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -46,19 +46,22 @@ cb = CircuitBreaker(
     name="api",
     window=CountWindow(size=100),
     tracker=All(),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),  # CLOSED 상태에서만 평가
+    # Tripper는 회로가 CLOSED 상태이고, 최소 10개의 요청이 있으며,
+    # 실패율이 50%를 초과할 때만 트립됩니다.
+    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
 )
 ```
 
-### OPEN (열림) {#state-open}
+### OPEN: 실패 상태 {#state-open}
 
-**호출 차단 상태**
+실패 임계값이 초과되면 회로가 열립니다. 이 상태에서는 서비스에 연락을 시도하지 않고 모든 호출을 즉시 거부합니다.
 
-- 모든 호출이 즉시 `CallNotPermittedError` 발생
-- 실패한 서비스를 보호하고 리소스 낭비 방지
-- Retry 전략에 따라 일정 시간 후 HALF_OPEN으로 전환
+- **작동**: 모든 호출을 차단하고 `CallNotPermittedError`를 발생시킵니다.
+- **Half Open으로 전환**: `retry`로 인해 `HALF_OPEN`으로 전환됩니다.
+
+애플리케이션이 실패하는 서비스에 리소스를 낭비하는 것을 방지하고 서비스가 복구될 시간을 제공합니다.
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -70,18 +73,20 @@ def call_api():
 try:
     result = call_api()
 except CallNotPermittedError as e:
+    # 회로가 열려 있으므로, 대체 로직을 실행합니다.
     print(f"Circuit is open: {e.message}")
-    # Fallback 로직 실행
     return {"fallback": "data"}
 ```
 
-### HALF_OPEN (반개방) {#state-half-open}
+### HALF_OPEN: 복구 상태 {#state-half-open}
 
-**복구 테스트 상태**
+Retry로 일정 시간을 대기한 후 회로는 이 상태로 전환되어 서비스가 복구되었는지 테스트합니다.
 
-- Permit 전략에 따라 제한적으로 호출 허용
-- 성공하면 CLOSED로, 실패하면 다시 OPEN으로 전환
-- 점진적 복구를 통해 서비스 부담 최소화
+- **작동**: `permit` 으로 정의된 제한된 수의 호출을 허용합니다.
+- **CLOSED로 전환**: 호출이 성공하면 회로가 닫히고 정상 작동으로 돌아갑니다.
+- **OPEN으로 전환**: 호출이 실패하면 회로는 다시 `OPEN` 상태로 전환됩니다.
+
+이 점진적인 복구 접근 방식은 아직 불안정한 서비스에 "동시다발적인 요청"이 쇄도하는 것을 방지합니다.
 
 ```python
 from fluxgate.permits import RampUp
@@ -90,65 +95,71 @@ cb = CircuitBreaker(
     name="api",
     window=CountWindow(size=100),
     tracker=All(),
-    tripper=MinRequests(5) & FailureRate(0.3),  # HALF_OPEN에서는 더 엄격한 기준
+    # 복구 테스트 중에는 더 엄격한 트립 조건을 사용합니다.
+    tripper=MinRequests(5) & FailureRate(0.3),
     retry=Cooldown(duration=60.0),
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),  # 10%부터 시작하여 점진적 증가
+    # 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
+    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
 )
 ```
 
-### METRICS_ONLY (메트릭만) {#state-metrics-only}
+### METRICS_ONLY: 트립 없이 모니터링 {#state-metrics-only}
 
-**메트릭 수집만 수행**
+이 상태에서 circuit breaker는 Metric을 추적하지만 절대 트립되지 않습니다.
 
-- 모든 호출이 실제 서비스로 전달됨
-- 메트릭은 수집하지만 Circuit은 절대 열리지 않음
-- 프로덕션 배포 전 모니터링 테스트에 유용
+- **작동**: `CLOSED` 상태와 마찬가지로 모든 호출이 통과되도록 허용합니다.
+
+활성 보호를 활성화하기 전에 새 서비스에서 또는 로드 테스트 중에 안전하게 Metric을 수집합니다.
 
 ```python
-# 프로덕션 배포 전 메트릭 수집
+# 프로덕션에서 브레이커를 활성화하기 전에 Metric을 수집합니다.
 cb.metrics_only()
 
-# 나중에 실제 Circuit Breaker 활성화
+# 준비가 되면 circuit breaker의 일반적인 수명 주기를 활성화합니다.
 cb.reset()
 ```
 
-### DISABLED (비활성) {#state-disabled}
+### DISABLED: 브레이커 우회 {#state-disabled}
 
-**Circuit Breaker 비활성화**
+이 상태는 circuit breaker를 완전히 비활성화합니다.
 
-- 모든 호출이 실제 서비스로 전달됨
-- 메트릭도 수집하지 않음
-- 디버깅이나 긴급 상황에 유용
+- **작동**: 모든 호출이 통과되도록 허용합니다.
+- **모니터링**: 어떠한 Metric도 추적하지 않습니다.
+
+디버깅, 특정 테스트 실행 또는 브레이커를 완전히 우회해야 하는 긴급 상황에 유용합니다.
 
 ```python
-# 긴급 상황에서 Circuit Breaker 비활성화
+# 긴급 상황 시 circuit breaker를 비활성화합니다.
 cb.disable()
 
-# 나중에 다시 활성화
+# 나중에 다시 활성화합니다.
 cb.reset()
 ```
 
-### FORCED_OPEN (강제 열림) {#state-forced-open}
+### FORCED_OPEN: 수동으로 호출 차단 {#state-forced-open}
 
-**강제로 호출 차단**
+이 상태는 회로를 강제로 열고 모든 호출을 차단합니다.
 
-- 모든 호출이 즉시 `CallNotPermittedError` 발생
-- 자동 복구 없음 (수동으로 reset 필요)
-- 계획된 유지보수나 긴급 차단에 유용
+- **작동**: `CallNotPermittedError`와 함께 모든 호출을 거부합니다.
+- **복구**: 자동으로 복구되지 않습니다. 수동 `reset()` 호출이 필요합니다.
+
+계획된 유지보수 또는 서비스를 수동으로 오프라인으로 전환하는 데 사용합니다.
 
 ```python
-# 유지보수를 위해 강제로 Circuit 열기
+# 계획된 배포 중에 회로를 강제로 엽니다.
 cb.force_open()
 
-# 유지보수 완료 후 복구
+# 유지보수 완료 후 정상 작동으로 돌아갑니다.
 cb.reset()
 ```
 
 ## 사용 방법 {#usage}
 
+코드에 circuit breaker를 여러 가지 방법으로 적용할 수 있습니다.
+
 ### 데코레이터 방식 {#decorator-usage}
 
-가장 일반적인 사용 방법입니다.
+데코레이터를 사용하는 것이 함수를 보호하는 가장 일반적이고 편리한 방법입니다.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -176,7 +187,7 @@ def charge_payment(amount: float):
 
 ### 직접 호출 방식 {#call-usage}
 
-동적으로 함수를 보호해야 할 때 유용합니다.
+`call` 메서드는 데코레이터로 수정할 수 없는 함수(예: 서드파티 라이브러리의 함수)를 보호해야 할 때 유용합니다.
 
 ```python
 def process_payment(amount: float):
@@ -184,16 +195,16 @@ def process_payment(amount: float):
     response.raise_for_status()
     return response.json()
 
-# Circuit Breaker를 통해 호출
+# .call()로 함수를 감싸서 보호합니다.
 result = cb.call(process_payment, amount=100.0)
 ```
 
 ### 비동기 지원 {#async-usage}
 
-Asyncio 애플리케이션을 위한 완벽한 지원을 제공합니다.
+Fluxgate는 `AsyncCircuitBreaker`를 통해 최신 `asyncio` 애플리케이션을 완벽하게 지원합니다.
 
 !!! note
-    AsyncCircuitBreaker는 `max_half_open_calls` 파라미터를 통해 HALF_OPEN 상태에서 동시에 실행 가능한 호출 수를 제한합니다. 기본값은 10이며, asyncio.Semaphore를 사용하여 동시성을 제어합니다. 이 제한은 복구 테스트 중인 서비스에 과도한 부하가 가해지는 것을 방지합니다.
+    복구 중인 서비스에 과부하가 걸리는 것을 방지하기 위해 `AsyncCircuitBreaker`는 `HALF_OPEN` 상태에서 허용되는 동시 호출 수를 제한합니다. 이는 `max_half_open_calls` 매개변수(기본값은 10)에 의해 제어되며, 내부적으로 `asyncio.Semaphore`에 의해 관리됩니다.
 
 ```python
 import httpx
@@ -206,7 +217,7 @@ cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
-    max_half_open_calls=5,  # HALF_OPEN 상태에서 동시 호출 제한 (기본값: 10)
+    max_half_open_calls=5,  # HALF_OPEN 상태에서 동시 호출을 5개로 제한합니다.
 )
 
 @cb
@@ -216,88 +227,90 @@ async def fetch_data():
         response.raise_for_status()
         return response.json()
 
-# 사용
+# await를 사용하여 비동기 함수를 호출합니다.
 result = await fetch_data()
 ```
 
-## 상태 정보 조회 {#info}
+## 브레이커 상태 확인 {#info}
 
-Circuit Breaker의 현재 상태와 메트릭을 확인할 수 있습니다.
+`.info()` 메서드를 사용하여 circuit breaker의 현재 상태와 Metric을 언제든지 확인할 수 있습니다.
 
 ```python
 info = cb.info()
 print(f"Circuit: {info.name}")
 print(f"State: {info.state}")
-print(f"Changed at: {info.changed_at}")
-print(f"Reopens: {info.reopens}")
-print(f"Metrics: {info.metrics}")
+print(f"Last state change: {info.changed_at}")
+print(f"Reopens at: {info.reopens}")
+print(f"Current metrics: {info.metrics}")
 
-# 출력 예시:
+# 출력 예시
 # Circuit: payment_api
 # State: closed
-# Changed at: 1234567890.123
-# Reopens: 0
-# Metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
+# Last state change: 1234567890.123
+# Reopens at: 0
+# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
 ```
 
 ## 수동 제어 {#manual-control}
 
-필요시 Circuit Breaker를 수동으로 제어할 수 있습니다.
+circuit breaker의 상태를 수동으로 제어해야 하는 경우가 있을 수 있습니다.
 
 ```python
-# CLOSED로 리셋 (메트릭도 초기화)
+# CLOSED 상태로 재설정하고 모든 Metric을 지웁니다.
 cb.reset()
 
-# METRICS_ONLY로 전환
+# 트립 없이 모니터링하기 위해 METRICS_ONLY로 전환합니다.
 cb.metrics_only()
 
-# DISABLED로 전환
+# 브레이커를 완전히 우회하기 위해 DISABLED로 전환합니다.
 cb.disable()
 
-# FORCED_OPEN으로 전환
+# 호출을 수동으로 차단하기 위해 FORCED_OPEN으로 전환합니다.
 cb.force_open()
 
-# 리스너에 알림 없이 상태 변경
+# Listener에게 알림 없이 상태를 변경할 수도 있습니다.
 cb.reset(notify=False)
 ```
 
-## 에러 처리 {#error-handling}
+## 오류 처리 및 Fallback {#error-handling}
 
-Circuit이 열려있을 때 발생하는 에러를 처리하는 방법입니다.
+회로가 열리면 `CallNotPermittedError`가 발생합니다. 캐시된 데이터 또는 기본값을 반환하는 것과 같은 대체 응답을 제공하기 위해 Fallback 메커니즘을 정의하여 이를 처리할 수 있습니다.
 
-### Fallback 파라미터 사용 (권장) {#fallback-parameter}
+### `fallback`을 사용한 자동 Fallback {#fallback-parameter}
 
-`fallback` 파라미터를 사용하면 예외 발생 시 자동으로 대체 함수가 호출됩니다.
+가장 쉬운 방법은 데코레이터에 직접 Fallback 함수를 제공하는 것입니다. 이 함수는 보호된 함수에서 **모든** 예외가 발생할 때마다 자동으로 호출됩니다. Fallback 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 
 ```python
-# fallback 함수는 예외를 인자로 받음
+# Fallback 함수는 예외를 인수로 받습니다.
 def handle_error(e: Exception) -> dict:
     if isinstance(e, CallNotPermittedError):
-        return get_cached_data()  # Circuit 열림
+        return get_cached_data()  # 회로가 열림
     if isinstance(e, TimeoutError):
-        return get_stale_data()   # 타임아웃
-    raise e  # 다른 예외는 재발생
+        return get_stale_data()   # 작업 시간 초과
+    raise e  # 다른 예상치 못한 예외는 다시 발생시킵니다.
 
 @cb(fallback=handle_error)
 def api_call() -> dict:
     return requests.get("https://api.example.com").json()
 
-# 사용: 예외 발생 시 자동으로 fallback 호출
+# 예외 발생 시 Fallback이 자동으로 호출됩니다.
 result = api_call()
 ```
 
-### call_with_fallback 사용 {#call-with-fallback}
+### `call_with_fallback`을 사용한 명시적 Fallback {#call-with-fallback}
 
-명시적으로 fallback을 지정하여 호출할 수도 있습니다.
+단일 호출에 대해 Fallback을 명시적으로 지정할 수도 있습니다.
 
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
-    lambda e: get_cached_data(),
+    fallback_func=lambda e: get_cached_data(),
 )
 ```
 
-### 수동 try/except 방식 {#manual-try-except}
+### 수동 `try...except` 처리 {#manual-try-except}
+
+최대한의 제어를 위해 표준 `try...except` 블록을 사용할 수 있습니다.
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -309,17 +322,15 @@ def api_call():
 try:
     result = api_call()
 except CallNotPermittedError:
-    # Circuit이 열려있음 - Fallback 처리
+    # 회로가 열려 있으므로, Fallback을 실행합니다.
     result = get_cached_data()
 except Exception as e:
-    # 실제 서비스 에러
-    logging.error(f"API call failed: {e}")
+    # 기본 서비스 호출이 실패했습니다.
+    logging.error(f"API 호출 실패: {e}")
     raise
 ```
 
-## 완전한 예제 {#complete-example}
-
-실제 프로덕션 환경에서 사용할 수 있는 완전한 예제입니다.
+## 완전한 프로덕션 예제 {#complete-example}
 
 ```python
 import httpx
@@ -332,10 +343,11 @@ from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
 from fluxgate.listeners.prometheus import PrometheusListener
 
-# 5xx 에러와 네트워크 실패만 추적
+# 중요한 서버 측 오류만 실패로 간주하도록 사용자 정의 Tracker를 정의합니다.
 def is_retriable_error(e: Exception) -> bool:
     if isinstance(e, httpx.HTTPStatusError):
-        return e.response.status_code >= 500
+        return e.response.status_code >= 500  # 5xx 오류는 실패입니다.
+    # 또한 네트워크 오류도 추적합니다.
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 payment_cb = CircuitBreaker(
@@ -343,22 +355,24 @@ payment_cb = CircuitBreaker(
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
     tripper=MinRequests(20) & (
-        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |    # CLOSED: 60% 실패 또는 30% 느린 호출
-        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))  # HALF_OPEN: 50% 실패 또는 20% 느린 호출
+        # CLOSED 상태에서는 60% 실패율 또는 30% 느린 호출율에서 트립됩니다.
+        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
+        # HALF_OPEN 상태에서는 복구를 확인하기 위해 더 엄격한 기준을 사용합니다.
+        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
     ),
     retry=Backoff(
         initial=10.0,
         multiplier=2.0,
         max_duration=300.0,
-        jitter_ratio=0.1  # Thundering herd 방지
+        jitter_ratio=0.1  # 동시다발적인 요청을 방지하기 위해 지터를 추가합니다.
     ),
     permit=RampUp(
-        initial=0.1,      # 10%부터 시작
-        final=0.5,        # 50%까지 증가
-        duration=60.0     # 60초에 걸쳐
+        initial=0.1,      # 10% 트래픽 허용부터 시작합니다.
+        final=0.5,        # 50%까지 점진적으로 증가시킵니다.
+        duration=60.0     # 60초에 걸쳐 증가시킵니다.
     ),
     listeners=[LogListener(), PrometheusListener()],
-    slow_threshold=3.0,  # 3초 이상을 느린 호출로 간주
+    slow_threshold=3.0,  # 3초 이상의 모든 호출을 느린 호출로 표시합니다.
 )
 
 @payment_cb
@@ -371,21 +385,21 @@ def charge_payment(amount: float):
     response.raise_for_status()
     return response.json()
 
-# 사용
+# Fallback 로직을 사용한 예제
 try:
     result = charge_payment(amount=100.0)
     print(f"Payment successful: {result}")
 except CallNotPermittedError:
-    print("Payment service is temporarily unavailable")
-    # Fallback: 결제를 큐에 추가
+    print("결제 서비스를 일시적으로 사용할 수 없습니다. 나중에 처리하기 위해 결제를 큐에 추가합니다.")
+    # Fallback: 나중에 처리할 결제를 큐에 추가합니다.
     queue_payment(amount=100.0)
 except httpx.HTTPStatusError as e:
-    print(f"Payment failed with status {e.response.status_code}")
+    print(f"결제 실패: 상태 코드 {e.response.status_code}")
     raise
 ```
 
 ## 다음 단계 {#next-steps}
 
-- [Components](components/index.md) - Circuit Breaker를 구성하는 컴포넌트 상세 학습
-- [Examples](examples.md) - 실제 사용 패턴과 시나리오
-- [API Reference](api/core.md) - 전체 API 문서
+- [컴포넌트](components/index.md): circuit breaker를 구성하는 컴포넌트에 대해 자세히 알아보세요.
+- [예제](examples.md): 더 많은 실제 사용 패턴과 시나리오를 확인하세요.
+- [API 레퍼런스](api/core.md): 전체 API 문서를 살펴보세요.

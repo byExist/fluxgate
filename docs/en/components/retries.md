@@ -1,81 +1,81 @@
 # Retries
 
-Retry determines when to transition from OPEN to HALF_OPEN state.
+A Retry strategy defines the "cooling-off" period for a circuit breaker. It controls when the breaker should attempt to recover by transitioning from the `OPEN` state to the `HALF_OPEN` state. Choosing the right strategy is key to balancing fast recovery with giving a struggling service enough time to heal.
 
-| Retry Type | Transition Timing | Use Case |
-|-----------|----------|----------|
-| **Always** | Immediately | Quick recovery attempts |
-| **Never** | No transition | Manual recovery |
-| **Cooldown** | After fixed wait time | Fixed wait period |
-| **Backoff** | Exponential backoff | Increasing wait on repeated failures |
+| Retry Type | Transition Timing | Best For... |
+|---|---|---|
+| **Always** | Immediately | Non-critical services where immediate retries are acceptable. |
+| **Never** | Manual only | When recovery requires manual intervention by an operator. |
+| **Cooldown** | After a fixed delay | A simple, predictable wait time before attempting recovery. |
+| **Backoff** | After an exponentially increasing delay | An adaptive approach that waits longer after repeated failures. |
+
+---
 
 ## Always
 
-Immediately attempts HALF_OPEN transition on every call.
+This strategy moves the circuit to `HALF_OPEN` immediately after it opens. On any subsequent call, it will attempt a recovery.
+
+!!! warning "Use with Caution"
+    `Always` can be dangerous, as it encourages a "thundering herd" problem where many clients retry simultaneously, overwhelming a service that is trying to recover. It's best used for non-critical services where failures are known to be very brief.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
 
-# Immediate recovery attempts
-cb = CircuitBreaker(
-    name="api",
-    retry=Always(),
-    ...
-)
+# Not generally recommended for production.
+cb = CircuitBreaker(name="api", retry=Always(), ...)
 ```
+
+---
 
 ## Never
 
-Keeps OPEN state until manual reset() is called.
+This strategy keeps the circuit in the `OPEN` state indefinitely until it is manually reset. This is useful when a service requires human intervention to be fixed.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Never
 
-# Manual recovery only
-cb = CircuitBreaker(
-    name="api",
-    retry=Never(),
-    ...
-)
+cb = CircuitBreaker(name="api", retry=Never(), ...)
 
-# Manual recovery
+# An operator must manually reset the breaker after fixing the service.
 cb.reset()
 ```
 
+---
+
 ## Cooldown
 
-Transitions to HALF_OPEN after a fixed wait period.
+This is a simple and common strategy that waits for a fixed `duration` (in seconds) before moving to `HALF_OPEN`.
+
+It's a good default choice for services that tend to recover in a predictable amount of time.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Cooldown
 
-# Wait 60 seconds before recovery attempt
+# Wait for 60 seconds before the first recovery attempt.
 cb = CircuitBreaker(
     name="api",
     retry=Cooldown(duration=60.0),
     ...
 )
-
-# Add jitter to prevent thundering herd
-cb = CircuitBreaker(
-    name="api",
-    retry=Cooldown(duration=60.0, jitter_ratio=0.1),  # ±10% random
-    ...
-)
 ```
+
+---
 
 ## Backoff
 
-Wait time increases exponentially with each retry.
+This is the most robust and recommended strategy for production systems. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.
+
+The wait time is calculated as `initial * (multiplier ** consecutive_failures)`.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Backoff
 
-# Start at 10s, double each time, max 300s
+# The wait time starts at 10s, doubles after each failed recovery attempt,
+# and is capped at a maximum of 300s.
 cb = CircuitBreaker(
     name="api",
     retry=Backoff(
@@ -85,91 +85,67 @@ cb = CircuitBreaker(
     ),
     ...
 )
-# Wait times by retry count:
-# 0 → 10s
-# 1 → 20s
-# 2 → 40s
-# 3 → 80s
-# 4 → 160s
-# 5+ → 300s
-
-# Add jitter
-cb = CircuitBreaker(
-    name="api",
-    retry=Backoff(
-        initial=10.0,
-        multiplier=2.0,
-        max_duration=300.0,
-        jitter_ratio=0.1  # ±10% random
-    ),
-    ...
-)
+# Sequence of wait times:
+# 1st attempt -> 10s
+# 2nd attempt -> 20s
+# 3rd attempt -> 40s
+# 4th attempt -> 80s
+# 5th attempt -> 160s
+# 6th+ attempt -> 300s (capped by max_duration)
 ```
 
-## Choosing a Retry {#choosing-a-retry}
+---
+
+## Choosing the Right Retry Strategy
 
 ### Comparison {#comparison}
 
 | Feature | Always | Never | Cooldown | Backoff |
-|---------|--------|-------|----------|---------|
-| **Recovery Speed** | Immediate | Not possible | Fixed time | Gradual increase |
+|---|---|---|---|---|
+| **Recovery** | Immediate | Manual | Fixed Delay | Exponential Delay |
 | **Service Load** | High | None | Medium | Low |
-| **Repeated Failure Handling** | None | N/A | None | Excellent |
-| **Complexity** | Simple | Simple | Simple | Medium |
+| **Handles Repeated Failures?** | No | N/A | No | Yes |
+| **Complexity** | Very Simple | Very Simple | Simple | Medium |
+| **Recommended?** | No | For special cases | Good default | **Best for production** |
 
-### Choose Always {#choose-always}
+### When should I use `Always`? {#choose-always}
 
-**Best for:**
+Only for non-critical services where failures are known to be extremely brief and the service can handle a high volume of retries.
 
-- Mostly transient failures
-- Quick recovery is critical
-- Service load is not a concern
+### When should I use `Never`? {#choose-never}
 
-**Examples:** Momentary network disconnection, temporary DNS errors
+When a service requires manual intervention to fix. The circuit breaker will not attempt to recover on its own.
 
-### Choose Never {#choose-never}
+- **Use case**: During a planned deployment or when a service is taken down for maintenance.
 
-**Best for:**
+### When should I use `Cooldown`? {#choose-cooldown}
 
-- Manual intervention required
-- Decision needed after monitoring
+This is a great, simple default. It's best when you have a general idea of how long the service takes to recover.
 
-**Examples:** During deployment, service under maintenance
+- **Use case**: Protecting a service that has a predictable recovery time, like an external API with a fixed rate-limiting window.
 
-### Choose Cooldown {#choose-cooldown}
+### When should I use `Backoff`? {#choose-backoff}
 
-**Best for:**
+This is the **strongly recommended** strategy for most production environments. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.
 
-- Predictable recovery time
-- Fixed wait time is sufficient
-- Thundering herd prevention needed (use jitter)
+- **Use case**: Protecting a critical downstream service that may be slow to restart or recover from an outage.
 
-**Examples:** External API rate limits, scheduled maintenance
+### A Note on Jitter {#using-jitter}
 
-### Choose Backoff {#choose-backoff}
-
-**Best for:**
-
-- High likelihood of repeated failures
-- Need to gradually reduce service load
-- Recovery time is unpredictable
-
-**Examples:** Service recovering from failure, overload conditions
-
-### Using Jitter {#using-jitter}
-
-**Add jitter when:**
-
-- Multiple circuit breakers attempt recovery simultaneously
-- Want to prevent thundering herd problem
+!!! tip "Always Add Jitter"
+    For both `Cooldown` and `Backoff`, it is highly recommended to add **jitter**. Jitter adds a small amount of randomness to the wait time, which helps prevent a "thundering herd" scenario where multiple instances of your service all try to recover at the exact same time.
 
 ```python
-# jitter_ratio=0.1 → ±10% random
-# duration=60.0 → actual wait: 54~66s
-retry = Cooldown(duration=60.0, jitter_ratio=0.1)
+from fluxgate.retries import Cooldown, Backoff
+
+# For a 60s cooldown, jitter adds a +/- 6s random variation (54s to 66s).
+retry_cooldown = Cooldown(duration=60.0, jitter_ratio=0.1)
+
+# The same applies to each step of the backoff.
+retry_backoff = Backoff(initial=10.0, jitter_ratio=0.1)
 ```
 
 ## Next Steps {#next-steps}
 
-- [Permits](permits.md) - Call permission policies in HALF_OPEN state
-- [Trippers](trippers.md) - Circuit state transition conditions
+- [Permits](permits.md): Configure how many "probe" calls are allowed during the `HALF_OPEN` recovery state.
+- [Trippers](trippers.md): Define the conditions that cause the circuit to trip in the first place.

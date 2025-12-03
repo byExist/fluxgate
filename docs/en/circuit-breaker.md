@@ -1,18 +1,18 @@
 # Circuit Breaker
 
-Circuit Breaker is a design pattern that automatically blocks calls to failing services in distributed systems to prevent cascading failures.
+A Circuit Breaker is a mechanism that prevents a system from repeatedly trying to execute an operation that is likely to fail, which is essential for building resilient distributed systems.
 
 ## Core Concepts {#core-concepts}
 
-Circuit Breaker works like an electrical circuit breaker:
+It works just like an electrical circuit breaker in your home.
 
-- In normal state, all calls are allowed (circuit is closed)
-- When failures exceed threshold, calls are blocked (circuit opens)
-- After some time, recovery is tested (half-open state)
+- When everything is normal, the circuit is **closed**, and calls flow through.
+- If failures surpass a threshold, the circuit **opens**, and calls are blocked.
+- After a timeout, the circuit enters a **half-open** state to test if the underlying service has recovered.
 
 ## State Transitions {#state-transitions}
 
-Circuit Breaker has 6 states:
+A circuit breaker automatically transitions between three main states: `CLOSED`, `OPEN`, and `HALF_OPEN`. It also provides manual override states (`DISABLED`, `FORCED_OPEN`, `METRICS_ONLY`) for maintenance and testing.
 
 ```text
 ┌─────────┐           ┌──────┐
@@ -26,13 +26,13 @@ Circuit Breaker has 6 states:
         [!tripper]   └───────────┘
 ```
 
-### CLOSED {#state-closed}
+### CLOSED: The Normal State {#state-closed}
 
-**Normal operating state**
+This is the default operational state where all calls pass through to the protected service. The circuit breaker continuously monitors calls in the background.
 
-- All calls pass through to the actual service
-- Continuously monitors failure metrics
-- Transitions to OPEN when Tripper condition is met
+- **Operation**: Allows all calls.
+- **Monitoring**: Tracks successes and failures.
+- **Transition**: Trips to `OPEN` if the failure threshold defined by the `tripper` is met.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -46,19 +46,21 @@ cb = CircuitBreaker(
     name="api",
     window=CountWindow(size=100),
     tracker=All(),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),  # Only evaluate in CLOSED state
+    # The tripper only trips if the circuit is in the CLOSED state,
+    # has at least 10 requests, and the failure rate is over 50%.
+    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
 )
 ```
 
-### OPEN {#state-open}
+### OPEN: The Failing State {#state-open}
 
-**Call blocking state**
+When the failure threshold is exceeded, the circuit opens. In this state, it immediately rejects all calls without attempting to contact the service.
 
-- All calls immediately raise `CallNotPermittedError`
-- Protects failing service and prevents resource waste
-- Transitions to HALF_OPEN after duration based on Retry strategy
+- **Operation**: Blocks all calls, raising a `CallNotPermittedError`.
+- **Benefit**: Prevents an application from wasting resources on a failing service and gives the service time to recover.
+- **Transition**: Moves to `HALF_OPEN` after the timeout defined by the `retry` strategy.
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -70,18 +72,20 @@ def call_api():
 try:
     result = call_api()
 except CallNotPermittedError as e:
+    # The circuit is open, so execute fallback logic.
     print(f"Circuit is open: {e.message}")
-    # Execute fallback logic
     return {"fallback": "data"}
 ```
 
-### HALF_OPEN {#state-half-open}
+### HALF_OPEN: The Recovery State {#state-half-open}
 
-**Recovery testing state**
+After the retry timeout, the circuit moves to this state to test if the service has recovered.
 
-- Allows limited calls based on Permit strategy
-- Transitions to CLOSED on success, back to OPEN on failure
-- Minimizes service load through gradual recovery
+- **Operation**: Allows a limited number of "probe" calls, as defined by the `permit` strategy.
+- **Transition to CLOSED**: If the probe calls succeed, the circuit closes and returns to normal operation.
+- **Transition to OPEN**: If the probe calls fail, the circuit re-opens to prevent further damage.
+
+This gradual recovery approach prevents a "thundering herd" from overwhelming a service that is still fragile.
 
 ```python
 from fluxgate.permits import RampUp
@@ -90,65 +94,68 @@ cb = CircuitBreaker(
     name="api",
     window=CountWindow(size=100),
     tracker=All(),
-    tripper=MinRequests(5) & FailureRate(0.3),  # Stricter criteria in HALF_OPEN
+    # Use a stricter tripping condition during recovery testing.
+    tripper=MinRequests(5) & FailureRate(0.3),
     retry=Cooldown(duration=60.0),
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),  # Start at 10%, gradual increase
+    # Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.
+    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
 )
 ```
 
-### METRICS_ONLY {#state-metrics-only}
+### METRICS_ONLY: Monitor Without Tripping {#state-metrics-only}
 
-**Metrics collection only**
+In this state, the circuit breaker tracks metrics but never trips open.
 
-- All calls pass through to the actual service
-- Collects metrics but never opens circuit
-- Useful for monitoring tests before production deployment
+- **Operation**: Allows all calls to pass through, just like in the `CLOSED` state.
+- **Use Case**: Safely gather metrics from a new service or during a load test before enabling active protection.
 
 ```python
-# Collect metrics before production deployment
+# Collect metrics before enabling the breaker in production.
 cb.metrics_only()
 
-# Later activate actual Circuit Breaker
+# When ready, activate the circuit breaker's normal lifecycle.
 cb.reset()
 ```
 
-### DISABLED {#state-disabled}
+### DISABLED: Bypass the Breaker {#state-disabled}
 
-**Circuit Breaker disabled**
+This state completely disables the circuit breaker.
 
-- All calls pass through to the actual service
-- No metrics collection
-- Useful for debugging or emergencies
+- **Operation**: Allows all calls to pass through.
+- **Monitoring**: Does not track any metrics.
+- **Use Case**: Useful for debugging, running specific tests, or in emergency situations where you need to bypass the breaker entirely.
 
 ```python
-# Disable Circuit Breaker in emergency
+# Disable the circuit breaker during an emergency.
 cb.disable()
 
-# Re-enable later
+# Re-enable it later.
 cb.reset()
 ```
 
-### FORCED_OPEN {#state-forced-open}
+### FORCED_OPEN: Manually Block Calls {#state-forced-open}
 
-**Forcefully block calls**
+This state forces the circuit to be open and block all calls.
 
-- All calls immediately raise `CallNotPermittedError`
-- No automatic recovery (requires manual reset)
-- Useful for planned maintenance or emergency shutdown
+- **Operation**: Rejects all calls with `CallNotPermittedError`.
+- **Recovery**: Does not automatically recover. It requires a manual `reset()` call.
+- **Use Case**: Ideal for planned maintenance or for manually taking a service offline.
 
 ```python
-# Force circuit open for maintenance
+# Force the circuit open during a planned deployment.
 cb.force_open()
 
-# Recover after maintenance
+# After maintenance is complete, return to normal operation.
 cb.reset()
 ```
 
 ## Usage {#usage}
 
+You can apply a circuit breaker to your code in several ways.
+
 ### Decorator Style {#decorator-usage}
 
-The most common usage pattern.
+Using a decorator is the most common and convenient way to protect a function.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -176,7 +183,7 @@ def charge_payment(amount: float):
 
 ### Direct Call Style {#call-usage}
 
-Useful when you need to protect functions dynamically.
+The `call` method is useful for protecting functions that you can't modify with a decorator, such as functions from a third-party library.
 
 ```python
 def process_payment(amount: float):
@@ -184,16 +191,16 @@ def process_payment(amount: float):
     response.raise_for_status()
     return response.json()
 
-# Call through Circuit Breaker
+# Protect the function by wrapping it with .call()
 result = cb.call(process_payment, amount=100.0)
 ```
 
 ### Async Support {#async-usage}
 
-Full support for asyncio applications.
+Fluxgate provides full support for modern `asyncio` applications via the `AsyncCircuitBreaker`.
 
 !!! note
-    AsyncCircuitBreaker limits the number of concurrent calls in HALF_OPEN state using the `max_half_open_calls` parameter. The default is 10, and concurrency is controlled using asyncio.Semaphore. This limit prevents overwhelming a service that is still recovering.
+    To prevent a recovering service from being overwhelmed, `AsyncCircuitBreaker` limits the number of concurrent calls allowed in the `HALF_OPEN` state. This is controlled by the `max_half_open_calls` parameter (default is 10) and is managed internally by an `asyncio.Semaphore`.
 
 ```python
 import httpx
@@ -206,7 +213,7 @@ cb = AsyncCircuitBreaker(
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
     retry=Cooldown(duration=60.0),
     permit=Random(ratio=0.5),
-    max_half_open_calls=5,  # Limit concurrent calls in HALF_OPEN (default: 10)
+    max_half_open_calls=5,  # Limit concurrent calls in HALF_OPEN to 5.
 )
 
 @cb
@@ -216,88 +223,90 @@ async def fetch_data():
         response.raise_for_status()
         return response.json()
 
-# Usage
+# Use await to call the async function
 result = await fetch_data()
 ```
 
-## Info {#info}
+## Inspecting the Breaker's State {#info}
 
-Check current state and metrics of Circuit Breaker.
+You can inspect the current state and metrics of a circuit breaker at any time using the `.info()` method.
 
 ```python
 info = cb.info()
 print(f"Circuit: {info.name}")
 print(f"State: {info.state}")
-print(f"Changed at: {info.changed_at}")
-print(f"Reopens: {info.reopens}")
-print(f"Metrics: {info.metrics}")
+print(f"Last state change: {info.changed_at}")
+print(f"Reopens at: {info.reopens}")
+print(f"Current metrics: {info.metrics}")
 
 # Example output:
 # Circuit: payment_api
 # State: closed
-# Changed at: 1234567890.123
-# Reopens: 0
-# Metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
+# Last state change: 1234567890.123
+# Reopens at: 0
+# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
 ```
 
 ## Manual Control {#manual-control}
 
-Manually control Circuit Breaker when needed.
+There may be times when you need to control the circuit breaker's state manually.
 
 ```python
-# Reset to CLOSED (also clears metrics)
+# Reset to CLOSED state and clear all metrics.
 cb.reset()
 
-# Transition to METRICS_ONLY
+# Transition to METRICS_ONLY to monitor without tripping.
 cb.metrics_only()
 
-# Transition to DISABLED
+# Transition to DISABLED to bypass the breaker entirely.
 cb.disable()
 
-# Transition to FORCED_OPEN
+# Transition to FORCED_OPEN to manually block calls.
 cb.force_open()
 
-# Change state without notifying listeners
+# You can also change state without notifying listeners.
 cb.reset(notify=False)
 ```
 
-## Error Handling {#error-handling}
+## Error Handling and Fallbacks {#error-handling}
 
-How to handle errors when circuit is open.
+When a circuit is open, it raises a `CallNotPermittedError`. You can handle this by defining a fallback mechanism to provide an alternative response, such as returning cached data or a default value.
 
-### Using fallback parameter (recommended) {#fallback-parameter}
+### Automatic Fallback with `fallback` (Recommended) {#fallback-parameter}
 
-Using the `fallback` parameter, a fallback function is automatically called on any exception.
+The easiest method is to provide a fallback function directly to the decorator. This function will be called automatically whenever an exception occurs.
 
 ```python
-# Fallback function receives the exception as argument
+# The fallback function receives the exception as an argument.
 def handle_error(e: Exception) -> dict:
     if isinstance(e, CallNotPermittedError):
-        return get_cached_data()  # Circuit open
+        return get_cached_data()  # Circuit is open
     if isinstance(e, TimeoutError):
-        return get_stale_data()   # Timeout
-    raise e  # Re-raise other exceptions
+        return get_stale_data()   # Operation timed out
+    raise e  # Re-raise any other unexpected exceptions.
 
 @cb(fallback=handle_error)
 def api_call() -> dict:
     return requests.get("https://api.example.com").json()
 
-# Usage: Fallback is automatically called on exception
+# The fallback is invoked automatically on any exception.
 result = api_call()
 ```
 
-### Using call_with_fallback {#call-with-fallback}
+### Explicit Fallback with `call_with_fallback` {#call-with-fallback}
 
-You can also explicitly specify a fallback when calling.
+You can also specify a fallback explicitly for a single call.
 
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
-    lambda e: get_cached_data(),
+    fallback_func=lambda e: get_cached_data(),
 )
 ```
 
-### Manual try/except approach {#manual-try-except}
+### Manual `try...except` Handling {#manual-try-except}
+
+For the most control, you can use a standard `try...except` block.
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -309,17 +318,17 @@ def api_call():
 try:
     result = api_call()
 except CallNotPermittedError:
-    # Circuit is open - Fallback handling
+    # The circuit is open, so execute the fallback.
     result = get_cached_data()
 except Exception as e:
-    # Actual service error
+    # The underlying service call failed.
     logging.error(f"API call failed: {e}")
     raise
 ```
 
-## Complete Example {#complete-example}
+## Complete Production Example {#complete-example}
 
-Complete example ready for production use.
+Here is a complete example of a production-ready circuit breaker configured to protect a critical payment API.
 
 ```python
 import httpx
@@ -332,10 +341,10 @@ from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
 from fluxgate.listeners.prometheus import PrometheusListener
 
-# Track only 5xx errors and network failures
+# Define a custom tracker to only count critical server-side errors as failures.
 def is_retriable_error(e: Exception) -> bool:
     if isinstance(e, httpx.HTTPStatusError):
-        return e.response.status_code >= 500
+        return e.response.status_code >= 500  # 5xx errors are failures
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 payment_cb = CircuitBreaker(
@@ -343,22 +352,24 @@ payment_cb = CircuitBreaker(
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
     tripper=MinRequests(20) & (
-        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |    # CLOSED: 60% failure or 30% slow calls
-        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))  # HALF_OPEN: 50% failure or 20% slow calls
+        # In CLOSED, trip on 60% failure rate or 30% slow call rate.
+        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
+        # In HALF_OPEN, use stricter criteria to confirm recovery.
+        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
     ),
     retry=Backoff(
         initial=10.0,
         multiplier=2.0,
         max_duration=300.0,
-        jitter_ratio=0.1  # Prevent thundering herd
+        jitter_ratio=0.1  # Add jitter to prevent a thundering herd.
     ),
     permit=RampUp(
-        initial=0.1,      # Start at 10%
-        final=0.5,        # Increase to 50%
-        duration=60.0     # Over 60 seconds
+        initial=0.1,      # Start by allowing 10% of traffic.
+        final=0.5,        # Gradually increase to 50%.
+        duration=60.0     # Ramp up over 60 seconds.
     ),
     listeners=[LogListener(), PrometheusListener()],
-    slow_threshold=3.0,  # Mark calls over 3 seconds as slow
+    slow_threshold=3.0,  # Mark any call over 3 seconds as slow.
 )
 
 @payment_cb
@@ -371,13 +382,13 @@ def charge_payment(amount: float):
     response.raise_for_status()
     return response.json()
 
-# Usage
+# Example usage with fallback logic
 try:
     result = charge_payment(amount=100.0)
     print(f"Payment successful: {result}")
 except CallNotPermittedError:
-    print("Payment service is temporarily unavailable")
-    # Fallback: Queue payment
+    print("Payment service is temporarily unavailable. Queuing payment for later.")
+    # Fallback: Add the payment to a queue to be processed later.
     queue_payment(amount=100.0)
 except httpx.HTTPStatusError as e:
     print(f"Payment failed with status {e.response.status_code}")
@@ -386,6 +397,6 @@ except httpx.HTTPStatusError as e:
 
 ## Next Steps {#next-steps}
 
-- [Components](components/index.md) - Learn components that make up Circuit Breaker
-- [Examples](examples.md) - Real-world usage patterns and scenarios
-- [API Reference](api/core.md) - Complete API documentation
+- [Components](components/index.md): Dive deeper into the components that make up a circuit breaker.
+- [Examples](examples.md): See more real-world usage patterns and scenarios.
+- [API Reference](api/core.md): Explore the complete API documentation.

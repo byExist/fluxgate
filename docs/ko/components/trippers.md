@@ -1,202 +1,180 @@
-# Trippers
+# Tripper
 
-Tripper는 Window가 수집한 메트릭을 평가하여 circuit 상태 전환 여부를 판단합니다. 여러 조건을 논리 연산자(`&`, `|`)로 조합할 수 있습니다.
+Tripper는 Circuit Breaker의 상태 전환 조건을 제어합니다. `Window`에서 제공하는 Metric을 기반으로 회로가 상태를 변경해야 하는지(예: `CLOSED`에서 `OPEN`으로) 결정합니다. 각 Tripper 컴포넌트를 논리 연산자(`&`, `|`)와 결합함으로써, 브레이커가 언제 트립해야 하는지에 대한 규칙을 정의할 수 있습니다.
 
-| Tripper 타입 | 조건 | 사용 사례 |
-|-------------|------|----------|
-| **Closed** | CLOSED 상태일 때 | 상태별 조건 분기 |
-| **HalfOpened** | HALF_OPEN 상태일 때 | 상태별 조건 분기 |
-| **MinRequests** | 최소 호출 수 충족 | 샘플 크기 보장 |
-| **FailureRate** | 실패율 임계값 초과 | 에러율 기반 차단 |
-| **AvgLatency** | 평균 지연시간 초과 | 성능 기반 차단 |
-| **SlowRate** | 느린 호출 비율 초과 | 느린 응답 기반 차단 |
+| Tripper 유형 | 조건 | 사용 사례 |
+|---|---|---|
+| **Closed** / **HalfOpened** | 회로가 특정 상태인지 확인합니다. | 특정 상태에서만 적용되는 조건을 구성합니다. |
+| **MinRequests** | 호출 수가 최소값을 초과하는지 확인합니다. | 통계적으로 유의미하지 않은 적은 수의 호출로 인해 트립되는 것을 방지합니다. |
+| **FailureRate** | 실패율이 너무 높은지 확인합니다. | 오류율이 허용할 수 없을 정도로 높아지면 트립됩니다. |
+| **AvgLatency** | 평균 응답 시간이 너무 느린지 확인합니다. | 전반적인 성능이 저하될 때 트립됩니다. |
+| **SlowRate** | 느린 호출의 비율이 너무 높은지 확인합니다. | 느린 요청의 비율을 기반으로 트립됩니다. |
 
-## Closed
+---
 
-CLOSED 상태일 때만 true를 반환합니다.
+## 상태 기반 Tripper
+
+이 Tripper는 Circuit Breaker의 현재 상태를 확인하여 `CLOSED` 또는 `HALF_OPEN` 상태에서만 적용되는 규칙을 만들 수 있도록 합니다.
+
+- `Closed()`: 회로가 `CLOSED` 상태일 때만 `True`를 반환합니다.
+- `HalfOpened()`: 회로가 `HALF_OPEN` 상태일 때만 `True`를 반환합니다.
+
+이들은 거의 항상 다른 조건을 범위 지정하기 위해 `&` 연산자와 함께 사용됩니다.
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.trippers import Closed, FailureRate
+from fluxgate.trippers import Closed, HalfOpened, FailureRate
 
-# CLOSED 상태에서만 실패율 검사
-cb = CircuitBreaker(
-    name="api",
-    tripper=Closed() & FailureRate(0.5),
-    ...
+# CLOSED 및 HALF_OPEN 상태에 대해 다른 실패율 임계값을 사용합니다.
+tripper = (
+    (Closed() & FailureRate(0.5)) |
+    (HalfOpened() & FailureRate(0.3))
 )
 ```
 
-## HalfOpened
+---
 
-HALF_OPEN 상태일 때만 true를 반환합니다.
+## 메트릭 기반 Tripper
 
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.trippers import HalfOpened, FailureRate
+이 Tripper는 `window`가 수집한 메트릭을 평가합니다.
 
-# HALF_OPEN 상태에서는 더 엄격한 기준 적용
-cb = CircuitBreaker(
-    name="api",
-    tripper=HalfOpened() & FailureRate(0.3),
-    ...
-)
-```
+### MinRequests
 
-## MinRequests
-
-최소 호출 수를 충족할 때만 true를 반환합니다.
+`MinRequests(count)`는 Window가 최소한 `count` 호출을 기록한 후에만 `True`를 반환합니다. 이는 통계적으로 중요하지 않은 적은 수의 실패(예: 2개 호출 중 1개 실패는 50% 실패율이지만, 통계적으로 충분한 데이터가 아님)로 인해 브레이커가 트립되는 것을 방지하는 데 매우 중요합니다.
 
 ```python
-from fluxgate import CircuitBreaker
 from fluxgate.trippers import MinRequests, FailureRate
 
-# 최소 10개 호출 후 실패율 검사
-cb = CircuitBreaker(
-    name="api",
-    tripper=MinRequests(10) & FailureRate(0.5),
-    ...
-)
+# 최소 10개의 호출이 기록될 때까지 브레이커는 트립되지 않습니다.
+tripper = MinRequests(10) & FailureRate(0.5)
 ```
 
-## FailureRate
+### FailureRate
 
-실패율이 임계값을 초과할 때 true를 반환합니다.
+`FailureRate(rate)`는 실패한 호출 대 총 호출 수의 비율이 `rate`를 초과하면(`0.5`는 50%) `True`를 반환합니다.
 
 ```python
-from fluxgate import CircuitBreaker
 from fluxgate.trippers import FailureRate
 
-# 실패율 50% 초과 시 circuit 열기
-cb = CircuitBreaker(
-    name="api",
-    tripper=FailureRate(0.5),
-    ...
-)
+# 호출의 50% 이상이 실패하는 경우 트립됩니다.
+tripper = FailureRate(0.5)
 ```
 
-## AvgLatency
+### AvgLatency
 
-평균 지연시간이 임계값을 초과할 때 true를 반환합니다.
+`AvgLatency(seconds)`는 Window 내 모든 호출의 평균 응답 시간이 `seconds`를 초과하면 `True`를 반환합니다.
 
 ```python
-from fluxgate import CircuitBreaker
 from fluxgate.trippers import AvgLatency
 
-# 평균 응답시간 2초 초과 시 circuit 열기
-cb = CircuitBreaker(
-    name="api",
-    tripper=AvgLatency(2.0),
-    ...
-)
+# 평균 응답 시간이 2초를 초과하면 트립됩니다.
+tripper = AvgLatency(2.0)
 ```
 
-## SlowRate
+### SlowRate
 
-느린 호출 비율이 임계값을 초과할 때 true를 반환합니다.
+`SlowRate(rate)`는 느린 호출의 비율이 `rate`를 초과하면 `True`를 반환합니다.
 
-!!! warning
-    `SlowRate`를 사용하려면 CircuitBreaker의 `slow_threshold` 파라미터를 반드시 설정해야 합니다. 이 값보다 오래 걸리는 호출이 "느린 호출"로 간주됩니다. 기본값은 `inf`(무한대)이므로, 설정하지 않으면 모든 호출이 "빠른 호출"로 간주되어 SlowRate가 항상 0%가 됩니다.
+!!! warning "`slow_threshold`가 필요합니다"
+    `SlowRate`를 사용하려면 메인 `CircuitBreaker`에 `slow_threshold` 매개변수(초 단위)를 **반드시** 설정해야 합니다. 이 값보다 오래 걸리는 모든 호출은 "느린" 것으로 간주됩니다. 이 값을 설정하지 않으면 `SlowRate`는 항상 `0.0`이 됩니다.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate
 
-# 느린 호출 30% 초과 시 circuit 열기
+# 호출의 30% 이상이 "느린" 경우 트립됩니다.
 cb = CircuitBreaker(
     name="api",
     tripper=SlowRate(0.3),
-    slow_threshold=1.0,  # 1초 이상을 느린 호출로 간주
+    slow_threshold=1.0,  # 1초 이상 걸리는 호출은 느린 것으로 간주됩니다.
     ...
 )
 ```
 
-## 논리 연산자 {#operators}
+---
 
-Tripper는 논리 연산자로 조합할 수 있습니다.
+## 논리 연산자를 이용한 Tripper 결합 {#operators}
 
-### AND (`&`) - 모든 조건 만족
+논리 연산자를 사용하여 Tripper를 결합함으로써 강력하고 정밀한 규칙을 만들 수 있습니다.
+
+### AND (`&`)
+
+`&` 연산자는 **모든** 조건이 참이어야 합니다. Tripper를 결합하는 가장 일반적인 방법입니다.
 
 ```python
 from fluxgate.trippers import MinRequests, FailureRate
 
-# 최소 10개 호출 AND 실패율 50% 이상
+# Window에 최소 10개의 요청이 있고 실패율이 50%를 초과하는 경우에만 trip됩니다.
 tripper = MinRequests(10) & FailureRate(0.5)
 ```
 
-### OR (`|`) - 조건 중 하나 만족
+### OR (`|`)
+
+`|` 연산자는 **어느 하나라도** 조건이 참이어야 합니다.
 
 ```python
 from fluxgate.trippers import FailureRate, SlowRate
 
-# 실패율 50% 이상 OR 느린 호출 30% 이상
+# 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.
 tripper = FailureRate(0.5) | SlowRate(0.3)
 ```
 
-### 복잡한 조합
+### 복합 예제
+
+다음은 `CLOSED` 및 `HALF_OPEN` 상태에 대해 다른 규칙을 만드는 방법입니다.
 
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
-# CLOSED: 최소 10개 호출 후 실패율 50%
-# HALF_OPEN: 최소 5개 호출 후 실패율 30%
+# - 상태가 CLOSED이면, 최소 10개의 요청이 있고 실패율이 50%를 초과할 때 trip됩니다.
+# - 또는 상태가 HALF_OPEN이면, 최소 5개의 요청이 있고 실패율이 30%를 초과할 때 trip됩니다.
 tripper = (
     (Closed() & MinRequests(10) & FailureRate(0.5)) |
     (HalfOpened() & MinRequests(5) & FailureRate(0.3))
 )
 ```
 
-## 선택 가이드 {#choosing-a-tripper}
+---
+
+## 올바른 Tripper 선택하기
 
 ### 비교 {#comparison}
 
-| 특성 | Closed/HalfOpened | MinRequests | FailureRate | AvgLatency | SlowRate |
-|-----|------------------|-------------|-------------|------------|--------------|
-| **목적** | 상태별 조건 분기 | 샘플 크기 보장 | 에러율 검사 | 평균 성능 검사 | 느린 호출 검사 |
-| **단독 사용** | 불가능 | 불가능 | 가능 | 가능 | 가능 |
-| **일반적 조합** | 다른 Tripper와 AND | 다른 Tripper와 AND | MinRequests와 AND | MinRequests와 AND | MinRequests와 AND |
+| 기능 | `Closed`/`HalfOpened` | `MinRequests` | `FailureRate` | `AvgLatency` | `SlowRate` |
+|---|---|---|---|---|---|
+| **목적** | 특정 상태에 규칙 적용 | 의미 있는 샘플 크기 보장 | 실패한 호출의 비율 확인 | 평균 성능 확인 | 느린 호출의 비율 확인 |
+| **단독 사용** | X | X | O | O | O |
 
-### MinRequests를 사용하세요 {#use-minrequests}
+### 항상 `MinRequests` 사용하기 {#use-minrequests}
 
-!!! tip "권장 사항"
-    - 거의 모든 Tripper 조합에 포함
-    - 샘플 크기가 작을 때 오판 방지
-    - Window size의 10-20% 정도가 적당
-
-**예시:**
+!!! tip "강력 추천"
+    거의 모든 Tripper 조합에 `MinRequests`를 포함해야 합니다. 이는 회로가 통계적으로 유의미하지 않은 적은 수의 호출 샘플을 기반으로 성급한 결정을 내리는 것을 방지합니다. Window 크기의 10-20% 정도의 값이 좋은 시작점입니다.
 
 ```python
-# Window size 100개, MinRequests 10개
+# CountWindow(size=100)의 경우, MinRequests를 10-20으로 설정하는 것이 합리적입니다.
 tripper = MinRequests(10) & FailureRate(0.5)
 ```
 
-### FailureRate vs AvgLatency vs SlowRate {#rate-vs-latency}
+### `FailureRate` vs. `AvgLatency` vs. `SlowRate` {#rate-vs-latency}
 
-**FailureRate를 선택하세요:**
+- 명시적인 오류(예외)를 가장 중요하게 생각한다면 **`FailureRate`를 선택하세요**. 가장 일반적이고 직관적인 선택입니다.
 
-- 에러 발생 여부가 중요한 경우
-- 명확한 실패 기준이 있는 경우
+- 전반적인 속도 저하로부터 보호하고 싶을 때는 **`AvgLatency`를 선택하세요**. 주의: 몇 개의 매우 느린 호출이 평균을 왜곡할 수 있습니다.
 
-**AvgLatency를 선택하세요:**
+- 이상치(outlier)로부터 보호하고 싶을 때는 **`SlowRate`를 선택하세요**. 단 하나의 극도로 느린 호출에 덜 민감하기 때문에 `AvgLatency`보다 종종 더 견고합니다. 이는 평균적인 느림이 아닌, 느린 호출의 *비율*을 측정합니다.
 
-- 전체 응답 시간 성능이 중요한 경우
-- 평균적인 지연이 문제인 경우
+### 종합하기 {#combining-conditions}
 
-**SlowRate를 선택하세요:**
-
-- 느린 호출의 비율이 중요한 경우
-- 특정 임계값(slow_threshold) 초과 비율을 제어하고 싶은 경우
-
-### 여러 조건 조합하기 {#combining-conditions}
+일반적으로 여러 조건을 결합하여 사용하기를 권장합니다.
 
 ```python
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate
 
-# 실패율 OR 느린 호출 비율
+# 최소 10개의 호출 이후, 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.
 tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
 ```
 
 ## 다음 단계 {#next-steps}
 
-- [Retries](retries.md) - Circuit이 열렸을 때 재시도 정책
-- [Permits](permits.md) - HALF_OPEN 상태에서 호출 허용 정책
+- [Retries](retries.md): `OPEN` 상태에서 복구하기 위한 정책을 정의합니다.
+- [Permits](permits.md): `HALF_OPEN` 상태에서 복구를 테스트하는 방법을 구성합니다.

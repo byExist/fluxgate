@@ -1,21 +1,30 @@
 # Permits
 
-HALF_OPEN 상태에서 호출 허용 여부를 제어합니다. Circuit이 복구를 시도할 때 트래픽을 점진적으로 허용하여 안정적인 복구를 돕습니다.
+Permit은 `HALF_OPEN` 상태에서 호출의 허용 여부를 결정합니다. Half Open으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.
 
-| Permit 타입 | 동작 방식 | 사용 사례 |
-|------------|----------|----------|
-| **Random** | 고정된 확률로 랜덤 허용 | 단순한 트래픽 제한 |
-| **RampUp** | 시간에 따라 점진적 증가 | 부드러운 트래픽 복구 |
+| Permit 유형 | 동작 | 적합한 경우 |
+|---|---|---|
+| **Random** | 무작위로 고정된 비율의 호출을 허용 | 트래픽을 제한하는 확률적인 방식 |
+| **RampUp** | 허용된 호출의 비율을 점진적으로 증가 | 트래픽을 부드럽게 재도입하는 방식 |
+
+---
 
 ## Random
 
-고정된 확률로 호출을 랜덤하게 허용합니다.
+고정된 확률로 호출을 통과시킵니다.
+
+### 작동 방식 {#random-how-it-works}
+
+`HALF_OPEN` 상태에 도달하는 모든 호출에 대해 `Random`은 난수를 생성하고, 구성된 `ratio` 내에 있으면 호출을 허용합니다.
+
+- `Random\(ratio=0.1\)`은 대략 10%의 호출을 허용합니다.
+- `Random\(ratio=0.8\)`은 대략 80%의 호출을 허용합니다.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.permits import Random
 
-# HALF_OPEN 상태에서 50% 확률로 호출 허용
+# HALF_OPEN 상태에서 대략 50%의 호출을 통과시킵니다.
 cb = CircuitBreaker(
     name="api",
     permit=Random(ratio=0.5),
@@ -23,42 +32,21 @@ cb = CircuitBreaker(
 )
 ```
 
-### 동작 방식 {#random-how-it-works}
-
-- 각 호출마다 독립적으로 확률 계산
-- `ratio` 값이 허용 확률 결정 (0.0 ~ 1.0)
-- 시간과 무관하게 일정한 비율 유지
-
-### 사용 시나리오 {#random-use-cases}
-
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.permits import Random
-
-# 보수적 복구: 10%만 허용
-cb = CircuitBreaker(
-    name="conservative_api",
-    permit=Random(ratio=0.1),
-    ...
-)
-
-# 적극적 복구: 80% 허용
-cb = CircuitBreaker(
-    name="aggressive_api",
-    permit=Random(ratio=0.8),
-    ...
-)
-```
+---
 
 ## RampUp
 
-시간에 따라 허용 비율을 점진적으로 증가시킵니다.
+시간이 지남에 따라 허용률을 점진적으로 증가시켜 더 부드럽고 온건한 복구를 제공합니다. 대부분의 케이스에 권장됩니다.
+
+### 작동 방식 {#rampup-how-it-works}
+
+`HALF_OPEN` 상태에 진입한 이후 경과된 시간을 기반으로, 설정된 `duration` 동안 `initial` 값에서 `final` 값까지 허용되는 트래픽 비율을 선형적으로 증가시킵니다.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.permits import RampUp
 
-# 10%에서 시작하여 60초에 걸쳐 80%까지 증가
+# 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
 cb = CircuitBreaker(
     name="api",
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
@@ -66,62 +54,30 @@ cb = CircuitBreaker(
 )
 ```
 
-### 동작 방식 {#rampup-how-it-works}
+**예시 진행:** `RampUp\(initial=0.1, final=0.8, duration=60.0\)`의 경우
 
-- HALF_OPEN 전환 시각부터 경과 시간 측정
-- 선형으로 허용 비율 증가: `initial + (final - initial) × (elapsed / duration)`
-- `duration` 경과 후에는 `final` 비율 유지
+- **0초 시점**: 호출의 10%가 허용됩니다.
+- **15초 시점**: 호출의 27.5%가 허용됩니다.
+- **30초 시점**: 호출의 45%가 허용됩니다.
+- **60초 시점\(이후\)**: 비율은 `final` 값인 80%로 제한됩니다.
 
-**예시: initial=0.1, final=0.8, duration=60초**
+---
 
-- 0초: 10% 허용
-- 15초: 27.5% 허용
-- 30초: 45% 허용
-- 45초: 62.5% 허용
-- 60초 이후: 80% 허용
-
-### 사용 시나리오 {#rampup-use-cases}
-
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.permits import RampUp
-
-# 점진적 복구가 필요한 외부 API
-cb = CircuitBreaker(
-    name="external_api",
-    permit=RampUp(initial=0.1, final=0.9, duration=120.0),
-    ...
-)
-
-# 빠른 복구가 가능한 내부 서비스
-cb = CircuitBreaker(
-    name="internal_service",
-    permit=RampUp(initial=0.3, final=1.0, duration=30.0),
-    ...
-)
-```
-
-## 선택 가이드 {#choosing-a-permit}
+## 올바른 Permit 선택
 
 ### 비교 {#comparison}
 
-| 특성 | Random | RampUp |
-|-----|--------|--------|
-| **복잡도** | 단순 | 중간 |
-| **허용 비율** | 일정 | 시간에 따라 증가 |
-| **복구 속도** | 즉시 고정 비율 | 점진적 증가 |
-| **부하 급증** | 가능 (높은 ratio 사용 시) | 최소화 |
-| **사용 사례** | 단순한 트래픽 제한 | 안정적인 점진적 복구 |
+| 기능 | Random | RampUp |
+|---|---|---|
+| **복잡성** | 간단 | 중간 |
+| **허용률** | 일정 | 시간 경과에 따라 증가 |
+| **복구 방식** | 즉시 고정 비율 | 점진적 증가 |
+| **로드 스파이크 위험** | 높음 \(높은 비율에서\) | 매우 낮음 |
+| **권장** | 간단한 경우 | **프로덕션에 가장 적합** |
 
-### Random을 선택하세요 {#choose-random}
+### `Random`은 언제 사용해야 하나요? {#choose-random}
 
-**적합한 경우:**
-
-- 단순한 트래픽 제어 필요
-- 즉시 일정한 비율로 복구
-- 부하 급증이 문제되지 않는 경우
-
-**예시:** 내부 서비스, 복구 시간이 중요한 경우
+`Random`은 일정한 속도로 복구 테스트를 즉시 시작해야 하고 하위 스트림 서비스에 과부하를 주는 것에 대해 걱정하지 않는 간단한 사용 사례에 가장 적합합니다.
 
 **권장 설정:**
 
@@ -129,22 +85,13 @@ cb = CircuitBreaker(
 # 보수적 (안정성 우선)
 permit = Random(ratio=0.3)
 
-# 균형적
-permit = Random(ratio=0.5)
-
-# 적극적 (빠른 복구 우선)
+# 공격적 (빠른 복구 우선)
 permit = Random(ratio=0.8)
 ```
 
-### RampUp을 선택하세요 {#choose-rampup}
+### `RampUp`은 언제 사용해야 하나요? {#choose-rampup}
 
-**적합한 경우:**
-
-- 점진적인 트래픽 증가 필요
-- 부하 급증 방지 중요
-- 외부 서비스 보호 필요
-
-**예시:** 외부 API, 데이터베이스, 부하에 민감한 서비스
+`RampUp`은 대부분의 프로덕션 환경에서 권장됩니다. 트래픽을 천천히 재도입하여 서비스가 캐시를 워밍업하고 연결을 재설정하며 스케일업할 시간을 제공함으로써 가장 안전한 복구 경로를 제공합니다.
 
 **권장 설정:**
 
@@ -152,43 +99,42 @@ permit = Random(ratio=0.8)
 # 보수적 복구
 permit = RampUp(initial=0.1, final=0.5, duration=120.0)
 
-# 균형적 복구
-permit = RampUp(initial=0.2, final=0.8, duration=60.0)
-
-# 적극적 복구
+# 공격적 복구
 permit = RampUp(initial=0.5, final=1.0, duration=30.0)
 ```
 
+---
+
 ## Retry와의 관계 {#relationship-with-retry}
 
-Permit과 Retry는 함께 작동하여 복구 전략을 결정합니다:
+`retry` 및 `permit`은 함께 작동하여 완전한 복구 프로세스를 정의합니다.
 
-- **Retry**: OPEN → HALF_OPEN 전환 시점 결정
-- **Permit**: HALF_OPEN 상태에서 호출 허용 비율 결정
+- **Retry**: Half Open 상태로의 전환 시점을 결정합니다.
+- **Permit**: Half Open 상태에서 요청의 허용 여부를 결정합니다.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
-# 재시도는 점진적으로, 허용은 천천히 증가
 cb = CircuitBreaker(
     name="api",
-    retry=Backoff(initial=10.0, multiplier=2.0, max_duration=300.0),
+    retry=Backoff(initial=10.0, multiplier=2.0),
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
     ...
 )
 ```
 
-**동작 흐름:**
+**복구 흐름은 다음과 같습니다:**
 
-1. Circuit이 OPEN 상태로 전환
-2. `Retry`가 대기 시간 결정 (예: 10초)
-3. 10초 후 HALF_OPEN으로 전환
-4. `Permit`이 호출 허용 여부 결정 (예: 시작 10%, 점진적 증가)
-5. 성공하면 CLOSED로, 실패하면 다시 OPEN으로
+1. `tripper` 조건이 충족되고 회로가 `OPEN` 상태로 전환됩니다.
+2. `retry`가 일정 시간 대기합니다. `Backoff(initial=10.0)`을 사용하면 10초 동안 기다립니다.
+3. 10초 후 회로가 `HALF_OPEN`으로 전환됩니다.
+4. 이제 `permit`이 동작합니다. 다음 60초 동안 허용되는 호출의 비율을 10%에서 80%까지 점진적으로 증가시킵니다.
+5. 이 시간 동안 `tripper`의해 실패로 판단되면 `OPEN`으로 다시 trip되고 `retry` 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).
+6. 성공하면 회로는 `CLOSED`로 다시 전환되고 정상 작동이 재개됩니다.
 
 ## 다음 단계 {#next-steps}
 
-- [Listeners](listeners/index.md) - Circuit 상태 변화 모니터링
-- [CircuitBreaker](../circuit-breaker.md) - 전체 설정 통합
+- [Listeners](listeners/index.md): 상태 변경을 모니터링하고 알림을 받습니다.
+- [Circuit Breaker 개요](../circuit-breaker.md): 모든 컴포넌트가 어떻게 함께 작동하는지 확인하세요.

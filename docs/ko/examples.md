@@ -1,12 +1,20 @@
-# Examples
+# 예제
 
-실제 사용 사례로 Fluxgate를 빠르게 시작하세요.
+이 페이지는 Fluxgate를 시작하는 데 도움이 되는 실용적인 실제 예제를 제공합니다.
 
-## 기본 사용법
+---
 
-### HTTP API 보호
+## 1. 외부 API 호출 보호
 
-외부 API 호출을 Circuit Breaker로 보호합니다.
+가장 일반적인 사용 사례입니다. 목표는 느리거나 실패하는 외부 서비스로부터 애플리케이션을 보호하는 것입니다.
+
+이 구성은 다음을 수행합니다.
+
+- 마지막 100개 호출에 대한 실패 추적 \( `CountWindow` \).
+- `httpx.HTTPError`를 실패로 간주 \( `TypeOf` \).
+- 최소 10개 호출이 있고 실패율이 50%를 초과하면 회로 트립 \( `MinRequests` , `FailureRate` \).
+- 복구 시도 전에 60초 대기 \( `Cooldown` \).
+- 복구 중 50%의 호출 허용 \( `Random` \).
 
 ```python
 import httpx
@@ -36,11 +44,11 @@ def charge_payment(amount: float):
     return response.json()
 ```
 
-## 비동기 사용법
+---
 
-### FastAPI 통합
+## 2. 웹 프레임워크와 통합 \(FastAPI\)
 
-FastAPI 엔드포인트에 Circuit Breaker를 적용합니다.
+웹 프레임워크와 통합할 때, 일반적으로 `CallNotPermittedError`를 잡아서 `503 Service Unavailable`과 같은 사용자 친화적인 오류 응답을 반환하고 싶을 것입니다.
 
 ```python
 from fastapi import FastAPI, HTTPException
@@ -50,289 +58,234 @@ from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import Closed, MinRequests, FailureRate
 from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 app = FastAPI()
 
-cb = AsyncCircuitBreaker(
-    name="external_api",
+# 중요한 외부 서비스를 위한 단일 circuit breaker.
+external_api_cb = AsyncCircuitBreaker(
+    name="external_product_api",
     window=CountWindow(size=100),
     tracker=TypeOf(httpx.HTTPError),
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
+    retry=Cooldown(duration=30.0),
 )
 
-@app.get("/data")
-async def get_data():
-    try:
-        @cb
-        async def fetch():
-            async with httpx.AsyncClient() as client:
-                response = await client.get("https://api.example.com/data")
-                response.raise_for_status()
-                return response.json()
+# 핵심 로직을 위한 별도의 함수가 좋은 관행입니다.
+@external_api_cb
+async def fetch_product_data(product_id: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"https://api.example.com/products/{product_id}")
+        response.raise_for_status()
+        return response.json()
 
-        return await fetch()
+@app.get("/products/{product_id}")
+async def get_product(product_id: str):
+    try:
+        data = await fetch_product_data(product_id)
+        return data
     except CallNotPermittedError:
-        raise HTTPException(status_code=503, detail="Service unavailable")
+        # 회로가 열려 있으므로 503 오류를 반환합니다.
+        raise HTTPException(
+            status_code=503,
+            detail="외부 제품 서비스를 현재 사용할 수 없습니다. 나중에 다시 시도하십시오."
+        )
+    except httpx.HTTPStatusError as e:
+        # 외부 서비스가 오류를 반환했습니다.
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))
 ```
 
-### 여러 Circuit Breaker 관리
+---
 
-서비스별로 독립적인 Circuit Breaker를 생성합니다.
+## 3. 서비스별로 다른 정책 적용
+
+서로 다른 외부 서비스에 대해 각각 자체적으로 조정된 정책을 가진 다른 circuit breaker를 사용하는 것이 일반적입니다. 결제와 같은 중요한 서비스는 인벤토리와 같은 덜 중요한 서비스보다 더 보수적인 구성을 가질 수 있습니다.
 
 ```python
 import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
+from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+from fluxgate.retries import Backoff
 
-# 서비스별 Circuit Breaker
+# 중요한 결제 서비스에 대한 더 보수적인 정책.
 payment_cb = AsyncCircuitBreaker(
     name="payment_service",
-    window=CountWindow(size=100),
+    window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
+    tripper=Closed() & MinRequests(20) & FailureRate(0.4),
+    retry=Backoff(initial=30.0, max_duration=600.0),
 )
 
+# 덜 중요한 인벤토리 서비스에 대한 더 공격적인 정책.
 inventory_cb = AsyncCircuitBreaker(
     name="inventory_service",
-    window=CountWindow(size=100),
+    window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.3),
-    retry=Cooldown(duration=30.0),
-    permit=Random(ratio=0.7),
+    tripper=Closed() & MinRequests(10) & FailureRate(0.6),
+    retry=Backoff(initial=10.0, max_duration=300.0),
 )
 
 @payment_cb
 async def charge_payment(amount: float):
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://payment.example.com/charge",
-            json={"amount": amount}
-        )
-        response.raise_for_status()
-        return response.json()
+    # ...
+    pass
 
 @inventory_cb
 async def check_inventory(product_id: str):
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"https://inventory.example.com/products/{product_id}"
-        )
-        response.raise_for_status()
-        return response.json()
+    # ...
+    pass
 ```
 
-## 고급 사용법
+---
 
-### 커스텀 에러 추적
+## 4. Fallback 처리
 
-특정 조건의 에러만 Circuit Breaker에서 추적합니다.
+호출이 차단되거나 실패하면 캐시된 데이터를 반환하는 것과 같은 대체 로직을 실행하는 경우가 많습니다. 이를 "폴백"이라고 합니다.
+
+### `fallback` 데코레이터 인자 사용 \(권장\)
+
+이것이 가장 깔끔한 접근 방식입니다. 보호된 함수가 **어떤** 예외를 발생시키든 제공된 함수가 자동으로 호출됩니다. 폴백 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 
 ```python
-import httpx
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import Custom
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+from fluxgate import CircuitBreaker, CallNotPermittedError
 
-# 5xx 에러와 네트워크 장애만 추적
-def is_server_error(e: Exception) -> bool:
-    if isinstance(e, httpx.HTTPStatusError):
-        return e.response.status_code >= 500
-    return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
+# 캐시에서 데이터를 가져오는 함수에 대한 플레이스홀더.
+def get_cached_data(e: Exception):
+    print(f"다음으로 인해 캐시된 데이터 반환: {type(e).__name__}")
+    return {"source": "cache"}
 
-cb = CircuitBreaker(
-    name="api_client",
-    window=CountWindow(size=100),
-    tracker=Custom(is_server_error),
-    tripper=Closed() & MinRequests(20) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-)
+# fetch_from_api가 예외를 발생시키는 경우에만 폴백이 호출됩니다.
+@cb(fallback=get_cached_data)
+def fetch_data_with_fallback() -> dict:
+    # ... 라이브 API에서 가져오는 로직 ...
+    raise httpx.ConnectError("연결 실패!")
+
+# 사용: 폴백이 자동으로 호출됩니다.
+result = fetch_data_with_fallback() # {"source": "cache"} 반환
 ```
 
-### 상태별 서로 다른 임계값
+### `call_with_fallback` 사용
 
-CLOSED와 HALF_OPEN 상태에서 다른 임계값을 적용합니다.
-
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import RampUp
-
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    # CLOSED: 60% 실패율, HALF_OPEN: 50% 실패율
-    tripper=MinRequests(20) & (
-        (Closed() & FailureRate(0.6)) |
-        (HalfOpened() & FailureRate(0.5))
-    ),
-    retry=Cooldown(duration=60.0),
-    # 점진적 트래픽 증가: 10% → 80% (60초)
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-)
-```
-
-### Fallback 처리 {#fallback}
-
-Circuit이 열렸을 때 대체 동작을 수행합니다. `fallback` 파라미터를 사용하면 예외 발생 시 자동으로 대체 함수가 호출됩니다.
-
-#### 데코레이터에서 fallback 사용
+데코레이터를 사용할 수 없을 때 유용합니다. `fallback` 인자와 동일하게 작동합니다.
 
 ```python
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+def fetch_from_api():
+    # ...
+    pass
 
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-)
-
-# fallback 함수는 예외를 인자로 받음
-def fallback_handler(e: Exception) -> dict:
-    if isinstance(e, ConnectionError):
-        return get_cached_data()
-    raise e  # 다른 예외는 재발생
-
-@cb(fallback=fallback_handler)
-def fetch_data() -> dict:
-    return fetch_from_api()
-
-# 사용: Circuit이 열려있거나 에러 발생 시 자동으로 fallback 호출
-result = fetch_data()
-```
-
-#### call_with_fallback 사용
-
-명시적으로 fallback을 지정하여 호출할 수도 있습니다.
-
-```python
-# 함수와 fallback을 함께 전달
+# fetch_from_api가 예외를 발생시키는 경우에만 폴백이 호출됩니다.
 result = cb.call_with_fallback(
     fetch_from_api,
-    lambda e: get_cached_data(),
-)
-
-# 인자가 있는 함수
-result = cb.call_with_fallback(
-    fetch_user_data,
-    lambda e: {"user_id": user_id, "cached": True},
-    user_id,  # 원본 함수에 전달될 인자
+    fallback_func=get_cached_data,
 )
 ```
 
-#### 비동기 fallback
+### 수동 `try...except`
 
-AsyncCircuitBreaker에서도 동일하게 사용합니다.
-
-```python
-from fluxgate import AsyncCircuitBreaker
-
-cb = AsyncCircuitBreaker(
-    name="async_api",
-    # ... 설정
-)
-
-@cb(fallback=lambda e: {"status": "fallback"})
-async def fetch_data() -> dict:
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://api.example.com/data")
-        return response.json()
-
-# 또는 call_with_fallback
-result = await cb.call_with_fallback(
-    fetch_from_api,
-    lambda e: get_cached_data(),
-)
-```
-
-#### 수동 try/except 방식 (기존 방식)
-
-fallback 없이 직접 예외를 처리할 수도 있습니다.
+최대한의 제어를 위해 표준 `try...except` 블록을 사용할 수 있습니다. 이는 최대한의 유연성을 제공하지만 더 장황합니다.
 
 ```python
 from fluxgate import CallNotPermittedError
 
 @cb
-def fetch():
-    return fetch_from_api()
+def fetch_data():
+    # ...
+    pass
 
 try:
-    result = fetch()
-except CallNotPermittedError:
-    # Circuit이 열려있을 때
-    result = get_cached_data()
-except ConnectionError:
-    # 연결 실패 시
-    result = get_cached_data()
+    result = fetch_data()
+except CallNotPermittedError as e:
+    # 이 블록은 회로가 열려 있을 때만 실행됩니다.
+    print("회로가 열렸습니다. 폴백을 반환합니다.")
+    result = get_cached_data(e)
+except httpx.HTTPError as e:
+    # 이 블록은 다른 특정 오류 발생 시 실행됩니다.
+    print(f"API 호출 실패: {e}, 폴백 반환.")
+    result = get_cached_data(e)
 ```
 
-### 팩토리 함수
+---
 
-엔드포인트별로 다른 정책의 Circuit Breaker를 생성합니다.
+## 5. 고급 구성 패턴
+
+### 사용자 정의 오류 추적
+
+`tracker`를 사용하면 실패로 간주되는 요소를 정확하게 정의할 수 있습니다. 예를 들어, 5xx 서버 오류를 추적하면서 4xx 클라이언트 오류는 무시할 수 있습니다.
 
 ```python
-from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate, SlowRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 import httpx
+from fluxgate.trackers import Custom
 
-def create_payment_circuit_breaker(
-    endpoint: str,
-    slow_threshold: float,
-    failure_rate: float = 0.5,
-    slow_rate: float = 0.5,
-) -> AsyncCircuitBreaker:
-    return AsyncCircuitBreaker(
-        name=f"payment_{endpoint}",
-        window=CountWindow(size=100),
-        tracker=TypeOf(httpx.HTTPError),
-        tripper=Closed() & MinRequests(10) & (
-            FailureRate(failure_rate) | SlowRate(slow_rate, slow_threshold)
-        ),
-        retry=Cooldown(duration=60.0),
-        permit=Random(ratio=0.5),
-    )
+# 이 함수는 추적하려는 오류에 대해서만 True를 반환합니다.
+def is_retriable_server_error(e: Exception) -> bool:
+    if isinstance(e, httpx.HTTPStatusError):
+        # 5xx 오류는 실패이지만, 4xx 오류는 실패가 아닙니다.
+        return e.response.status_code >= 500
+    # 또한 네트워크 오류도 추적합니다.
+    return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
-# 변수에 저장
-charge_cb = create_payment_circuit_breaker("charge", slow_threshold=2.0, failure_rate=0.3)
-refund_cb = create_payment_circuit_breaker("refund", slow_threshold=3.0, failure_rate=0.3)
-history_cb = create_payment_circuit_breaker("history", slow_threshold=0.5)
-
-# 또는 바로 데코레이터로 사용
-@create_payment_circuit_breaker("charge", slow_threshold=2.0, failure_rate=0.3)
-async def charge_payment(amount: float):
+cb = CircuitBreaker(
+    name="api_client",
+    tracker=Custom(is_retriable_server_error),
     ...
+)
+```
+
+### 상태별 다른 임계값
+
+`Closed()` 및 `HalfOpened()` Tripper를 사용하여 복구 시도에 대한 더 엄격한 규칙을 만들 수 있습니다.
+
+```python
+from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
+
+cb = CircuitBreaker(
+    name="api",
+    # CLOSED 및 HALF_OPEN 상태에 대해 다른 트립 조건을 사용합니다.
+    tripper=(
+        (Closed() & MinRequests(20) & FailureRate(0.6)) |
+        (HalfOpened() & MinRequests(5) & FailureRate(0.5)) # 더 엄격하게
+    ),
+    ...
+)
+```
+
+### 동적 생성을 위한 팩토리
+
+팩토리 함수는 코드를 반복하지 않고도 많은 유사한 circuit breaker를 생성하고 관리하기 위한 강력한 패턴입니다.
+
+```python
+from fluxgate import CircuitBreaker
+from fluxgate.retries import Cooldown
+from fluxgate.windows import CountWindow
+from fluxgate.trippers import MinRequests, FailureRate
+
+def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
+    """정의된 정책 이름에 따라 circuit breaker를 생성합니다."""
+    if policy == "strict":
+        return CircuitBreaker(
+            name=name,
+            window=CountWindow(100),
+            tripper=MinRequests(20) & FailureRate(0.4),
+            retry=Cooldown(60.0)
+        )
+    elif policy == "lenient":
+        return CircuitBreaker(
+            name=name,
+            window=CountWindow(50),
+            tripper=MinRequests(10) & FailureRate(0.7),
+            retry=Cooldown(30.0)
+        )
+    else:
+        raise ValueError(f"알 수 없는 정책: {policy}")
+
+# 즉시 브레이커 생성
+checkout_cb = circuit_breaker_factory("checkout", "strict")
+recommendation_cb = circuit_breaker_factory("recommendations", "lenient")
 ```
 
 ## 다음 단계
 
-- [Components](components/index.md) - 상세 컴포넌트 문서
-- [Listeners](components/listeners/index.md) - 모니터링 및 알림 설정
-- [API Reference](api/core.md) - 전체 API 문서
+- [컴포넌트 개요](components/index.md): 각 컴포넌트에 대해 더 깊이 알아보세요.
+- [Listener 개요](components/listeners/index.md): circuit breaker를 모니터링하는 방법을 배우세요.
+- [API 레퍼런스](api/core.md): 전체 API 문서를 살펴보세요.

@@ -1,21 +1,24 @@
 # Trackers
 
-Trackers determine whether raised exceptions should be recorded as failures by the circuit breaker. All exceptions propagate to the caller, but only recorded exceptions affect metrics.
+Trackers are crucial for defining what a "failure" means for your service. While all exceptions are propagated to the caller, a tracker decides which ones should actually count against your error budget and contribute to tripping the circuit breaker. This allows you to distinguish between expected errors (like a 404 Not Found) and actual failures (like a 500 Internal Server Error).
 
-| Tracker Type | Matching | Use Case |
-|--------------|----------|----------|
-| **All** | All exceptions | Track all failures |
-| **TypeOf** | Exception type | Track specific exceptions |
-| **Custom** | Custom function | Complex conditions |
+| Tracker Type | Matches Based On... | Best For... |
+|---|---|---|
+| **All** | Any exception | Simple cases where any exception is a failure. |
+| **TypeOf** | The exception's type | When failures can be identified by their type (e.g., `ConnectionError`). |
+| **Custom** | A user-defined function | When you need to inspect an exception's content (e.g., an HTTP status code). |
+
+---
 
 ## All
 
-Tracks all exceptions as failures.
+This is the simplest tracker. It counts every exception as a failure.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trackers import All
 
+# Any exception raised by the decorated function will be tracked as a failure.
 cb = CircuitBreaker(
     name="api",
     tracker=All(),
@@ -23,15 +26,18 @@ cb = CircuitBreaker(
 )
 ```
 
+---
+
 ## TypeOf
 
-Tracks only exceptions of specific types.
+This tracker checks if an exception is an instance of one or more specified types. It's perfect for tracking known, common failure classes.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trackers import TypeOf
 
-# Track only network-related exceptions
+# Track only network-related exceptions as failures.
+# Other exceptions (e.g., ValueError) will be ignored by the breaker.
 cb = CircuitBreaker(
     name="external_api",
     tracker=TypeOf(ConnectionError, TimeoutError),
@@ -39,18 +45,22 @@ cb = CircuitBreaker(
 )
 ```
 
+---
+
 ## Custom
 
-Uses custom function to determine exceptions.
+For maximum flexibility, `Custom` lets you provide your own function to inspect the exception and decide if it's a failure. This is essential for cases where you need to check an exception's attributes, such as an HTTP status code.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trackers import Custom
 import httpx
 
-# Track only HTTP 5xx errors
+# Only count 5xx server errors as failures. Client errors (4xx) will be ignored.
 def is_server_error(e: Exception) -> bool:
-    return isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500
+    if isinstance(e, httpx.HTTPStatusError):
+        return e.response.status_code >= 500
+    return False
 
 cb = CircuitBreaker(
     name="http_api",
@@ -59,101 +69,105 @@ cb = CircuitBreaker(
 )
 ```
 
-## Logical Operators {#operators}
+---
 
-Trackers can be combined with logical operators.
+## Combining Trackers with Logical Operators {#operators}
 
-### AND (`&`) - Both Conditions
+The real power of trackers comes from combining them with logical operators (`&`, `|`, `~`) to create precise failure-detection rules.
+
+### AND (`&`)
+
+Use the `&` operator to create a tracker that matches only if **both** conditions are true.
 
 ```python
-from fluxgate.trackers import TypeOf
+from fluxgate.trackers import TypeOf, Custom
 
-# ConnectionError AND contains specific message
+# Track ConnectionError exceptions that also contain the word "timeout".
 tracker = (
     TypeOf(ConnectionError) &
     Custom(lambda e: "timeout" in str(e).lower())
 )
 ```
 
-### OR (`|`) - Either Condition
+### OR (`|`)
+
+Use the `|` operator to create a tracker that matches if **either** condition is true.
 
 ```python
 from fluxgate.trackers import TypeOf
 
-# ConnectionError OR TimeoutError
+# Track either a ConnectionError OR a TimeoutError.
 tracker = TypeOf(ConnectionError) | TypeOf(TimeoutError)
 
-# Or specify at once
+# This is equivalent to passing multiple types to TypeOf directly.
 tracker = TypeOf(ConnectionError, TimeoutError)
 ```
 
-### NOT (`~`) - Invert Condition
+### NOT (`~`)
 
-```python
-from fluxgate.trackers import Custom
-import httpx
-
-# HTTP errors excluding 4xx (track only 5xx)
-is_4xx = lambda e: isinstance(e, httpx.HTTPStatusError) and 400 <= e.response.status_code < 500
-tracker = TypeOf(httpx.HTTPStatusError) & ~Custom(is_4xx)
-```
-
-### Complex Combinations
+Use the `~` operator to **invert** a condition, excluding certain errors.
 
 ```python
 from fluxgate.trackers import TypeOf, Custom
 import httpx
 
-# (Network errors OR 5xx errors) AND retriable
-network_errors = TypeOf(ConnectionError, TimeoutError)
-server_errors = Custom(lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500)
-not_auth_error = ~Custom(lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 401)
-
-tracker = (network_errors | server_errors) & not_auth_error
+# Ignore 4xx client errors, but track all other HTTPStatusError exceptions (e.g., 5xx).
+is_4xx_error = Custom(lambda e: isinstance(e, httpx.HTTPStatusError) and 400 <= e.response.status_code < 500)
+tracker = TypeOf(httpx.HTTPStatusError) & ~is_4xx_error
 ```
 
-## Choosing a Tracker {#choosing-a-tracker}
+### Complex Example
+
+You can combine these operators to build sophisticated rules.
+
+```python
+from fluxgate.trackers import TypeOf, Custom
+import httpx
+
+# This tracker counts an exception as a failure if:
+# 1. It is a network error (ConnectionError or TimeoutError), OR
+# 2. It is a 5xx server error, AND
+# 3. It is NOT a 401 Unauthorized error (which we might handle differently).
+
+network_errors = TypeOf(ConnectionError, TimeoutError)
+server_errors = Custom(lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500)
+is_auth_error = Custom(lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 401)
+
+tracker = (network_errors | server_errors) & ~is_auth_error
+```
+
+---
+
+## Choosing the Right Tracker
 
 ### Comparison {#comparison}
 
 | Feature | All | TypeOf | Custom |
-|---------|-----|--------|--------|
-| **Simplicity** | Simplest | Simple | Requires function |
+|---|---|---|---|
+| **Simplicity** | Dead simple | Simple | Requires a custom function |
 | **Flexibility** | Low | Medium | High |
-| **Performance** | O(1) | O(1) | Depends on function |
-| **Use Case** | Track all failures | Track by type | Complex conditions |
+| **Performance** | Excellent (O(1)) | Excellent (O(1)) | Depends on your function |
+| **Primary Use** | Track everything | Track specific types | Inspect exception contents |
 
-### Choose All {#choose-all}
+### When should I use `All`? {#choose-all}
 
-**Best for:**
+`All` is best when any exception indicates a genuine failure. It's often combined with `~` to exclude a few specific, expected exceptions.
 
-- Treating all exceptions as failures
-- Simple error handling
-- Excluding specific exceptions (with logical operators)
+- **Use case**: Protecting an internal service where any error is considered critical.
 
-**Examples:** Simple internal services, all errors are critical
+### When should I use `TypeOf`? {#choose-typeof}
 
-### Choose TypeOf {#choose-typeof}
+`TypeOf` is the most common choice for tracking failures from external services where you can anticipate the kinds of errors that occur.
 
-**Best for:**
+- **Use case**: Calling an external API where you expect `TimeoutError` or `ConnectionError`.
 
-- Tracking specific exception types
-- Predictable errors like network, timeout
-- Failures classifiable by type
+### When should I use `Custom`? {#choose-custom}
 
-**Examples:** External API calls, network-dependent services
+`Custom` is necessary when you need to look inside an exception to decide if it's a failure.
 
-### Choose Custom {#choose-custom}
-
-**Best for:**
-
-- HTTP status code-based matching
-- Inspecting exception messages or attributes
-- Complex business logic
-
-**Examples:** HTTP APIs, conditional retries, fine-grained error classification
+- **Use case**: Checking the status code of an `httpx.HTTPStatusError` to distinguish between client errors (4xx) and server errors (5xx).
 
 ## Next Steps {#next-steps}
 
-- [Trippers](trippers.md) - Control circuit based on metrics collected by trackers
-- [Windows](windows.md) - Determine failure tracking approach
+- [Windows](windows.md): Learn how call history is stored.
+- [Trippers](trippers.md): Use the metrics gathered by trackers to build tripping logic.

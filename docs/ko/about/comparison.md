@@ -1,141 +1,137 @@
-# 다른 라이브러리와 비교
+# 다른 라이브러리와의 비교
 
-이 페이지에서는 Fluxgate와 다른 Python circuit breaker 라이브러리를 비교하여 상황에 맞는 선택을 돕습니다.
-
-## 개요
-
-| 라이브러리 | Python | License |
-|-----------|--------|---------|
-| [![circuitbreaker](https://img.shields.io/github/stars/fabfuel/circuitbreaker?label=circuitbreaker&logo=github)](https://github.com/fabfuel/circuitbreaker) | ![Python](https://img.shields.io/pypi/pyversions/circuitbreaker) | ![License](https://img.shields.io/github/license/fabfuel/circuitbreaker) |
-| [![pybreaker](https://img.shields.io/github/stars/danielfm/pybreaker?label=pybreaker&logo=github)](https://github.com/danielfm/pybreaker) | ![Python](https://img.shields.io/pypi/pyversions/pybreaker) | ![License](https://img.shields.io/github/license/danielfm/pybreaker) |
-| [![aiobreaker](https://img.shields.io/github/stars/arlyon/aiobreaker?label=aiobreaker&logo=github)](https://github.com/arlyon/aiobreaker) | ![Python](https://img.shields.io/pypi/pyversions/aiobreaker) | ![License](https://img.shields.io/github/license/arlyon/aiobreaker) |
-| [![pycircuitbreaker](https://img.shields.io/github/stars/etimberg/pycircuitbreaker?label=pycircuitbreaker&logo=github)](https://github.com/etimberg/pycircuitbreaker) | ![Python](https://img.shields.io/pypi/pyversions/pycircuitbreaker) | ![License](https://img.shields.io/github/license/etimberg/pycircuitbreaker) |
+이 페이지는 Fluxgate와 다른 인기 있는 Python Circuit Breaker 라이브러리를 공정하게 비교합니다. 목표는 다양한 설계 철학과 기능을 강조하여 특정 요구에 가장 적합한 도구를 선택하는 데 도움을 드리는 것입니다.
 
 ## 기능 비교
 
 | 기능 | Fluxgate | circuitbreaker | pybreaker | aiobreaker |
-|-----|:--------:|:--------------:|:---------:|:----------:|
-| **동기 지원** | Yes | Yes | Yes | No |
-| **비동기 지원** | Yes (asyncio) | Yes | Tornado만 | Yes (asyncio) |
-| **트리거 조건** | 실패율 | 연속 실패 | 연속 실패 | 연속 실패 |
-| **슬라이딩 윈도우** | Yes (Count/Time) | No | No | No |
-| **조합 가능한 조건** | Yes (`&`, `\|`) | No | No | No |
-| **지연시간 기반 트리거** | Yes (AvgLatency, SlowRate) | No | No | No |
-| **Fallback** | Yes | Yes | No | No |
-| **Redis 저장소** | No | No | Yes | Yes |
-| **리스너/모니터링** | Yes (Log, Prometheus, Slack) | Yes (Monitor) | Yes | Yes |
-| **타입 힌트** | 완전 | 부분 | 부분 | 부분 |
-| **HALF_OPEN 제어** | Yes (Permit) | 1회 테스트 | success_threshold | 1회 테스트 |
+|---|:---:|:---:|:---:|:---:|
+| **비동기 지원** | ✅ | ✅ | \(Tornado만\) | ✅ |
+| **주요 트립 로직** | 실패율 | 연속 실패 | 연속 실패 | 연속 실패 |
+| **슬라이딩 윈도우** | ✅ \(카운트 또는 시간\) | ❌ | ❌ | ❌ |
+| **지연 기반 트립** | ✅ \(`AvgLatency`, `SlowRate`\) | ❌ | ❌ | ❌ |
+| **조합 가능한 규칙 (&, \|)** | ✅ | ❌ | ❌ | ❌ |
+| **점진적 복구 \(`RampUp`\)**| ✅ | ❌ | ❌ | ❌ |
+| **상태 Listener** | ✅ | ✅ | ✅ | ✅ |
+| **내장 모니터링** | ✅ \(Prometheus, Slack\) | ❌ | ❌ | ❌ |
+| **외부 상태 저장소** | ❌ | ❌ | ✅ \(Redis\) | ✅ \(Redis\) |
+| **타입 힌트 \(PEP 484\)** | ✅ \(완벽\) | ❌ \(부분\) | ❌ \(부분\) | ❌ \(부분\) |
+
+---
 
 ## 주요 차이점
 
-### 트리거 조건
+### 1. 더 견고한 트립 로직
 
-대부분의 circuit breaker 라이브러리는 **연속 실패 횟수**를 사용합니다:
+대부분의 라이브러리는 간단한 **연속 실패 횟수**를 기반으로 트립됩니다. 이는 깨지기 쉬울 수 있습니다. 서비스가 여전히 비정상 상태이더라도 단 한 번의 성공적인 호출로 카운터가 0으로 재설정될 수 있습니다.
 
-```python
-# circuitbreaker / pybreaker
-# 5회 연속 실패 후 OPEN
-@circuit(failure_threshold=5)
-def call_api():
-    ...
-```
+Fluxgate는 **슬라이딩 윈도우를 통한 실패율**을 사용하며, 이는 서비스 상태를 훨씬 더 정확하고 안정적으로 평가할 수 있습니다.
 
-Fluxgate는 **슬라이딩 윈도우 내 실패율**을 사용합니다:
+- **다른 라이브러리:**
 
-```python
-# Fluxgate
-# 최근 100개 호출 중 실패율 50% 초과 시 OPEN
-cb = CircuitBreaker(
-    window=CountWindow(size=100),
-    tripper=MinRequests(10) & FailureRate(0.5),
-    ...
-)
-```
+    ```python
+    # 5번 연속 실패 후 열립니다.
+    @circuit(failure_threshold=5)
+    def call_api(): ...
+    ```
 
-이 접근 방식의 장점:
+- **Fluxgate:**
 
-- 단 한 번의 성공으로 실패 카운트가 리셋되지 않음
-- 간헐적 실패를 더 잘 처리
-- 더 정확한 서비스 상태 평가
+    ```python
+    # 지난 100개 호출에서 실패율이 50%를 초과하면 열립니다.
+    cb = CircuitBreaker(
+        window=CountWindow(size=100),
+        tripper=MinRequests(10) & FailureRate(0.5),
+    )
+    ```
 
-### 조합 가능한 조건
+### 2. 조합 가능하고 유연한 규칙
 
-Fluxgate는 논리 연산자로 여러 조건을 조합할 수 있습니다:
+Fluxgate는 간단한 컴포넌트를 논리 연산자(`&`, `|`)와 결합하여 정교하고 세분화된 규칙을 구축할 수 있도록 합니다. 다른 라이브러리는 일반적으로 단일 조건만 지원합니다.
 
-```python
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
+- **다른 라이브러리:** 단일 임계값.
+- **Fluxgate:**
 
-# 상태별로 다른 임계값 적용
-tripper = MinRequests(10) & (
-    (Closed() & FailureRate(0.5)) |
-    (HalfOpened() & FailureRate(0.3))
-)
+    ```python
+    from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
 
-# 여러 트리거 조건 조합
-tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
-```
+    # 다른 상태에 대해 다른 규칙을 사용합니다.
+    tripper = (
+        (Closed() & MinRequests(10) & FailureRate(0.5)) |
+        (HalfOpened() & MinRequests(5) & FailureRate(0.3))
+    )
 
-### 지연시간 기반 트리거
+    # 높은 실패율 또는 높은 느린 호출율에서 트립됩니다.
+    tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
+    ```
 
-Fluxgate는 에러뿐만 아니라 응답 시간을 기반으로도 circuit을 열 수 있습니다:
+### 3. 지연 기반 트립
 
-```python
-from fluxgate.trippers import AvgLatency, SlowRate
+Fluxgate는 예외뿐만 아니라 응답 시간을 기반으로 트립할 수 있습니다. 이는 서비스 "Brown-out"(서비스가 느리지만 실패하지는 않는 경우)을 감지하는 데 중요합니다.
 
-# 평균 지연시간 2초 초과 시 OPEN
-tripper = MinRequests(10) & AvgLatency(2.0)
+- **다른 라이브러리:** 예외에만 반응할 수 있습니다.
+- **Fluxgate:**
 
-# 느린 호출(1초 초과)이 30% 이상이면 OPEN
-cb = CircuitBreaker(
-    tripper=MinRequests(10) & SlowRate(0.3),
-    slow_threshold=1.0,  # 1초
-    ...
-)
-```
+    ```python
+    from fluxgate.trippers import AvgLatency, SlowRate
 
-### 점진적 복구
+    # 평균 지연 시간이 2초를 초과하면 트립됩니다.
+    tripper = MinRequests(10) & AvgLatency(2.0)
 
-Fluxgate는 HALF_OPEN 상태에서 세밀한 복구 제어를 제공합니다:
+    # 호출의 30% 이상이 1초보다 느리면 트립됩니다.
+    cb = CircuitBreaker(
+        tripper=MinRequests(10) & SlowRate(0.3),
+        slow_threshold=1.0,
+    )
+    ```
 
-```python
-from fluxgate.permits import RampUp
+### 4. 점진적 복구
 
-# 60초에 걸쳐 트래픽을 10%에서 80%로 점진적 증가
-cb = CircuitBreaker(
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-    ...
-)
-```
+서비스가 복구 중일 때는 과부하를 피하기 위해 트래픽을 점진적으로 재도입해야 합니다. Fluxgate는 이를 위해 `RampUp`을 제공합니다. 다른 라이브러리는 일반적으로 한 번에 하나의 테스트 호출만 허용합니다.
 
-## 라이브러리 선택 가이드
+- **다른 라이브러리:** 하나의 호출을 허용하고, 성공하면 회로를 닫습니다.
+- **Fluxgate:**
 
-### Fluxgate를 선택하세요
+    ```python
+    from fluxgate.permits import RampUp
 
-- 연속 실패가 아닌 실패율 기반 트리거가 필요할 때
-- 지연시간 기반 circuit breaking이 필요할 때
-- 복잡한 트리거 조건을 조합해야 할 때
-- 현대적인 asyncio 애플리케이션을 구축할 때
-- 완전한 타입 힌트와 IDE 지원이 중요할 때
+    # 60초 동안 트래픽을 10%에서 80%로 점진적으로 증가시킵니다.
+    cb = CircuitBreaker(
+        permit=RampUp(initial=0.1, final=0.8, duration=60.0),
+        ...
+    )
+    ```
 
-### circuitbreaker를 선택하세요
+---
 
-- 간단하고 검증된 솔루션이 필요할 때
-- 연속 실패 카운팅으로 충분할 때
-- 최소한의 설정을 원할 때
+## 각 라이브러리를 선택하는 경우
 
-### pybreaker를 선택하세요
+### `Fluxgate`를 선택해야 하는 경우
 
-- 분산 상태를 위한 Redis 저장소가 필요할 때
-- Tornado로 비동기를 사용할 때
-- `success_threshold` 기능이 필요할 때
+가장 강력하고 프로덕션 준비가 된 기능 세트가 필요합니다.
 
-### aiobreaker를 선택하세요
+- **연속 실패**가 아닌 **실패율** 또는 **지연 시간**을 기반으로 트리거하고 싶습니다.
+- **복잡하고 조합 가능한 규칙**(예: 다른 상태에 대한 다른 임계값)이 필요합니다.
+- 복구 중에 트래픽을 **점진적으로 증가**시키고 싶습니다.
+- 현대적인 **asyncio** 애플리케이션을 구축 중입니다.
+- 더 나은 개발자 경험을 위해 완전히 **타입 힌트**된 API를 중요하게 생각합니다.
 
-- asyncio와 함께 Redis 저장소가 필요할 때
-- pybreaker의 기능 세트로 충분할 때
+### `circuitbreaker`를 선택해야 하는 경우?
 
-## 참고
+기본적인 사용 사례에 대한 간단하고 안정적이며 널리 사용되는 라이브러리가 필요합니다.
 
-- [Circuit Breaker](../circuit-breaker.md) - 핵심 개념과 사용법
-- [컴포넌트](../components/index.md) - 상세 컴포넌트 문서
+- **연속 실패** 기반의 트리거가 요구 사항을 충족합니다.
+- 단순성과 최소한의 구성을 중요하게 생각합니다.
+
+### `pybreaker` 또는 `aiobreaker`를 선택해야 하는 경우?
+
+여러 프로세스나 서버 간에 **Circuit Breaker 상태를 공유**해야 하는 엄격한 요구 사항이 있습니다.
+
+- 아키텍처에 분산 상태 저장소(Redis)가 필요합니다.
+- `pybreaker`는 스레드 또는 Tornado 기반 애플리케이션에 적합합니다.
+- `aiobreaker`는 `pybreaker`의 `asyncio` 버전입니다.
+
+## 함께 보기
+
+- [설계 및 영감](design.md): Fluxgate의 철학에 대해 알아보세요.
+- [컴포넌트 개요](../components/index.md): 이러한 기능을 가능하게 하는 컴포넌트에 대해 자세히 알아보세요.

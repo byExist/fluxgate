@@ -1,17 +1,19 @@
-# 릴리스 노트
+# 변경 기록
 
-## 0.1.1
+이 프로젝트의 모든 변경 사항은 이 파일에 문서화됩니다.
 
-최초 릴리스.
+## [0.1.1] - 2025.12.01
 
-### Features
+Fluxgate의 초기 공개 릴리스입니다.
 
-- ✨ 동기/비동기 지원을 위한 `CircuitBreaker`, `AsyncCircuitBreaker` 추가.
-- ✨ 슬라이딩 윈도우 추가: `CountWindow` (개수 기반), `TimeWindow` (시간 기반).
-- ✨ `&`, `|`, `~` 연산자로 조합 가능한 트래커 추가: `All`, `TypeOf`, `Custom`.
-- ✨ `&`, `|` 연산자로 조합 가능한 트리퍼 추가: `Closed`, `HalfOpened`, `MinRequests`, `FailureRate`, `AvgLatency`, `SlowRate`.
-- ✨ 재시도 전략 추가: `Never`, `Always`, `Cooldown`, `Backoff`.
-- ✨ 허용 전략 추가: `Random`, `RampUp`.
-- ✨ 모니터링을 위한 리스너 추가: `LogListener`, `PrometheusListener`, `SlackListener`.
-- ✨ 수동 제어 메서드 추가: `disable()`, `enable()`, `force_open()`, `reset()`.
-- ✨ `py.typed` 마커와 함께 완전한 타입 힌트 지원.
+### 기능
+
+- ✨ **핵심**: `CircuitBreaker` 및 `AsyncCircuitBreaker`의 초기 구현.
+- ✨ **Window**: 슬라이딩 윈도우 (`CountWindow`, `TimeWindow`).
+- ✨ **Tracker**: `&`, `|`, `~` 연산자를 사용한 조합 가능한 실패 Tracker (`All`, `TypeOf`, `Custom`).
+- ✨ **Tripper**: `&` 및 `|` 연산자를 사용한 조합 가능한 트립 조건 (`Closed`, `HalfOpened`, `MinRequests`, `FailureRate`, `AvgLatency`, `SlowRate`).
+- ✨ **Retry**: 복구 (`Never`, `Always`, `Cooldown`, `Backoff`).
+- ✨ **Permit**: 점진적 복구 (`Random`, `RampUp`).
+- ✨ **Listener**: 내장 모니터링 및 알림 통합 (`LogListener`, `PrometheusListener`, `SlackListener`).
+- ✨ **수동 제어**: 수동 개입을 위한 메서드 (`disable`, `metrics_only`, `force_open`, `reset`).
+- ✨ **타이핑**: 뛰어난 IDE 지원을 위한 전체 타입 힌트 및 `py.typed` 준수.

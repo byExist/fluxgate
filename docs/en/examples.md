@@ -1,12 +1,20 @@
 # Examples
 
-Get started quickly with real-world use cases.
+This page provides practical, real-world examples to help you get started with Fluxgate.
 
-## Basic Usage
+---
 
-### HTTP API Protection
+## 1. Protecting an External API Call
 
-Protect external API calls with a circuit breaker.
+This is the most common use case. The goal is to protect our application from a slow or failing external service.
+
+This configuration will:
+
+- Track failures over the last 100 calls (`CountWindow`).
+- Consider any `httpx.HTTPError` as a failure (`TypeOf`).
+- Trip the circuit if there are at least 10 calls and the failure rate exceeds 50% (`MinRequests`, `FailureRate`).
+- Wait for 60 seconds before attempting recovery (`Cooldown`).
+- Allow 50% of calls through during recovery (`Random`).
 
 ```python
 import httpx
@@ -36,11 +44,11 @@ def charge_payment(amount: float):
     return response.json()
 ```
 
-## Async Usage
+---
 
-### FastAPI Integration
+## 2. Integrating with a Web Framework (FastAPI)
 
-Apply circuit breakers to FastAPI endpoints.
+When integrating with a web framework, you typically want to catch a `CallNotPermittedError` and return a user-friendly error response, like a `503 Service Unavailable`.
 
 ```python
 from fastapi import FastAPI, HTTPException
@@ -50,289 +58,234 @@ from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import Closed, MinRequests, FailureRate
 from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 app = FastAPI()
 
-cb = AsyncCircuitBreaker(
-    name="external_api",
+# A single circuit breaker for a critical external service.
+external_api_cb = AsyncCircuitBreaker(
+    name="external_product_api",
     window=CountWindow(size=100),
     tracker=TypeOf(httpx.HTTPError),
     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
+    retry=Cooldown(duration=30.0),
 )
 
-@app.get("/data")
-async def get_data():
-    try:
-        @cb
-        async def fetch():
-            async with httpx.AsyncClient() as client:
-                response = await client.get("https://api.example.com/data")
-                response.raise_for_status()
-                return response.json()
+# A separate function for your core logic is a good practice.
+@external_api_cb
+async def fetch_product_data(product_id: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"https://api.example.com/products/{product_id}")
+        response.raise_for_status()
+        return response.json()
 
-        return await fetch()
+@app.get("/products/{product_id}")
+async def get_product(product_id: str):
+    try:
+        data = await fetch_product_data(product_id)
+        return data
     except CallNotPermittedError:
-        raise HTTPException(status_code=503, detail="Service unavailable")
+        # The circuit is open, return a 503 error.
+        raise HTTPException(
+            status_code=503,
+            detail="The external product service is currently unavailable. Please try again later."
+        )
+    except httpx.HTTPStatusError as e:
+        # The external service returned an error.
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))
 ```
 
-### Multiple Circuit Breakers
+---
 
-Create independent circuit breakers for each service.
+## 3. Applying Different Policies per Service
+
+It's common to have different circuit breakers for different external services, each with its own tailored policy. A high-criticality service like payments might have a more conservative configuration than a less critical one like inventory.
 
 ```python
 import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
+from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+from fluxgate.retries import Backoff
 
-# Per-service circuit breakers
+# More conservative policy for the critical payment service.
 payment_cb = AsyncCircuitBreaker(
     name="payment_service",
-    window=CountWindow(size=100),
+    window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
+    tripper=Closed() & MinRequests(20) & FailureRate(0.4),
+    retry=Backoff(initial=30.0, max_duration=600.0),
 )
 
+# More aggressive policy for the less critical inventory service.
 inventory_cb = AsyncCircuitBreaker(
     name="inventory_service",
-    window=CountWindow(size=100),
+    window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.3),
-    retry=Cooldown(duration=30.0),
-    permit=Random(ratio=0.7),
+    tripper=Closed() & MinRequests(10) & FailureRate(0.6),
+    retry=Backoff(initial=10.0, max_duration=300.0),
 )
 
 @payment_cb
 async def charge_payment(amount: float):
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://payment.example.com/charge",
-            json={"amount": amount}
-        )
-        response.raise_for_status()
-        return response.json()
+    # ...
+    pass
 
 @inventory_cb
 async def check_inventory(product_id: str):
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"https://inventory.example.com/products/{product_id}"
-        )
-        response.raise_for_status()
-        return response.json()
+    # ...
+    pass
 ```
 
-## Advanced Usage
+---
 
-### Custom Error Tracking
+## 4. Handling Fallbacks
 
-Track only specific types of errors in the circuit breaker.
+When a call is blocked or fails, you often want to execute alternative logic, such as returning cached data. This is known as a "fallback".
+
+### Using the `fallback` Decorator Argument (Recommended)
+
+This is the cleanest approach. The provided function is called automatically whenever the protected function raises **any** exception. Your fallback function receives the exception instance, so you can decide how to handle it.
 
 ```python
-import httpx
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import Custom
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+from fluxgate import CircuitBreaker, CallNotPermittedError
 
-# Track only 5xx errors and network failures
-def is_server_error(e: Exception) -> bool:
-    if isinstance(e, httpx.HTTPStatusError):
-        return e.response.status_code >= 500
-    return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
+# Placeholder for a function that gets data from a cache.
+def get_cached_data(e: Exception):
+    print(f"Returning cached data due to: {type(e).__name__}")
+    return {"source": "cache"}
 
-cb = CircuitBreaker(
-    name="api_client",
-    window=CountWindow(size=100),
-    tracker=Custom(is_server_error),
-    tripper=Closed() & MinRequests(20) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-)
+# The fallback is only called if fetch_from_api raises an exception.
+@cb(fallback=get_cached_data)
+def fetch_data_with_fallback() -> dict:
+    # ... logic to fetch from the live API ...
+    raise httpx.ConnectError("Connection failed!")
+
+# Usage: The fallback is invoked automatically.
+result = fetch_data_with_fallback() # Returns {"source": "cache"}
 ```
 
-### Different Thresholds Per State
+### Using `call_with_fallback`
 
-Apply different thresholds for CLOSED and HALF_OPEN states.
-
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import RampUp
-
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    # CLOSED: 60% failure rate, HALF_OPEN: 50% failure rate
-    tripper=MinRequests(20) & (
-        (Closed() & FailureRate(0.6)) |
-        (HalfOpened() & FailureRate(0.5))
-    ),
-    retry=Cooldown(duration=60.0),
-    # Gradual traffic increase: 10% � 80% over 60s
-    permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-)
-```
-
-### Fallback Handling
-
-Perform alternative actions when exceptions occur. Using the `fallback` parameter, a fallback function is automatically called on any exception.
-
-#### Using fallback with decorator
+This is useful when you can't use a decorator. It works just like the `fallback` argument.
 
 ```python
-from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
+def fetch_from_api():
+    # ...
+    pass
 
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-)
-
-# Fallback function receives the exception as argument
-def fallback_handler(e: Exception) -> dict:
-    if isinstance(e, ConnectionError):
-        return get_cached_data()
-    raise e  # Re-raise other exceptions
-
-@cb(fallback=fallback_handler)
-def fetch_data() -> dict:
-    return fetch_from_api()
-
-# Usage: Fallback is automatically called on circuit open or error
-result = fetch_data()
-```
-
-#### Using call_with_fallback
-
-You can also explicitly specify a fallback when calling.
-
-```python
-# Pass function and fallback together
+# The fallback is only called if fetch_from_api raises an exception.
 result = cb.call_with_fallback(
     fetch_from_api,
-    lambda e: get_cached_data(),
-)
-
-# With arguments
-result = cb.call_with_fallback(
-    fetch_user_data,
-    lambda e: {"user_id": user_id, "cached": True},
-    user_id,  # Arguments passed to the original function
+    fallback_func=get_cached_data,
 )
 ```
 
-#### Async fallback
+### Manual `try...except`
 
-AsyncCircuitBreaker works the same way.
-
-```python
-from fluxgate import AsyncCircuitBreaker
-
-cb = AsyncCircuitBreaker(
-    name="async_api",
-    # ... configuration
-)
-
-@cb(fallback=lambda e: {"status": "fallback"})
-async def fetch_data() -> dict:
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://api.example.com/data")
-        return response.json()
-
-# Or use call_with_fallback
-result = await cb.call_with_fallback(
-    fetch_from_api,
-    lambda e: get_cached_data(),
-)
-```
-
-#### Manual try/except (legacy approach)
-
-You can also handle exceptions directly without fallback.
+For maximum control, you can use a standard `try...except` block. This gives you the most flexibility but is also more verbose.
 
 ```python
 from fluxgate import CallNotPermittedError
 
 @cb
-def fetch():
-    return fetch_from_api()
+def fetch_data():
+    # ...
+    pass
 
 try:
-    result = fetch()
-except CallNotPermittedError:
-    # When circuit is open
-    result = get_cached_data()
-except ConnectionError:
-    # On connection failure
-    result = get_cached_data()
+    result = fetch_data()
+except CallNotPermittedError as e:
+    # This block executes ONLY when the circuit is open.
+    print("Circuit is open, returning fallback.")
+    result = get_cached_data(e)
+except httpx.HTTPError as e:
+    # This block executes on other specific errors.
+    print(f"API call failed: {e}, returning fallback.")
+    result = get_cached_data(e)
 ```
 
-### Factory Function
+---
 
-Create circuit breakers with different policies per endpoint.
+## 5. Advanced Configuration Patterns
+
+### Custom Error Tracking
+
+A `tracker` lets you define precisely what counts as a failure. For example, you can ignore 4xx client errors while tracking 5xx server errors.
 
 ```python
-from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate, SlowRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 import httpx
+from fluxgate.trackers import Custom
 
-def create_payment_circuit_breaker(
-    endpoint: str,
-    slow_threshold: float,
-    failure_rate: float = 0.5,
-    slow_rate: float = 0.5,
-) -> AsyncCircuitBreaker:
-    return AsyncCircuitBreaker(
-        name=f"payment_{endpoint}",
-        window=CountWindow(size=100),
-        tracker=TypeOf(httpx.HTTPError),
-        tripper=Closed() & MinRequests(10) & (
-            FailureRate(failure_rate) | SlowRate(slow_rate, slow_threshold)
-        ),
-        retry=Cooldown(duration=60.0),
-        permit=Random(ratio=0.5),
-    )
+# This function returns True only for errors we want to track.
+def is_retriable_server_error(e: Exception) -> bool:
+    if isinstance(e, httpx.HTTPStatusError):
+        # 5xx errors are failures, but 4xx errors are not.
+        return e.response.status_code >= 500
+    # Also track network errors.
+    return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
-# Store in variables
-charge_cb = create_payment_circuit_breaker("charge", slow_threshold=2.0, failure_rate=0.3)
-refund_cb = create_payment_circuit_breaker("refund", slow_threshold=3.0, failure_rate=0.3)
-history_cb = create_payment_circuit_breaker("history", slow_threshold=0.5)
-
-# Or use directly as decorator
-@create_payment_circuit_breaker("charge", slow_threshold=2.0, failure_rate=0.3)
-async def charge_payment(amount: float):
+cb = CircuitBreaker(
+    name="api_client",
+    tracker=Custom(is_retriable_server_error),
     ...
+)
+```
+
+### Different Thresholds per State
+
+You can use `Closed()` and `HalfOpened()` trippers to create stricter rules for recovery attempts.
+
+```python
+from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
+
+cb = CircuitBreaker(
+    name="api",
+    # Use different tripping conditions for the CLOSED and HALF_OPEN states.
+    tripper=(
+        (Closed() & MinRequests(20) & FailureRate(0.6)) |
+        (HalfOpened() & MinRequests(5) & FailureRate(0.5)) # Stricter
+    ),
+    ...
+)
+```
+
+### Factory for Dynamic Creation
+
+A factory function is a powerful pattern for creating and managing many similar circuit breakers without repeating code.
+
+```python
+from fluxgate import CircuitBreaker
+from fluxgate.retries import Cooldown
+from fluxgate.windows import CountWindow
+from fluxgate.trippers import MinRequests, FailureRate
+
+def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
+    """Creates a circuit breaker based on a predefined policy name."""
+    if policy == "strict":
+        return CircuitBreaker(
+            name=name,
+            window=CountWindow(100),
+            tripper=MinRequests(20) & FailureRate(0.4),
+            retry=Cooldown(60.0)
+        )
+    elif policy == "lenient":
+        return CircuitBreaker(
+            name=name,
+            window=CountWindow(50),
+            tripper=MinRequests(10) & FailureRate(0.7),
+            retry=Cooldown(30.0)
+        )
+    else:
+        raise ValueError(f"Unknown policy: {policy}")
+
+# Create breakers on the fly
+checkout_cb = circuit_breaker_factory("checkout", "strict")
+recommendation_cb = circuit_breaker_factory("recommendations", "lenient")
 ```
 
 ## Next Steps
 
-- [Components](components/index.md) - Detailed component documentation
-- [Listeners](components/listeners/index.md) - Monitoring and alerting setup
-- [API Reference](api/core.md) - Complete API documentation
+- [Components Overview](components/index.md): Dive deeper into each component.
+- [Listeners Overview](components/listeners/index.md): Learn how to monitor your circuit breakers.
+- [API Reference](api/core.md): Explore the complete API documentation.

@@ -12,6 +12,8 @@
 
 **마이그레이션:**
 
+<!--pytest.mark.skip-->
+
 ```python
 # 이전 (v0.1.x)
 cb = CircuitBreaker(

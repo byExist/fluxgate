@@ -137,6 +137,7 @@ cb = CircuitBreaker(
     ),
     retry=Backoff(initial=10.0, multiplier=2.0, max_duration=300.0),
     permit=RampUp(initial=0.1, final=0.5, duration=60.0),
+    slow_threshold=float("inf"),
 )
 ```
 

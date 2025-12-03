@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 
 **Migration:**
 
+<!--pytest.mark.skip-->
+
 ```python
 # Before (v0.1.x)
 cb = CircuitBreaker(

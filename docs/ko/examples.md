@@ -288,6 +288,7 @@ def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
             tripper=MinRequests(20) & FailureRate(0.4),
             retry=Cooldown(60.0),
             permit=Random(ratio=0.5),
+            slow_threshold=float("inf"),
         )
     elif policy == "lenient":
         return CircuitBreaker(
@@ -297,6 +298,7 @@ def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
             tripper=MinRequests(10) & FailureRate(0.7),
             retry=Cooldown(30.0),
             permit=Random(ratio=0.5),
+            slow_threshold=float("inf"),
         )
     else:
         raise ValueError(f"알 수 없는 정책: {policy}")

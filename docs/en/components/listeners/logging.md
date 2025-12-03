@@ -38,6 +38,67 @@ When the circuit breaker changes state, it will produce a log record like this:
 
 ---
 
+## Custom Logger {#custom-logger}
+
+By default, `LogListener` uses the root logger. You can inject your own logger for better control over log routing and formatting.
+
+<!--pytest.mark.skip-->
+
+```python
+import logging
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.log import LogListener
+
+# Create a dedicated logger for circuit breaker events
+cb_logger = logging.getLogger("myapp.circuit_breaker")
+cb_logger.setLevel(logging.INFO)
+
+cb = CircuitBreaker(
+    name="payment_api",
+    ...,
+    listeners=[LogListener(logger=cb_logger)],
+)
+```
+
+---
+
+## Custom Log Levels {#custom-log-levels}
+
+Use `level_map` to customize the log level for each state transition. By default, transitions to `OPEN` and `FORCED_OPEN` are logged at `WARNING` level, while others are logged at `INFO`.
+
+<!--pytest.mark.skip-->
+
+```python
+import logging
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.log import LogListener
+from fluxgate.state import StateEnum
+
+# Log OPEN transitions as ERROR for alerting
+level_map = {
+    StateEnum.OPEN: logging.ERROR,
+    StateEnum.HALF_OPEN: logging.WARNING,
+    StateEnum.CLOSED: logging.DEBUG,
+}
+
+cb = CircuitBreaker(
+    name="payment_api",
+    ...,
+    listeners=[LogListener(level_map=level_map)],
+)
+```
+
+You can also combine both options:
+
+<!--pytest.mark.skip-->
+
+```python
+cb_logger = logging.getLogger("myapp.circuit_breaker")
+listener = LogListener(logger=cb_logger, level_map=level_map)
+```
+
+---
+
 ## Implementing Structured (JSON) Logging {#structured-logging}
 
 For better observability in modern platforms, you can create a custom listener to output logs in a structured format like JSON.

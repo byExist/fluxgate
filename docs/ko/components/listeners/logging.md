@@ -38,6 +38,67 @@ Circuit Breaker가 상태를 변경하면 다음과 같은 로그 레코드를 �
 
 ---
 
+## 커스텀 Logger {#custom-logger}
+
+기본적으로 `LogListener`는 루트 logger를 사용합니다. 로그 라우팅과 포맷팅을 더 세밀하게 제어하려면 직접 logger를 주입할 수 있습니다.
+
+<!--pytest.mark.skip-->
+
+```python
+import logging
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.log import LogListener
+
+# Circuit Breaker 이벤트 전용 logger 생성
+cb_logger = logging.getLogger("myapp.circuit_breaker")
+cb_logger.setLevel(logging.INFO)
+
+cb = CircuitBreaker(
+    name="payment_api",
+    ...,
+    listeners=[LogListener(logger=cb_logger)],
+)
+```
+
+---
+
+## 커스텀 로그 레벨 {#custom-log-levels}
+
+`level_map`을 사용하여 각 상태 전환에 대한 로그 레벨을 커스터마이징할 수 있습니다. 기본적으로 `OPEN`과 `FORCED_OPEN`으로의 전환은 `WARNING` 레벨로, 나머지는 `INFO` 레벨로 기록됩니다.
+
+<!--pytest.mark.skip-->
+
+```python
+import logging
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.log import LogListener
+from fluxgate.state import StateEnum
+
+# OPEN 전환을 ERROR로 기록하여 알림 트리거
+level_map = {
+    StateEnum.OPEN: logging.ERROR,
+    StateEnum.HALF_OPEN: logging.WARNING,
+    StateEnum.CLOSED: logging.DEBUG,
+}
+
+cb = CircuitBreaker(
+    name="payment_api",
+    ...,
+    listeners=[LogListener(level_map=level_map)],
+)
+```
+
+두 옵션을 함께 사용할 수도 있습니다:
+
+<!--pytest.mark.skip-->
+
+```python
+cb_logger = logging.getLogger("myapp.circuit_breaker")
+listener = LogListener(logger=cb_logger, level_map=level_map)
+```
+
+---
+
 ## 구조화된 (JSON) 로깅 구현 {#structured-logging}
 
 최신 플랫폼에서 더 나은 가시성을 위해 JSON과 같은 구조화된 형식으로 로그를 출력하는 사용자 정의 Listener를 만들 수 있습니다.

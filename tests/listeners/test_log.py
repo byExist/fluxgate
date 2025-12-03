@@ -129,3 +129,109 @@ async def test_logging_listener_with_async_circuit_breaker(caplog: LogCaptureFix
 
     assert len(caplog.records) >= 1
     assert "async_test" in caplog.text
+
+
+def test_logging_listener_custom_logger(caplog: LogCaptureFixture):
+    """LogListener uses custom logger when provided."""
+    custom_logger = logging.getLogger("custom.circuit_breaker")
+    listener = LogListener(logger=custom_logger)
+
+    signal = Signal(
+        circuit_name="custom_test",
+        old_state=StateEnum.CLOSED,
+        new_state=StateEnum.OPEN,
+        timestamp=1234567890.0,
+    )
+
+    with caplog.at_level(logging.INFO, logger="custom.circuit_breaker"):
+        listener(signal)
+
+    assert len(caplog.records) == 1
+    assert caplog.records[0].name == "custom.circuit_breaker"
+    assert "custom_test" in caplog.text
+
+
+def test_logging_listener_default_level_map(caplog: LogCaptureFixture):
+    """LogListener uses WARNING for OPEN state by default."""
+    listener = LogListener()
+
+    signal_open = Signal(
+        circuit_name="test",
+        old_state=StateEnum.CLOSED,
+        new_state=StateEnum.OPEN,
+        timestamp=1234567890.0,
+    )
+
+    signal_closed = Signal(
+        circuit_name="test",
+        old_state=StateEnum.OPEN,
+        new_state=StateEnum.CLOSED,
+        timestamp=1234567890.0,
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        listener(signal_open)
+        listener(signal_closed)
+
+    assert len(caplog.records) == 2
+    assert caplog.records[0].levelno == logging.WARNING
+    assert caplog.records[1].levelno == logging.INFO
+
+
+def test_logging_listener_custom_level_map(caplog: LogCaptureFixture):
+    """LogListener uses custom level_map when provided."""
+    level_map = {
+        StateEnum.OPEN: logging.ERROR,
+        StateEnum.CLOSED: logging.DEBUG,
+    }
+    listener = LogListener(level_map=level_map)
+
+    signal_open = Signal(
+        circuit_name="test",
+        old_state=StateEnum.CLOSED,
+        new_state=StateEnum.OPEN,
+        timestamp=1234567890.0,
+    )
+
+    signal_closed = Signal(
+        circuit_name="test",
+        old_state=StateEnum.OPEN,
+        new_state=StateEnum.CLOSED,
+        timestamp=1234567890.0,
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        listener(signal_open)
+        listener(signal_closed)
+
+    assert len(caplog.records) == 2
+    assert caplog.records[0].levelno == logging.ERROR
+    assert caplog.records[1].levelno == logging.DEBUG
+
+
+def test_logging_listener_partial_level_map(caplog: LogCaptureFixture):
+    """LogListener merges partial level_map with defaults."""
+    level_map = {StateEnum.OPEN: logging.CRITICAL}
+    listener = LogListener(level_map=level_map)
+
+    signal_open = Signal(
+        circuit_name="test",
+        old_state=StateEnum.CLOSED,
+        new_state=StateEnum.OPEN,
+        timestamp=1234567890.0,
+    )
+
+    signal_half_open = Signal(
+        circuit_name="test",
+        old_state=StateEnum.OPEN,
+        new_state=StateEnum.HALF_OPEN,
+        timestamp=1234567890.0,
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        listener(signal_open)
+        listener(signal_half_open)
+
+    assert len(caplog.records) == 2
+    assert caplog.records[0].levelno == logging.CRITICAL  # overridden
+    assert caplog.records[1].levelno == logging.INFO  # default

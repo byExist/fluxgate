@@ -762,18 +762,7 @@
   <a href="#random-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동작 방식
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#random-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        사용 시나리오
+        작동 방식
       
     </span>
   </a>
@@ -801,18 +790,7 @@
   <a href="#rampup-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동작 방식
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rampup-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        사용 시나리오
+        작동 방식
       
     </span>
   </a>
@@ -825,15 +803,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-permit" class="md-nav__link">
+  <a href="#permit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        선택 가이드
+        올바른 Permit 선택
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="선택 가이드">
+    <nav class="md-nav" aria-label="올바른 Permit 선택">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -851,7 +829,7 @@
   <a href="#choose-random" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Random을 선택하세요
+        Random은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -862,7 +840,7 @@
   <a href="#choose-rampup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RampUp을 선택하세요
+        RampUp은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1582,18 +1560,7 @@
   <a href="#random-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동작 방식
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#random-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        사용 시나리오
+        작동 방식
       
     </span>
   </a>
@@ -1621,18 +1588,7 @@
   <a href="#rampup-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동작 방식
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rampup-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        사용 시나리오
+        작동 방식
       
     </span>
   </a>
@@ -1645,15 +1601,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-permit" class="md-nav__link">
+  <a href="#permit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        선택 가이드
+        올바른 Permit 선택
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="선택 가이드">
+    <nav class="md-nav" aria-label="올바른 Permit 선택">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1671,7 +1627,7 @@
   <a href="#choose-random" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Random을 선택하세요
+        Random은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1682,7 +1638,7 @@
   <a href="#choose-rampup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RampUp을 선택하세요
+        RampUp은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1737,212 +1693,167 @@
 
 
 <h1 id="permits">Permits<a class="headerlink" href="#permits" title="Permanent link">&para;</a></h1>
-<p>HALF_OPEN 상태에서 호출 허용 여부를 제어합니다. Circuit이 복구를 시도할 때 트래픽을 점진적으로 허용하여 안정적인 복구를 돕습니다.</p>
+<p>Permit은 <code>HALF_OPEN</code> 상태에서 호출의 허용 여부를 결정합니다. Half Open으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.</p>
 <table>
 <thead>
 <tr>
-<th>Permit 타입</th>
-<th>동작 방식</th>
-<th>사용 사례</th>
+<th>Permit 유형</th>
+<th>동작</th>
+<th>적합한 경우</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Random</strong></td>
-<td>고정된 확률로 랜덤 허용</td>
-<td>단순한 트래픽 제한</td>
+<td>무작위로 고정된 비율의 호출을 허용</td>
+<td>트래픽을 제한하는 확률적인 방식</td>
 </tr>
 <tr>
 <td><strong>RampUp</strong></td>
-<td>시간에 따라 점진적 증가</td>
-<td>부드러운 트래픽 복구</td>
+<td>허용된 호출의 비율을 점진적으로 증가</td>
+<td>트래픽을 부드럽게 재도입하는 방식</td>
 </tr>
 </tbody>
 </table>
+<hr />
 <h2 id="random">Random<a class="headerlink" href="#random" title="Permanent link">&para;</a></h2>
-<p>고정된 확률로 호출을 랜덤하게 허용합니다.</p>
+<p>고정된 확률로 호출을 통과시킵니다.</p>
+<h3 id="random-how-it-works">작동 방식<a class="headerlink" href="#random-how-it-works" title="Permanent link">&para;</a></h3>
+<p><code>HALF_OPEN</code> 상태에 도달하는 모든 호출에 대해 <code>Random</code>은 난수를 생성하고, 구성된 <code>ratio</code> 내에 있으면 호출을 허용합니다.</p>
+<ul>
+<li><code>Random\(ratio=0.1\)</code>은 대략 10%의 호출을 허용합니다.</li>
+<li><code>Random\(ratio=0.8\)</code>은 대략 80%의 호출을 허용합니다.</li>
+</ul>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
 
-<span class="c1"># HALF_OPEN 상태에서 50% 확률로 호출 허용</span>
+<span class="c1"># HALF_OPEN 상태에서 대략 50%의 호출을 통과시킵니다.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="random-how-it-works">동작 방식<a class="headerlink" href="#random-how-it-works" title="Permanent link">&para;</a></h3>
-<ul>
-<li>각 호출마다 독립적으로 확률 계산</li>
-<li><code>ratio</code> 값이 허용 확률 결정 (0.0 ~ 1.0)</li>
-<li>시간과 무관하게 일정한 비율 유지</li>
-</ul>
-<h3 id="random-use-cases">사용 시나리오<a class="headerlink" href="#random-use-cases" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
-
-<span class="c1"># 보수적 복구: 10%만 허용</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;conservative_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-
-<span class="c1"># 적극적 복구: 80% 허용</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;aggressive_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-</code></pre></div>
+<hr />
 <h2 id="rampup">RampUp<a class="headerlink" href="#rampup" title="Permanent link">&para;</a></h2>
-<p>시간에 따라 허용 비율을 점진적으로 증가시킵니다.</p>
+<p>시간이 지남에 따라 허용률을 점진적으로 증가시켜 더 부드럽고 온건한 복구를 제공합니다. 대부분의 케이스에 권장됩니다.</p>
+<h3 id="rampup-how-it-works">작동 방식<a class="headerlink" href="#rampup-how-it-works" title="Permanent link">&para;</a></h3>
+<p><code>HALF_OPEN</code> 상태에 진입한 이후 경과된 시간을 기반으로, 설정된 <code>duration</code> 동안 <code>initial</code> 값에서 <code>final</code> 값까지 허용되는 트래픽 비율을 선형적으로 증가시킵니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
 
-<span class="c1"># 10%에서 시작하여 60초에 걸쳐 80%까지 증가</span>
+<span class="c1"># 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="rampup-how-it-works">동작 방식<a class="headerlink" href="#rampup-how-it-works" title="Permanent link">&para;</a></h3>
+<p><strong>예시 진행:</strong> <code>RampUp\(initial=0.1, final=0.8, duration=60.0\)</code>의 경우</p>
 <ul>
-<li>HALF_OPEN 전환 시각부터 경과 시간 측정</li>
-<li>선형으로 허용 비율 증가: <code>initial + (final - initial) × (elapsed / duration)</code></li>
-<li><code>duration</code> 경과 후에는 <code>final</code> 비율 유지</li>
+<li><strong>0초 시점</strong>: 호출의 10%가 허용됩니다.</li>
+<li><strong>15초 시점</strong>: 호출의 27.5%가 허용됩니다.</li>
+<li><strong>30초 시점</strong>: 호출의 45%가 허용됩니다.</li>
+<li><strong>60초 시점(이후)</strong>: 비율은 <code>final</code> 값인 80%로 제한됩니다.</li>
 </ul>
-<p><strong>예시: initial=0.1, final=0.8, duration=60초</strong></p>
-<ul>
-<li>0초: 10% 허용</li>
-<li>15초: 27.5% 허용</li>
-<li>30초: 45% 허용</li>
-<li>45초: 62.5% 허용</li>
-<li>60초 이후: 80% 허용</li>
-</ul>
-<h3 id="rampup-use-cases">사용 시나리오<a class="headerlink" href="#rampup-use-cases" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
-
-<span class="c1"># 점진적 복구가 필요한 외부 API</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;external_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">120.0</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-
-<span class="c1"># 빠른 복구가 가능한 내부 서비스</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;internal_service&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">30.0</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-</code></pre></div>
-<h2 id="choosing-a-permit">선택 가이드<a class="headerlink" href="#choosing-a-permit" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="permit">올바른 Permit 선택<a class="headerlink" href="#permit" title="Permanent link">&para;</a></h2>
 <h3 id="comparison">비교<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>특성</th>
+<th>기능</th>
 <th>Random</th>
 <th>RampUp</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>복잡도</strong></td>
-<td>단순</td>
+<td><strong>복잡성</strong></td>
+<td>간단</td>
 <td>중간</td>
 </tr>
 <tr>
-<td><strong>허용 비율</strong></td>
+<td><strong>허용률</strong></td>
 <td>일정</td>
-<td>시간에 따라 증가</td>
+<td>시간 경과에 따라 증가</td>
 </tr>
 <tr>
-<td><strong>복구 속도</strong></td>
+<td><strong>복구 방식</strong></td>
 <td>즉시 고정 비율</td>
 <td>점진적 증가</td>
 </tr>
 <tr>
-<td><strong>부하 급증</strong></td>
-<td>가능 (높은 ratio 사용 시)</td>
-<td>최소화</td>
+<td><strong>로드 스파이크 위험</strong></td>
+<td>높음 (높은 비율에서)</td>
+<td>매우 낮음</td>
 </tr>
 <tr>
-<td><strong>사용 사례</strong></td>
-<td>단순한 트래픽 제한</td>
-<td>안정적인 점진적 복구</td>
+<td><strong>권장</strong></td>
+<td>간단한 경우</td>
+<td><strong>프로덕션에 가장 적합</strong></td>
 </tr>
 </tbody>
 </table>
-<h3 id="choose-random">Random을 선택하세요<a class="headerlink" href="#choose-random" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
-<ul>
-<li>단순한 트래픽 제어 필요</li>
-<li>즉시 일정한 비율로 복구</li>
-<li>부하 급증이 문제되지 않는 경우</li>
-</ul>
-<p><strong>예시:</strong> 내부 서비스, 복구 시간이 중요한 경우</p>
+<h3 id="choose-random"><code>Random</code>은 언제 사용해야 하나요?<a class="headerlink" href="#choose-random" title="Permanent link">&para;</a></h3>
+<p><code>Random</code>은 일정한 속도로 복구 테스트를 즉시 시작해야 하고 하위 스트림 서비스에 과부하를 주는 것에 대해 걱정하지 않는 간단한 사용 사례에 가장 적합합니다.</p>
 <p><strong>권장 설정:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 보수적 (안정성 우선)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
+
+<span class="c1"># 보수적 (안정성 우선)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
-<span class="c1"># 균형적</span>
-<span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-
-<span class="c1"># 적극적 (빠른 복구 우선)</span>
+<span class="c1"># 공격적 (빠른 복구 우선)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="choose-rampup">RampUp을 선택하세요<a class="headerlink" href="#choose-rampup" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
-<ul>
-<li>점진적인 트래픽 증가 필요</li>
-<li>부하 급증 방지 중요</li>
-<li>외부 서비스 보호 필요</li>
-</ul>
-<p><strong>예시:</strong> 외부 API, 데이터베이스, 부하에 민감한 서비스</p>
+<h3 id="choose-rampup"><code>RampUp</code>은 언제 사용해야 하나요?<a class="headerlink" href="#choose-rampup" title="Permanent link">&para;</a></h3>
+<p><code>RampUp</code>은 대부분의 프로덕션 환경에서 권장됩니다. 트래픽을 천천히 재도입하여 서비스가 캐시를 워밍업하고 연결을 재설정하며 스케일업할 시간을 제공함으로써 가장 안전한 복구 경로를 제공합니다.</p>
 <p><strong>권장 설정:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 보수적 복구</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
+
+<span class="c1"># 보수적 복구</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">120.0</span><span class="p">)</span>
 
-<span class="c1"># 균형적 복구</span>
-<span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">)</span>
-
-<span class="c1"># 적극적 복구</span>
+<span class="c1"># 공격적 복구</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="relationship-with-retry">Retry와의 관계<a class="headerlink" href="#relationship-with-retry" title="Permanent link">&para;</a></h2>
-<p>Permit과 Retry는 함께 작동하여 복구 전략을 결정합니다:</p>
+<p><code>retry</code> 및 <code>permit</code>은 함께 작동하여 완전한 복구 프로세스를 정의합니다.</p>
 <ul>
-<li><strong>Retry</strong>: OPEN → HALF_OPEN 전환 시점 결정</li>
-<li><strong>Permit</strong>: HALF_OPEN 상태에서 호출 허용 비율 결정</li>
+<li><strong>Retry</strong>: Half Open 상태로의 전환 시점을 결정합니다.</li>
+<li><strong>Permit</strong>: Half Open 상태에서 요청의 허용 여부를 결정합니다.</li>
 </ul>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
 
-<span class="c1"># 재시도는 점진적으로, 허용은 천천히 증가</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">max_duration</span><span class="o">=</span><span class="mf">300.0</span><span class="p">),</span>
+    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">),</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>동작 흐름:</strong></p>
+<p><strong>복구 흐름은 다음과 같습니다:</strong></p>
 <ol>
-<li>Circuit이 OPEN 상태로 전환</li>
-<li><code>Retry</code>가 대기 시간 결정 (예: 10초)</li>
-<li>10초 후 HALF_OPEN으로 전환</li>
-<li><code>Permit</code>이 호출 허용 여부 결정 (예: 시작 10%, 점진적 증가)</li>
-<li>성공하면 CLOSED로, 실패하면 다시 OPEN으로</li>
+<li><code>tripper</code> 조건이 충족되고 회로가 <code>OPEN</code> 상태로 전환됩니다.</li>
+<li><code>retry</code>가 일정 시간 대기합니다. <code>Backoff(initial=10.0)</code>을 사용하면 10초 동안 기다립니다.</li>
+<li>10초 후 회로가 <code>HALF_OPEN</code>으로 전환됩니다.</li>
+<li>이제 <code>permit</code>이 동작합니다. 다음 60초 동안 허용되는 호출의 비율을 10%에서 80%까지 점진적으로 증가시킵니다.</li>
+<li>이 시간 동안 <code>tripper</code>의해 실패로 판단되면 <code>OPEN</code>으로 다시 trip되고 <code>retry</code> 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).</li>
+<li>성공하면 회로는 <code>CLOSED</code>로 다시 전환되고 정상 작동이 재개됩니다.</li>
 </ol>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../listeners/">Listeners</a> - Circuit 상태 변화 모니터링</li>
-<li><a href="../../circuit-breaker/">CircuitBreaker</a> - 전체 설정 통합</li>
+<li><a href="../listeners/">Listeners</a>: 상태 변경을 모니터링하고 알림을 받습니다.</li>
+<li><a href="../../circuit-breaker/">Circuit Breaker 개요</a>: 모든 컴포넌트가 어떻게 함께 작동하는지 확인하세요.</li>
 </ul>
 
 

@@ -861,46 +861,7 @@
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#synchronous-circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Synchronous Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asynchronous-circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Asynchronous Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#custom-log-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Log Levels
+        Basic Usage
       
     </span>
   </a>
@@ -911,7 +872,7 @@
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logging
+        Implementing Structured (JSON) Logging
       
     </span>
   </a>
@@ -922,7 +883,7 @@
   <a href="#file-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        File Logging
+        Configuring File Logging
       
     </span>
   </a>
@@ -1503,46 +1464,7 @@
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#synchronous-circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Synchronous Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asynchronous-circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Asynchronous Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#custom-log-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Log Levels
+        Basic Usage
       
     </span>
   </a>
@@ -1553,7 +1475,7 @@
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logging
+        Implementing Structured (JSON) Logging
       
     </span>
   </a>
@@ -1564,7 +1486,7 @@
   <a href="#file-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        File Logging
+        Configuring File Logging
       
     </span>
   </a>
@@ -1603,16 +1525,20 @@
 
 
 <h1 id="loglistener">LogListener<a class="headerlink" href="#loglistener" title="Permanent link">&para;</a></h1>
-<p>A listener that logs circuit breaker state transitions using Python's standard <code>logging</code> module.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<h3 id="synchronous-circuit-breaker">Synchronous Circuit Breaker<a class="headerlink" href="#synchronous-circuit-breaker" title="Permanent link">&para;</a></h3>
+<p>The <code>LogListener</code> provides the simplest way to observe your circuit breaker's behavior. It hooks into Python's standard <code>logging</code> module to record state transitions, giving you a clear, chronological view of how the breaker is operating.</p>
+<p>It works identically for both <code>CircuitBreaker</code> and <code>AsyncCircuitBreaker</code>.</p>
+<h2 id="usage">Basic Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>Simply add <code>LogListener</code> to the <code>listeners</code> list of your circuit breaker.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
+<span class="c1"># Basic configuration for console logging</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">)</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
@@ -1621,91 +1547,67 @@
     <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()],</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>Output Example:</strong></p>
+<p>When the circuit breaker changes state, it will produce a log record like this:</p>
 <div class="highlight"><pre><span></span><code>[2025-01-15 10:30:45] Circuit Breaker &#39;payment_api&#39; transitioned from CLOSED to OPEN
 [2025-01-15 10:31:45] Circuit Breaker &#39;payment_api&#39; transitioned from OPEN to HALF_OPEN
 [2025-01-15 10:31:50] Circuit Breaker &#39;payment_api&#39; transitioned from HALF_OPEN to CLOSED
 </code></pre></div>
-<h3 id="asynchronous-circuit-breaker">Asynchronous Circuit Breaker<a class="headerlink" href="#asynchronous-circuit-breaker" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncCircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
-
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-
-<span class="n">cb</span> <span class="o">=</span> <span class="n">AsyncCircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;async_api&quot;</span><span class="p">,</span>
-    <span class="o">...</span><span class="p">,</span>
-    <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()],</span>
-<span class="p">)</span>
-</code></pre></div>
-<h2 id="custom-log-level">Custom Log Levels<a class="headerlink" href="#custom-log-level" title="Permanent link">&para;</a></h2>
-<p>To use different log levels, create a custom listener:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">WarningLogListener</span><span class="p">(</span><span class="n">IListener</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs only OPEN state transitions at WARNING level&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">))</span>
-        <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">] Circuit Breaker &#39;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;transitioned from </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span> <span class="o">==</span> <span class="n">StateEnum</span><span class="o">.</span><span class="n">OPEN</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="structured-logging">Structured Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>
-<p>For JSON-formatted logs:</p>
+<hr />
+<h2 id="structured-logging">Implementing Structured (JSON) Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>
+<p>For better observability in modern platforms, you can create a custom listener to output logs in a structured format like JSON.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">JsonLogListener</span><span class="p">(</span><span class="n">IListener</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;circuit_breaker_transition&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Circuit breaker transition&quot;</span><span class="p">,</span>
             <span class="s2">&quot;circuit_name&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span>
-            <span class="s2">&quot;old_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="s2">&quot;new_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="s2">&quot;previous_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;current_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp_utc&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
         <span class="p">}</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">))</span>
+
+<span class="c1"># Usage</span>
+<span class="n">json_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;json_logger&quot;</span><span class="p">)</span>
+<span class="n">cb_listener</span> <span class="o">=</span> <span class="n">JsonLogListener</span><span class="p">(</span><span class="n">json_logger</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="file-logging">File Logging<a class="headerlink" href="#file-logging" title="Permanent link">&para;</a></h2>
+<h2 id="file-logging">Configuring File Logging<a class="headerlink" href="#file-logging" title="Permanent link">&para;</a></h2>
+<p>To send circuit breaker logs to a file, configure a suitable handler in your application's logging setup. <code>LogListener</code> will automatically use this configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging.handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotatingFileHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
+<span class="c1"># Configure a rotating file handler</span>
 <span class="n">handler</span> <span class="o">=</span> <span class="n">RotatingFileHandler</span><span class="p">(</span>
-    <span class="s1">&#39;circuit_breaker.log&#39;</span><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;circuit_breaker.log&#39;</span><span class="p">,</span>
     <span class="n">maxBytes</span><span class="o">=</span><span class="mi">10</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 10MB</span>
-    <span class="n">backupCount</span><span class="o">=</span><span class="mi">5</span>
+    <span class="n">backupCount</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span>
-    <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">))</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="c1"># Add the handler to the root logger</span>
+<span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+<span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">root_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
+<span class="c1"># LogListener will now write to the file via the root logger.</span>
+<span class="n">log_listener</span> <span class="o">=</span> <span class="n">LogListener</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../prometheus/">PrometheusListener</a> - Metrics-based monitoring</li>
-<li><a href="../slack/">SlackListener</a> - Real-time notifications</li>
-<li><a href="../">Overview</a> - Back to listeners overview</li>
+<li><a href="../prometheus/">PrometheusListener</a>: Expose metrics for time-series monitoring.</li>
+<li><a href="../slack/">SlackListener</a>: Send real-time notifications on state changes.</li>
+<li><a href="../">Listeners Overview</a>: Return to the main listeners page.</li>
 </ul>
 
 

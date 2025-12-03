@@ -767,17 +767,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#random-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -806,32 +795,21 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#rampup-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-permit" class="md-nav__link">
+  <a href="#choosing-the-right-permit-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing a Permit
+        Choosing the Right Permit Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Choosing a Permit">
+    <nav class="md-nav" aria-label="Choosing the Right Permit Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -849,7 +827,7 @@
   <a href="#choose-random" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Random
+        When should I use Random?
       
     </span>
   </a>
@@ -860,7 +838,7 @@
   <a href="#choose-rampup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose RampUp
+        When should I use RampUp?
       
     </span>
   </a>
@@ -1587,17 +1565,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#random-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1626,32 +1593,21 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#rampup-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-permit" class="md-nav__link">
+  <a href="#choosing-the-right-permit-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing a Permit
+        Choosing the Right Permit Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Choosing a Permit">
+    <nav class="md-nav" aria-label="Choosing the Right Permit Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1669,7 +1625,7 @@
   <a href="#choose-random" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Random
+        When should I use Random?
       
     </span>
   </a>
@@ -1680,7 +1636,7 @@
   <a href="#choose-rampup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose RampUp
+        When should I use RampUp?
       
     </span>
   </a>
@@ -1735,109 +1691,77 @@
 
 
 <h1 id="permits">Permits<a class="headerlink" href="#permits" title="Permanent link">&para;</a></h1>
-<p>Controls call admission in HALF_OPEN state. Helps stable recovery by gradually allowing traffic when the circuit attempts to recover.</p>
+<p>Permit strategies are the gatekeepers of the <code>HALF_OPEN</code> state. After a <code>retry</code> strategy decides it's time to test for recovery, the <code>permit</code> strategy decides <em>how</em> to test. It controls how many "probe" calls are allowed to pass through to the recovering service, preventing it from being overwhelmed by a sudden flood of traffic.</p>
 <table>
 <thead>
 <tr>
 <th>Permit Type</th>
 <th>Behavior</th>
-<th>Use Case</th>
+<th>Best For...</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Random</strong></td>
-<td>Random admission with fixed probability</td>
-<td>Simple traffic limiting</td>
+<td>Allows a random, fixed percentage of calls.</td>
+<td>A simple, probabilistic approach to limiting traffic.</td>
 </tr>
 <tr>
 <td><strong>RampUp</strong></td>
-<td>Gradual increase over time</td>
-<td>Smooth traffic recovery</td>
+<td>Gradually increases the percentage of allowed calls.</td>
+<td>A sophisticated approach that gently re-introduces traffic.</td>
 </tr>
 </tbody>
 </table>
+<hr />
 <h2 id="random">Random<a class="headerlink" href="#random" title="Permanent link">&para;</a></h2>
-<p>Randomly allows calls with a fixed probability.</p>
+<p>This strategy allows calls to pass through with a simple, fixed probability.</p>
+<h3 id="random-how-it-works">How It Works<a class="headerlink" href="#random-how-it-works" title="Permanent link">&para;</a></h3>
+<p>For every call that arrives in the <code>HALF_OPEN</code> state, <code>Random</code> generates a random number and allows the call if it's within the configured <code>ratio</code>. This decision is stateless and independent for each call.</p>
+<ul>
+<li><code>Random(ratio=0.1)</code> allows roughly 10% of calls.</li>
+<li><code>Random(ratio=0.8)</code> allows roughly 80% of calls.</li>
+</ul>
+<p>This is a good choice for simple traffic limiting, especially when you want to start testing recovery at a constant rate immediately.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
 
-<span class="c1"># Allow 50% of calls in HALF_OPEN state</span>
+<span class="c1"># Allow approximately 50% of calls to pass through in the HALF_OPEN state.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="random-how-it-works">How It Works<a class="headerlink" href="#random-how-it-works" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Independent probability calculation for each call</li>
-<li><code>ratio</code> value determines admission probability (0.0 to 1.0)</li>
-<li>Maintains constant rate regardless of time</li>
-</ul>
-<h3 id="random-use-cases">Use Cases<a class="headerlink" href="#random-use-cases" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
-
-<span class="c1"># Conservative recovery: Allow only 10%</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;conservative_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-
-<span class="c1"># Aggressive recovery: Allow 80%</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;aggressive_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-</code></pre></div>
+<hr />
 <h2 id="rampup">RampUp<a class="headerlink" href="#rampup" title="Permanent link">&para;</a></h2>
-<p>Gradually increases admission rate over time.</p>
+<p>This strategy provides a smoother, more gentle recovery by gradually increasing the admission rate over time. It's the recommended choice for most production systems.</p>
+<h3 id="rampup-how-it-works">How It Works<a class="headerlink" href="#rampup-how-it-works" title="Permanent link">&para;</a></h3>
+<p><code>RampUp</code> linearly increases the allowed traffic ratio from an <code>initial</code> value to a <code>final</code> value over a set <code>duration</code>. The calculation is based on the time elapsed since the breaker entered the <code>HALF_OPEN</code> state.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
 
-<span class="c1"># Start at 10%, increase to 80% over 60 seconds</span>
+<span class="c1"># Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="rampup-how-it-works">How It Works<a class="headerlink" href="#rampup-how-it-works" title="Permanent link">&para;</a></h3>
+<p><strong>Example Progression:</strong> For <code>RampUp(initial=0.1, final=0.8, duration=60.0)</code>:</p>
 <ul>
-<li>Measures elapsed time since HALF_OPEN transition</li>
-<li>Linearly increases admission rate: <code>initial + (final - initial) × (elapsed / duration)</code></li>
-<li>Maintains <code>final</code> ratio after <code>duration</code> elapses</li>
+<li><strong>At 0s:</strong> 10% of calls are allowed.</li>
+<li><strong>At 15s:</strong> 27.5% of calls are allowed.</li>
+<li><strong>At 30s:</strong> 45% of calls are allowed.</li>
+<li><strong>At 60s (and beyond):</strong> The rate is capped at the <code>final</code> value of 80%.</li>
 </ul>
-<p><strong>Example: initial=0.1, final=0.8, duration=60 seconds</strong></p>
-<ul>
-<li>0s: 10% allowed</li>
-<li>15s: 27.5% allowed</li>
-<li>30s: 45% allowed</li>
-<li>45s: 62.5% allowed</li>
-<li>60s+: 80% allowed</li>
-</ul>
-<h3 id="rampup-use-cases">Use Cases<a class="headerlink" href="#rampup-use-cases" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
-
-<span class="c1"># External API requiring gradual recovery</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;external_api&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">120.0</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-
-<span class="c1"># Internal service with fast recovery</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;internal_service&quot;</span><span class="p">,</span>
-    <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">30.0</span><span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
-</code></pre></div>
-<h2 id="choosing-a-permit">Choosing a Permit<a class="headerlink" href="#choosing-a-permit" title="Permanent link">&para;</a></h2>
+<p>This strategy is excellent for protecting load-sensitive services like databases or external APIs.</p>
+<hr />
+<h2 id="choosing-the-right-permit-strategy">Choosing the Right Permit Strategy<a class="headerlink" href="#choosing-the-right-permit-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1859,50 +1783,42 @@
 <td>Increases over time</td>
 </tr>
 <tr>
-<td><strong>Recovery Speed</strong></td>
+<td><strong>Recovery Style</strong></td>
 <td>Immediate fixed rate</td>
-<td>Gradual increase</td>
+<td>Gradual ramp-up</td>
 </tr>
 <tr>
-<td><strong>Load Spike</strong></td>
-<td>Possible (with high ratio)</td>
-<td>Minimized</td>
+<td><strong>Load Spike Risk</strong></td>
+<td>Higher (with a high ratio)</td>
+<td>Very low</td>
 </tr>
 <tr>
-<td><strong>Use Case</strong></td>
-<td>Simple traffic limiting</td>
-<td>Stable gradual recovery</td>
+<td><strong>Recommended?</strong></td>
+<td>For simple cases</td>
+<td><strong>Best for production</strong></td>
 </tr>
 </tbody>
 </table>
-<h3 id="choose-random">Choose Random<a class="headerlink" href="#choose-random" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Simple traffic control needed</li>
-<li>Immediate recovery at constant rate</li>
-<li>Load spikes not a concern</li>
-</ul>
-<p><strong>Examples:</strong> Internal services, time-critical recovery</p>
+<h3 id="choose-random">When should I use <code>Random</code>?<a class="headerlink" href="#choose-random" title="Permanent link">&para;</a></h3>
+<p><code>Random</code> is best for simple use cases where you need to quickly start testing recovery at a constant rate and aren't worried about overwhelming the downstream service.</p>
 <p><strong>Recommended Settings:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Conservative (stability first)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
+
+<span class="c1"># Conservative (prioritizes stability)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
 <span class="c1"># Balanced</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
-<span class="c1"># Aggressive (fast recovery first)</span>
+<span class="c1"># Aggressive (prioritizes fast recovery)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="choose-rampup">Choose RampUp<a class="headerlink" href="#choose-rampup" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Gradual traffic increase needed</li>
-<li>Load spike prevention important</li>
-<li>External service protection needed</li>
-</ul>
-<p><strong>Examples:</strong> External APIs, databases, load-sensitive services</p>
+<h3 id="choose-rampup">When should I use <code>RampUp</code>?<a class="headerlink" href="#choose-rampup" title="Permanent link">&para;</a></h3>
+<p><code>RampUp</code> is the <strong>strongly recommended</strong> strategy for most production environments. It provides the safest recovery path by slowly re-introducing traffic, giving the service time to warm up caches, re-establish connections, and scale up.</p>
 <p><strong>Recommended Settings:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Conservative recovery</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
+
+<span class="c1"># Conservative recovery</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">120.0</span><span class="p">)</span>
 
 <span class="c1"># Balanced recovery</span>
@@ -1911,36 +1827,40 @@
 <span class="c1"># Aggressive recovery</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="relationship-with-retry">Relationship with Retry<a class="headerlink" href="#relationship-with-retry" title="Permanent link">&para;</a></h2>
-<p>Permit and Retry work together to determine recovery strategy:</p>
+<p>The <code>retry</code> and <code>permit</code> strategies work together to define your complete recovery process.</p>
 <ul>
-<li><strong>Retry</strong>: Determines when to transition from OPEN → HALF_OPEN</li>
-<li><strong>Permit</strong>: Determines call admission rate in HALF_OPEN state</li>
+<li><strong>Retry</strong>: Decides <strong>when</strong> to attempt recovery (the cooling-off period).</li>
+<li><strong>Permit</strong>: Decides <strong>how</strong> to attempt recovery (the traffic allowance).</li>
 </ul>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
 
-<span class="c1"># Gradual retry, slow ramp-up</span>
+<span class="c1"># A robust production setup using Backoff and RampUp.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">max_duration</span><span class="o">=</span><span class="mf">300.0</span><span class="p">),</span>
+    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">),</span>
     <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>Flow:</strong></p>
+<p><strong>The recovery flow works like this:</strong></p>
 <ol>
-<li>Circuit transitions to OPEN state</li>
-<li><code>Retry</code> determines wait time (e.g., 10 seconds)</li>
-<li>After 10 seconds, transitions to HALF_OPEN</li>
-<li><code>Permit</code> determines call admission (e.g., start 10%, gradual increase)</li>
-<li>On success → CLOSED, on failure → OPEN again</li>
+<li>The <code>tripper</code> condition is met, and the circuit transitions to the <code>OPEN</code> state.</li>
+<li>The <code>retry</code> strategy starts its timer. With <code>Backoff(initial=10.0)</code>, it waits for 10 seconds.</li>
+<li>After 10 seconds, the circuit transitions to <code>HALF_OPEN</code>.</li>
+<li>Now, the <code>permit</code> strategy takes over. For the next 60 seconds, it will gradually increase the percentage of allowed calls from 10% up to 80%.</li>
+<li>If a probe call fails during this time, the circuit immediately trips back to <code>OPEN</code>, and the <code>retry</code> counter is incremented (the next wait time will be 20 seconds).</li>
+<li>If all probe calls succeed, the circuit transitions back to <code>CLOSED</code>, and normal operation resumes.</li>
 </ol>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../listeners/">Listeners</a> - Monitor circuit state changes</li>
-<li><a href="../../circuit-breaker/">CircuitBreaker</a> - Integrate all settings</li>
+<li><a href="../listeners/">Listeners</a>: Monitor these state changes and get notified.</li>
+<li><a href="../../circuit-breaker/">Circuit Breaker Overview</a>: See how all the components fit together.</li>
 </ul>
 
 

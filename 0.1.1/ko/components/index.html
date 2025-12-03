@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#components-overview" class="md-skip">
+        <a href="#_1" class="md-skip">
           콘텐츠로 이동
         </a>
       
@@ -607,7 +607,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         아키텍처
@@ -618,15 +618,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#component-types" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        컴포넌트 타입
+        컴포넌트 유형
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="컴포넌트 타입">
+    <nav class="md-nav" aria-label="컴포넌트 유형">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -701,7 +701,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#full-example" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         전체 예제
@@ -712,7 +712,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         다음 단계
@@ -1533,7 +1533,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         아키텍처
@@ -1544,15 +1544,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#component-types" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        컴포넌트 타입
+        컴포넌트 유형
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="컴포넌트 타입">
+    <nav class="md-nav" aria-label="컴포넌트 유형">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1627,7 +1627,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#full-example" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         전체 예제
@@ -1638,7 +1638,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         다음 단계
@@ -1668,96 +1668,98 @@
   
 
 
-<h1 id="components-overview">컴포넌트 개요<a class="headerlink" href="#components-overview" title="Permanent link">&para;</a></h1>
-<p>Fluxgate는 조합 가능한 컴포넌트를 사용하여 유연한 circuit breaker 설정을 구축합니다. 각 컴포넌트는 circuit breaker 동작의 특정 측면을 담당합니다.</p>
-<h2 id="architecture">아키텍처<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<h1 id="_1">컴포넌트 개요<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>Fluxgate의 동작은 플러그인 가능한 컴포넌트 세트로 정의됩니다. 이 컴포넌트들을 조합함으로써 시스템의 필요에 정확히 맞는 회로 차단기를 구성할 수 있습니다. 각 컴포넌트는 로직의 특정 부분을 담당합니다.</p>
+<h2 id="_2">아키텍처<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>컴포넌트</th>
 <th>역할</th>
-<th>지원 연산자</th>
+<th>조합 가능 여부</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Window</strong></td>
-<td>호출 기록 추적 (개수 또는 시간 기반)</td>
-<td>-</td>
+<td>최근 호출 결과를 저장하는 슬라이딩 윈도우.</td>
+<td>아니요</td>
 </tr>
 <tr>
 <td><strong>Tracker</strong></td>
-<td>추적할 예외 정의</td>
-<td>&amp;, |, ~</td>
+<td>어떤 결과(예: 특정 예외)가 실패로 간주되어야 하는지 식별합니다.</td>
+<td>예 (&amp;, |, ~)</td>
 </tr>
 <tr>
 <td><strong>Tripper</strong></td>
-<td>Circuit을 여닫는 조건 결정</td>
-<td>&amp;, |</td>
+<td>Window의 Metric을 사용하여 언제 회로를 트립할지 결정합니다.</td>
+<td>예 (&amp;, |)</td>
 </tr>
 <tr>
 <td><strong>Retry</strong></td>
-<td>OPEN → HALF_OPEN 전환 시점 제어</td>
-<td>-</td>
+<td><code>OPEN</code> 상태에서 <code>HALF_OPEN</code> 상태로 이동하는 조건을 정의합니다.</td>
+<td>아니요</td>
 </tr>
 <tr>
 <td><strong>Permit</strong></td>
-<td>HALF_OPEN 상태에서 호출 허용 여부 결정</td>
-<td>-</td>
+<td><code>HALF_OPEN</code> 상태에서 허용되는 "프로브" 호출 수를 관리합니다.</td>
+<td>아니요</td>
 </tr>
 <tr>
 <td><strong>Listener</strong></td>
-<td>상태 전환 감지 및 외부 시스템 알림</td>
-<td>-</td>
+<td>상태 변경에 반응하여 로깅 또는 알림과 같은 부작용을 트리거합니다.</td>
+<td>아니요</td>
 </tr>
 </tbody>
 </table>
-<h2 id="component-types">컴포넌트 타입<a class="headerlink" href="#component-types" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="_3">컴포넌트 유형<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <h3 id="windows"><a href="windows/">Windows</a><a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
-<p>슬라이딩 윈도우를 통해 호출 기록을 추적합니다.</p>
+<p>Windows는 최근 호출 결과(성공, 실패, 응답 시간 등)를 저장하고, <code>tripper</code>가 회로를 열지 여부를 결정하는 데 사용하는 Metric을 제공합니다.</p>
 <ul>
-<li><strong>CountWindow</strong> - 최근 N개 호출</li>
-<li><strong>TimeWindow</strong> - 최근 N초</li>
+<li><strong>CountWindow</strong>: 마지막 N개의 호출을 저장합니다.</li>
+<li><strong>TimeWindow</strong>: 마지막 N초 동안의 호출을 저장합니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span><span class="p">,</span> <span class="n">TimeWindow</span>
 
-<span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># 최근 100개 호출 추적</span>
-<span class="n">window</span> <span class="o">=</span> <span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>    <span class="c1"># 최근 60초 추적</span>
+<span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># 마지막 100개 호출 추적</span>
+<span class="n">window</span> <span class="o">=</span> <span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>    <span class="c1"># 마지막 60초 추적</span>
 </code></pre></div>
 <h3 id="trackers"><a href="trackers/">Trackers</a><a class="headerlink" href="#trackers" title="Permanent link">&para;</a></h3>
-<p>어떤 예외를 실패로 간주할지 정의합니다.</p>
+<p>Trackers는 호출 결과(예: 예외)를 검사하여 실패로 표시되어야 하는지 여부를 결정합니다.</p>
 <ul>
-<li><strong>All</strong> - 모든 예외 추적</li>
-<li><strong>TypeOf</strong> - 특정 예외 타입 추적</li>
-<li><strong>Custom</strong> - 커스텀 추적 로직</li>
+<li><strong>All</strong>: 모든 예외를 실패로 추적합니다.</li>
+<li><strong>TypeOf</strong>: 특정 예외 유형만 추적합니다.</li>
+<li><strong>Custom</strong>: 사용자 정의 함수로 실패 기준을 정의할 수 있습니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trackers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeOf</span><span class="p">,</span> <span class="n">Custom</span>
 
 <span class="n">tracker</span> <span class="o">=</span> <span class="n">TypeOf</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span>
 <span class="n">tracker</span> <span class="o">=</span> <span class="n">Custom</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>조합 가능</strong>: <code>&amp;</code>, <code>|</code>, <code>~</code> 연산자로 tracker 조합 가능.</p>
+<p><strong>조합 가능</strong>: <code>&amp;</code> (AND), <code>|</code> (OR), <code>~</code> (NOT) 연산자를 사용하여 조합할 수 있습니다.</p>
 <h3 id="trippers"><a href="trippers/">Trippers</a><a class="headerlink" href="#trippers" title="Permanent link">&para;</a></h3>
-<p>메트릭을 기반으로 circuit을 열고 닫을 시점을 결정합니다.</p>
+<p>Trippers는 <code>CLOSED</code> 상태에서 <code>OPEN</code> 상태로 회로를 트립시키거나 다시 닫는 핵심 로직을 정의합니다. Window의 Metric을 분석하여 결정을 내립니다.</p>
 <ul>
-<li><strong>Closed/HalfOpened</strong> - 상태 기반 조건</li>
-<li><strong>MinRequests</strong> - 최소 호출 수</li>
-<li><strong>FailureRate</strong> - 실패율</li>
-<li><strong>AvgLatency</strong> - 평균 응답 시간</li>
-<li><strong>SlowRate</strong> - 느린 호출 비율</li>
+<li><strong>Closed/HalfOpened</strong>: 특정 상태에서만 적용되는 조건을 생성합니다.</li>
+<li><strong>MinRequests</strong>: 최소 호출 수가 충족되기 전에 브레이커가 트립되는 것을 방지합니다.</li>
+<li><strong>FailureRate</strong>: 실패율이 특정 비율을 초과하면 트립됩니다.</li>
+<li><strong>AvgLatency</strong>: 평균 응답 시간이 너무 높으면 트립됩니다.</li>
+<li><strong>SlowRate</strong>: 느린 호출의 비율이 임계값을 초과하면 트립됩니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
 
+<span class="c1"># CLOSED 상태에서 최소 10개의 요청과 50%의 실패율이 충족되면 트립됩니다.</span>
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">Closed</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>조합 가능</strong>: <code>&amp;</code>, <code>|</code> 연산자로 조건 조합 가능.</p>
+<p><strong>조합 가능</strong>: <code>&amp;</code> (AND) 및 <code>|</code> (OR) 연산자를 사용하여 정교한 트립 조건을 구축합니다.</p>
 <h3 id="retries"><a href="retries/">Retries</a><a class="headerlink" href="#retries" title="Permanent link">&para;</a></h3>
-<p>OPEN에서 HALF_OPEN 상태로 전환할 시점을 제어합니다.</p>
+<p>Retry는 쿨다운 기간을 제어하여 회로가 <code>OPEN</code> 상태에서 <code>HALF_OPEN</code> 상태로 이동하여 복구를 시도해야 하는 시점을 결정합니다.</p>
 <ul>
-<li><strong>Never</strong> - 수동 리셋 필요</li>
-<li><strong>Always</strong> - 즉시 재시도</li>
-<li><strong>Cooldown</strong> - 고정 대기 시간</li>
-<li><strong>Backoff</strong> - 지수 백오프</li>
+<li><strong>Never</strong>: 수동 재설정이 필요하며, 회로가 자동으로 복구되지 않습니다.</li>
+<li><strong>Always</strong>: 즉시 복구를 시도합니다.</li>
+<li><strong>Cooldown</strong>: 고정된 대기 시간 동안 기다린 후 전환합니다.</li>
+<li><strong>Backoff</strong>: 반복적인 실패 후 대기 시간을 늘리는 지수 백오프 알고리즘을 사용합니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span><span class="p">,</span> <span class="n">Backoff</span>
 
@@ -1765,10 +1767,10 @@
 <span class="n">retry</span> <span class="o">=</span> <span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">max_duration</span><span class="o">=</span><span class="mf">300.0</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="permits"><a href="permits/">Permits</a><a class="headerlink" href="#permits" title="Permanent link">&para;</a></h3>
-<p>HALF_OPEN 상태에서 허용할 호출을 제어합니다.</p>
+<p>Permit은 <code>HALF_OPEN</code> 상태에서 허용되는 호출 수를 관리하여 서비스 복구를 안전하게 테스트할 수 있도록 돕습니다.</p>
 <ul>
-<li><strong>Random</strong> - 확률적 허용</li>
-<li><strong>RampUp</strong> - 점진적 트래픽 증가</li>
+<li><strong>Random</strong>: 확률적으로 일정 비율의 호출을 통과시킵니다.</li>
+<li><strong>RampUp</strong>: 설정된 기간 동안 허용되는 호출 비율을 점진적으로 증가시킵니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span><span class="p">,</span> <span class="n">RampUp</span>
 
@@ -1776,25 +1778,29 @@
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="listeners"><a href="listeners/">Listeners</a><a class="headerlink" href="#listeners" title="Permanent link">&para;</a></h3>
-<p>상태 전환을 감지하고 외부 시스템에 알립니다.</p>
+<p>Listeners는 상태 변경 이벤트에 등록하여 로깅, 모니터링 또는 알림과 같은 부작용을 트리거할 수 있습니다.</p>
 <ul>
-<li><strong>LogListener</strong> - 표준 로깅</li>
-<li><strong>PrometheusListener</strong> - Prometheus 메트릭 (opt)</li>
-<li><strong>SlackListener</strong> - Slack 알림 (opt)</li>
+<li><strong>LogListener</strong>: 표준 로깅에 상태 변경을 기록합니다.</li>
+<li><strong>PrometheusListener</strong>: Prometheus 스크래핑을 위한 메트릭을 노출합니다. (optional)</li>
+<li><strong>SlackListener</strong>: Slack 채널로 상태 변경 알림을 보냅니다. (optional)</li>
 </ul>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
 <span class="n">listeners</span> <span class="o">=</span> <span class="p">[</span><span class="n">LogListener</span><span class="p">()]</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="n">listeners</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="full-example">전체 예제<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h2>
-<p>모든 것을 함께 사용:</p>
+<h2 id="_4">전체 예제<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trackers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Custom</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">HalfOpened</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_server_error</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="ne">ConnectionError</span><span class="p">)</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
@@ -1808,15 +1814,14 @@
     <span class="n">permit</span><span class="o">=</span><span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
-<h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>각 컴포넌트를 자세히 살펴보세요:</p>
+<h2 id="_5">다음 단계<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="windows/">Windows</a> - 올바른 윈도우 타입 선택</li>
-<li><a href="trackers/">Trackers</a> - 실패 기준 정의</li>
-<li><a href="trippers/">Trippers</a> - Circuit 동작 설정</li>
-<li><a href="retries/">Retries</a> - 복구 전략 계획</li>
-<li><a href="permits/">Permits</a> - 복구 중 트래픽 제어</li>
-<li><a href="listeners/">Listeners</a> - 상태 전환 모니터링</li>
+<li><a href="windows/">Windows</a>: 사용 사례에 맞는 올바른 Window 유형을 선택하는 방법을 배우세요.</li>
+<li><a href="trackers/">Trackers</a>: 정확한 실패 기준을 정의하세요.</li>
+<li><a href="trippers/">Trippers</a>: 회로를 트립시키는 강력한 조건을 구축하세요.</li>
+<li><a href="retries/">Retries</a>: 복구 조건을 설계하세요.</li>
+<li><a href="permits/">Permits</a>: 복구 기간 동안 트래픽을 안전하게 관리하세요.</li>
+<li><a href="listeners/">Listeners</a>: 모니터링 및 알림 스택과 통합하세요.</li>
 </ul>
 
 

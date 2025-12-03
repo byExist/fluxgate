@@ -1782,6 +1782,8 @@
 
 <h1 id="listeners">Listeners<a class="headerlink" href="#listeners" title="Permanent link">&para;</a></h1>
 <p>Listeners detect circuit breaker state transitions and send notifications to external systems.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
@@ -1797,7 +1799,10 @@
 </code></pre></div>
 <h2 id="signal">Signal<a class="headerlink" href="#signal" title="Permanent link">&para;</a></h2>
 <p>Listeners receive a <code>Signal</code> object on state transitions:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Signal</span><span class="p">:</span>
     <span class="n">circuit_name</span><span class="p">:</span> <span class="nb">str</span>     <span class="c1"># Circuit breaker name</span>
     <span class="n">old_state</span><span class="p">:</span> <span class="n">StateEnum</span>  <span class="c1"># Previous state</span>
@@ -1819,6 +1824,8 @@
 </blockquote>
 <h3 id="asynchronous-listeners-iasynclistener">Asynchronous Listeners (IAsyncListener)<a class="headerlink" href="#asynchronous-listeners-iasynclistener" title="Permanent link">&para;</a></h3>
 <p>Only available for <code>AsyncCircuitBreaker</code>:</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAsyncListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 
@@ -1829,6 +1836,8 @@
 <h2 id="available-listeners">Available Listeners<a class="headerlink" href="#available-listeners" title="Permanent link">&para;</a></h2>
 <h3 id="loglistener"><a href="logging/">LogListener</a><a class="headerlink" href="#loglistener" title="Permanent link">&para;</a></h3>
 <p>Logs state transitions using Python's standard <code>logging</code> module.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
@@ -1837,6 +1846,8 @@
 <p>Collects Prometheus metrics for integration with monitoring systems.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate<span class="o">[</span>prometheus<span class="o">]</span>
 </code></pre></div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">PrometheusListener</span><span class="p">()])</span>
@@ -1845,6 +1856,8 @@
 <p>Sends state transition notifications to Slack channels.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate<span class="o">[</span>slack<span class="o">]</span>
 </code></pre></div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.slack</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackListener</span><span class="p">,</span> <span class="n">AsyncSlackListener</span>
 
 <span class="c1"># Sync</span>
@@ -1859,6 +1872,8 @@
 </code></pre></div>
 <h2 id="custom-listeners">Custom Listeners<a class="headerlink" href="#custom-listeners" title="Permanent link">&para;</a></h2>
 <h3 id="synchronous-listener">Synchronous Listener<a class="headerlink" href="#synchronous-listener" title="Permanent link">&para;</a></h3>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
@@ -1887,7 +1902,7 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;circuit&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span>
-            <span class="s2">&quot;transition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;transition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
@@ -1895,6 +1910,8 @@
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <p>Listener exceptions don't affect circuit breaker operation. Exceptions are automatically logged, and the circuit breaker continues normally.</p>
 <h2 id="combining-listeners">Combining Multiple Listeners<a class="headerlink" href="#combining-listeners" title="Permanent link">&para;</a></h2>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>

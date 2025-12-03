@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#listeners" class="md-skip">
+        <a href="#listener" class="md-skip">
           콘텐츠로 이동
         </a>
       
@@ -855,10 +855,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#ilistener" class="md-nav__link">
+  <a href="#listener-ilistener" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동기 리스너 (IListener)
+        동기 Listener (IListener)
       
     </span>
   </a>
@@ -866,10 +866,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#iasynclistener" class="md-nav__link">
+  <a href="#listener-iasynclistener" class="md-nav__link">
     <span class="md-ellipsis">
       
-        비동기 리스너 (IAsyncListener)
+        비동기 Listener (IAsyncListener)
       
     </span>
   </a>
@@ -885,12 +885,12 @@
   <a href="#available-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        사용 가능한 리스너
+        사용 가능한 Listener
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="사용 가능한 리스너">
+    <nav class="md-nav" aria-label="사용 가능한 Listener">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -935,19 +935,19 @@
   <a href="#custom-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        커스텀 리스너
+        커스텀 Listener
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="커스텀 리스너">
+    <nav class="md-nav" aria-label="커스텀 Listener">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#listener_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동기 리스너
+        동기 Listener
       
     </span>
   </a>
@@ -955,10 +955,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#listener_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        비동기 리스너
+        비동기 Listener
       
     </span>
   </a>
@@ -985,7 +985,7 @@
   <a href="#combining-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        여러 리스너 조합
+        여러 Listener 조합
       
     </span>
   </a>
@@ -1614,10 +1614,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#ilistener" class="md-nav__link">
+  <a href="#listener-ilistener" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동기 리스너 (IListener)
+        동기 Listener (IListener)
       
     </span>
   </a>
@@ -1625,10 +1625,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#iasynclistener" class="md-nav__link">
+  <a href="#listener-iasynclistener" class="md-nav__link">
     <span class="md-ellipsis">
       
-        비동기 리스너 (IAsyncListener)
+        비동기 Listener (IAsyncListener)
       
     </span>
   </a>
@@ -1644,12 +1644,12 @@
   <a href="#available-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        사용 가능한 리스너
+        사용 가능한 Listener
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="사용 가능한 리스너">
+    <nav class="md-nav" aria-label="사용 가능한 Listener">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1694,19 +1694,19 @@
   <a href="#custom-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        커스텀 리스너
+        커스텀 Listener
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="커스텀 리스너">
+    <nav class="md-nav" aria-label="커스텀 Listener">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#listener_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        동기 리스너
+        동기 Listener
       
     </span>
   </a>
@@ -1714,10 +1714,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#listener_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        비동기 리스너
+        비동기 Listener
       
     </span>
   </a>
@@ -1744,7 +1744,7 @@
   <a href="#combining-listeners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        여러 리스너 조합
+        여러 Listener 조합
       
     </span>
   </a>
@@ -1782,8 +1782,10 @@
   
 
 
-<h1 id="listeners">Listeners<a class="headerlink" href="#listeners" title="Permanent link">&para;</a></h1>
-<p>Listener는 Circuit Breaker의 상태 전환을 감지하고 외부 시스템에 알림을 보냅니다.</p>
+<h1 id="listener">Listener<a class="headerlink" href="#listener" title="Permanent link">&para;</a></h1>
+<p>Listener는 Circuit Breaker 상태 전환을 감지하고 외부 시스템에 알림을 보냅니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
@@ -1798,17 +1800,20 @@
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="signal">Signal<a class="headerlink" href="#signal" title="Permanent link">&para;</a></h2>
-<p>리스너는 상태 전환 시 <code>Signal</code> 객체를 받습니다:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<p>Listener는 상태 전환 시 <code>Signal</code> 객체를 받습니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Signal</span><span class="p">:</span>
     <span class="n">circuit_name</span><span class="p">:</span> <span class="nb">str</span>     <span class="c1"># Circuit Breaker 이름</span>
     <span class="n">old_state</span><span class="p">:</span> <span class="n">StateEnum</span>  <span class="c1"># 이전 상태</span>
-    <span class="n">new_state</span><span class="p">:</span> <span class="n">StateEnum</span>  <span class="c1"># 새로운 상태</span>
-    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>      <span class="c1"># 전환 시각 (Unix timestamp)</span>
+    <span class="n">new_state</span><span class="p">:</span> <span class="n">StateEnum</span>  <span class="c1"># 새 상태</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>      <span class="c1"># 전환 시간 (Unix 타임스탬프)</span>
 </code></pre></div>
 <h2 id="sync-vs-async">동기 vs 비동기<a class="headerlink" href="#sync-vs-async" title="Permanent link">&para;</a></h2>
-<h3 id="ilistener">동기 리스너 (IListener)<a class="headerlink" href="#ilistener" title="Permanent link">&para;</a></h3>
-<p><code>CircuitBreaker</code>와 <code>AsyncCircuitBreaker</code> 모두에서 사용 가능:</p>
+<h3 id="listener-ilistener">동기 Listener (IListener)<a class="headerlink" href="#listener-ilistener" title="Permanent link">&para;</a></h3>
+<p><code>CircuitBreaker</code> 및 <code>AsyncCircuitBreaker</code> 모두에서 사용할 수 있습니다.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 
@@ -1816,11 +1821,14 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
-<blockquote>
-<p><strong>주의</strong>: <code>AsyncCircuitBreaker</code>에서 동기 리스너 사용 시, 블로킹 I/O 작업(네트워크 호출, 파일 쓰기 등)이 있다면 이벤트 루프를 막을 수 있습니다. 블로킹 작업이 필요한 경우 <code>IAsyncListener</code>를 사용하세요.</p>
-</blockquote>
-<h3 id="iasynclistener">비동기 리스너 (IAsyncListener)<a class="headerlink" href="#iasynclistener" title="Permanent link">&para;</a></h3>
-<p><code>AsyncCircuitBreaker</code>에서만 사용 가능:</p>
+<div class="admonition warning">
+<p class="admonition-title">주의</p>
+<p><code>AsyncCircuitBreaker</code>와 함께 동기 Listener를 사용할 때, 이벤트 루프를 차단하는 블로킹 I/O 작업(네트워크 호출 등)을 피하십시오. I/O가 필요한 작업에는 <code>IAsyncListener</code>를 사용하십시오.</p>
+</div>
+<h3 id="listener-iasynclistener">비동기 Listener (IAsyncListener)<a class="headerlink" href="#listener-iasynclistener" title="Permanent link">&para;</a></h3>
+<p><code>AsyncCircuitBreaker</code>에서만 사용할 수 있습니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAsyncListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 
@@ -1828,25 +1836,31 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">send_notification</span><span class="p">(</span><span class="n">signal</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="available-listeners">사용 가능한 리스너<a class="headerlink" href="#available-listeners" title="Permanent link">&para;</a></h2>
+<h2 id="available-listeners">사용 가능한 Listener<a class="headerlink" href="#available-listeners" title="Permanent link">&para;</a></h2>
 <h3 id="loglistener"><a href="logging/">LogListener</a><a class="headerlink" href="#loglistener" title="Permanent link">&para;</a></h3>
-<p>표준 라이브러리의 <code>logging</code> 모듈을 사용하여 상태 전환을 로깅합니다.</p>
+<p>Python의 표준 <code>logging</code> 모듈을 사용하여 Circuit Breaker 상태 전환을 로깅합니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
 </code></pre></div>
 <h3 id="prometheuslistener"><a href="prometheus/">PrometheusListener</a><a class="headerlink" href="#prometheuslistener" title="Permanent link">&para;</a></h3>
-<p>Prometheus 메트릭을 수집하여 모니터링 시스템과 연동합니다.</p>
+<p>모니터링 시스템과의 통합을 위해 Prometheus Metric을 수집합니다.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate<span class="o">[</span>prometheus<span class="o">]</span>
 </code></pre></div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">PrometheusListener</span><span class="p">()])</span>
 </code></pre></div>
 <h3 id="slacklistener-asyncslacklistener"><a href="slack/">SlackListener / AsyncSlackListener</a><a class="headerlink" href="#slacklistener-asyncslacklistener" title="Permanent link">&para;</a></h3>
-<p>Slack 채널에 상태 전환 알림을 전송합니다.</p>
+<p>Circuit Breaker 상태 전환 알림을 Slack 채널로 보냅니다.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate<span class="o">[</span>slack<span class="o">]</span>
 </code></pre></div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.slack</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackListener</span><span class="p">,</span> <span class="n">AsyncSlackListener</span>
 
 <span class="c1"># 동기</span>
@@ -1859,8 +1873,10 @@
     <span class="n">AsyncSlackListener</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">&quot;C1234567890&quot;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="s2">&quot;xoxb-...&quot;</span><span class="p">)</span>
 <span class="p">])</span>
 </code></pre></div>
-<h2 id="custom-listeners">커스텀 리스너<a class="headerlink" href="#custom-listeners" title="Permanent link">&para;</a></h2>
-<h3 id="_1">동기 리스너<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<h2 id="custom-listeners">커스텀 Listener<a class="headerlink" href="#custom-listeners" title="Permanent link">&para;</a></h2>
+<h3 id="listener_1">동기 Listener<a class="headerlink" href="#listener_1" title="Permanent link">&para;</a></h3>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
@@ -1876,7 +1892,7 @@
                 <span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
             <span class="p">)</span>
 </code></pre></div>
-<h3 id="_2">비동기 리스너<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<h3 id="listener_2">비동기 Listener<a class="headerlink" href="#listener_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAsyncListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
@@ -1889,14 +1905,16 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;circuit&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span>
-            <span class="s2">&quot;transition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;transition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="error-handling">에러 처리<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
-<p>리스너에서 예외가 발생해도 Circuit Breaker의 동작에는 영향을 주지 않습니다. 예외는 자동으로 로깅되며, Circuit Breaker는 정상적으로 동작을 계속합니다.</p>
-<h2 id="combining-listeners">여러 리스너 조합<a class="headerlink" href="#combining-listeners" title="Permanent link">&para;</a></h2>
+<p>Listener에서 발생하는 예외는 Circuit Breaker 동작에 영향을 미치지 않습니다. 예외는 로깅되며 Circuit Breaker는 정상적으로 계속 작동합니다.</p>
+<h2 id="combining-listeners">여러 Listener 조합<a class="headerlink" href="#combining-listeners" title="Permanent link">&para;</a></h2>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
@@ -1914,9 +1932,10 @@
 </code></pre></div>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="logging/">LogListener</a> - 로깅 설정</li>
-<li><a href="prometheus/">PrometheusListener</a> - Prometheus 연동</li>
+<li><a href="logging/">LogListener</a> - 로깅 구성</li>
+<li><a href="prometheus/">PrometheusListener</a> - Prometheus 통합</li>
 <li><a href="slack/">SlackListener</a> - Slack 알림 설정</li>
+<li><a href="./">개요</a> - Listener 개요로 돌아가기</li>
 </ul>
 
 

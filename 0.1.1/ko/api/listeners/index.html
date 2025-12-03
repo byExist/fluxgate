@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#listeners" class="md-skip">
+        <a href="#api-listener" class="md-skip">
           콘텐츠로 이동
         </a>
       
@@ -1344,6 +1344,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        로깅 Listener
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fluxgate.listeners.log.LogListener" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1372,6 +1383,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prometheus-listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Listener
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fluxgate.listeners.prometheus.PrometheusListener" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1396,6 +1418,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#slack-listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slack Listener
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1526,6 +1559,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        로깅 Listener
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fluxgate.listeners.log.LogListener" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1554,6 +1598,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prometheus-listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Listener
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fluxgate.listeners.prometheus.PrometheusListener" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1578,6 +1633,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#slack-listener" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slack Listener
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1657,7 +1723,11 @@
   
 
 
-<h1 id="listeners">Listeners<a class="headerlink" href="#listeners" title="Permanent link">&para;</a></h1>
+<h1 id="api-listener">API: Listener<a class="headerlink" href="#api-listener" title="Permanent link">&para;</a></h1>
+<p>이 페이지는 사용 가능한 Listener 구현을 문서화합니다. Listener를 사용하면 로깅, 모니터링 및 알림 시스템과 통합하여 Circuit Breaker 상태 변경에 반응할 수 있습니다.</p>
+<p>Listener 사용 및 사용자 정의에 대한 개요는 <a href="../../components/listeners/">Listener 컴포넌트 가이드</a>를 참조하십시오.</p>
+<hr />
+<h2 id="listener">로깅 Listener<a class="headerlink" href="#listener" title="Permanent link">&para;</a></h2>
 
 
 <div class="doc doc-object doc-class">
@@ -1760,7 +1830,9 @@ Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="prometheus-listener">Prometheus Listener<a class="headerlink" href="#prometheus-listener" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-class">
 
@@ -1876,7 +1948,9 @@ Works with both CircuitBreaker and AsyncCircuitBreaker.</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="slack-listener">Slack Listener<a class="headerlink" href="#slack-listener" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-class">
 

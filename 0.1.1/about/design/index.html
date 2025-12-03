@@ -1065,10 +1065,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#django-permissions" class="md-nav__link">
+  <a href="#django-rest-framework" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Django Permissions
+        Django REST Framework
       
     </span>
   </a>
@@ -1104,10 +1104,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#not-thread-safe" class="md-nav__link">
+  <a href="#circuitbreaker-is-not-thread-safe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Not Thread-Safe
+        CircuitBreaker is Not Thread-Safe
       
     </span>
   </a>
@@ -1546,10 +1546,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#django-permissions" class="md-nav__link">
+  <a href="#django-rest-framework" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Django Permissions
+        Django REST Framework
       
     </span>
   </a>
@@ -1585,10 +1585,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#not-thread-safe" class="md-nav__link">
+  <a href="#circuitbreaker-is-not-thread-safe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Not Thread-Safe
+        CircuitBreaker is Not Thread-Safe
       
     </span>
   </a>
@@ -1632,57 +1632,65 @@
 
 
 <h1 id="design-inspiration">Design &amp; Inspiration<a class="headerlink" href="#design-inspiration" title="Permanent link">&para;</a></h1>
-<p>This document explains Fluxgate's design decisions and the projects that influenced them.</p>
+<p>This document explains the core design philosophy of Fluxgate, the projects that inspired it, and the rationale behind key architectural decisions.</p>
 <h2 id="the-name">The Name<a class="headerlink" href="#the-name" title="Permanent link">&para;</a></h2>
-<p>A <a href="https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer">fluxgate magnetometer</a> is a sensor that detects changes in magnetic fields by monitoring saturation states and responding at thresholds. This mirrors how a circuit breaker monitors system health and trips when thresholds are exceeded.</p>
+<p>A <a href="https://en.wikipedia.org/wiki/Magnetometer#Fluxgate_magnetometer">fluxgate magnetometer</a> is a sensor that detects changes in magnetic fields by monitoring saturation states and responding when a threshold is exceeded. This mirrors how a circuit breaker monitors a system's health and "trips" when a failure threshold is passed.</p>
 <h2 id="inspiration">Inspiration<a class="headerlink" href="#inspiration" title="Permanent link">&para;</a></h2>
+<p>Fluxgate's design is heavily influenced by two fantastic, industry-proven projects.</p>
 <h3 id="resilience4j">Resilience4j<a class="headerlink" href="#resilience4j" title="Permanent link">&para;</a></h3>
-<p><a href="https://resilience4j.readme.io/">Resilience4j</a> is a lightweight fault tolerance library for Java, inspired by Netflix Hystrix. Fluxgate borrows several key concepts from Resilience4j:</p>
-<p>Resilience4j tracks call outcomes using sliding windows (count-based or time-based) rather than simple consecutive failure counting. This provides more accurate health assessment of services. Fluxgate adopts this approach.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Fluxgate&#39;s sliding window approach inspired by Resilience4j</span>
+<p><a href="https://resilience4j.readme.io/">Resilience4j</a> is a lightweight, popular fault tolerance library for Java. Fluxgate borrows its most critical concept: the use of <strong>sliding windows</strong> for tracking service health.</p>
+<p>Unlike simpler patterns that only track consecutive failures, a sliding window (either count-based or time-based) provides a much more accurate and robust assessment of a service's health over a recent period.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Fluxgate&#39;s sliding window approach is directly inspired by Resilience4j.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span><span class="p">,</span> <span class="n">TimeWindow</span>
 
-<span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Last 100 calls</span>
-<span class="n">window</span> <span class="o">=</span> <span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>    <span class="c1"># Last 60 seconds</span>
+<span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Tracks the last 100 calls.</span>
+<span class="n">window</span> <span class="o">=</span> <span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>    <span class="c1"># Tracks calls in the last 60 seconds.</span>
 </code></pre></div>
-<h3 id="django-permissions">Django Permissions<a class="headerlink" href="#django-permissions" title="Permanent link">&para;</a></h3>
-<p><a href="https://docs.djangoproject.com/en/stable/topics/auth/default/#permissions">Django's permission system</a> supports combining permissions using bitwise operators (<code>&amp;</code>, <code>|</code>, <code>~</code>). This elegant pattern inspired Fluxgate's composable components.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Django REST framework&#39;s composable permissions</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.views</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIView</span>
+<h3 id="django-rest-framework">Django REST Framework<a class="headerlink" href="#django-rest-framework" title="Permanent link">&para;</a></h3>
+<p><a href="https://www.django-rest-framework.org/api-guide/permissions/#how-permissions-are-determined">Django's permission system</a> uses a brilliant and highly flexible pattern of <strong>composable objects</strong> combined with logical operators (<code>&amp;</code>, <code>|</code>, <code>~</code>).</p>
+<!--pytest.mark.skip-->
+
+<div class="highlight"><pre><span></span><code><span class="c1"># In Django REST Framework, complex rules are built by combining simple permission classes.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.permissions</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsAuthenticated</span><span class="p">,</span> <span class="n">IsAdminUser</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
-    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">IsAdminUser</span> <span class="o">|</span> <span class="n">IsStaff</span><span class="p">)]</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span> <span class="o">&amp;</span> <span class="n">IsAdminUser</span><span class="p">]</span>
 </code></pre></div>
-<p>Fluxgate applies the same pattern to Trippers and Trackers:</p>
+<p>Fluxgate applies this exact same philosophy to its <code>Tracker</code> and <code>Tripper</code> components. Instead of forcing users to learn a complex configuration schema or use a clunky builder pattern, it provides simple, reusable building blocks that can be combined to create sophisticated rules.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">HalfOpened</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
 
-<span class="c1"># Composable trippers with logical operators</span>
+<span class="c1"># Complex tripping logic is created by combining simple trippers.</span>
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span>
     <span class="p">(</span><span class="n">Closed</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">|</span>
     <span class="p">(</span><span class="n">HalfOpened</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">))</span>
 <span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trackers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeOf</span>
-
-<span class="c1"># Composable trackers</span>
-<span class="n">tracker</span> <span class="o">=</span> <span class="n">TypeOf</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">TypeOf</span><span class="p">(</span><span class="n">CancellationError</span><span class="p">)</span>
-</code></pre></div>
-<p>This approach provides flexibility without complex configuration objects or builder patterns.</p>
+<p>This composable approach is at the heart of Fluxgate's flexibility.</p>
+<hr />
 <h2 id="design-decisions">Design Decisions<a class="headerlink" href="#design-decisions" title="Permanent link">&para;</a></h2>
+<p>Fluxgate makes two intentional design choices that differ from some other libraries.</p>
 <h3 id="no-distributed-state-sharing">No Distributed State Sharing<a class="headerlink" href="#no-distributed-state-sharing" title="Permanent link">&para;</a></h3>
-<p>Fluxgate does not support distributed state sharing (e.g., Redis storage). Each CircuitBreaker instance manages state within a single process.</p>
-<p>Distributed state is not a fundamental requirement of the circuit breaker pattern. The pattern's core purpose is to prevent cascading failures by quickly stopping calls to unhealthy services.</p>
+<p>Fluxgate's circuit breakers manage their state entirely within the application's process. There is no built-in support for sharing state across multiple processes or servers (e.g., via Redis).</p>
+<p>This was a deliberate decision based on the core purpose of the circuit breaker pattern. The goal is to protect an application from repeatedly calling an unhealthy service. This can be achieved effectively without distributed state.</p>
 <ul>
-<li>Each process can independently assess the health of downstream services. If a service is unhealthy, all processes will naturally detect this through their own failures.</li>
-<li>Adding distributed state introduces network latency, additional failure points, and operational complexity. These costs often outweigh the benefits.</li>
+<li><strong>Independent Assessment</strong>: If a downstream service is unhealthy, every instance of your application will naturally detect this through its own failed calls. The circuits will open independently and correctly on each server.</li>
+<li><strong>Simplicity and Resilience</strong>: Adding a dependency on a distributed state store (like Redis) introduces a new network dependency, a new point of failure, and significant operational complexity. A failure in the state store could disable the entire circuit breaking mechanism.</li>
+<li><strong>Performance</strong>: Relying on in-process memory is significantly faster than making a network call to check the state of the circuit on every request.</li>
 </ul>
-<h3 id="not-thread-safe">Not Thread-Safe<a class="headerlink" href="#not-thread-safe" title="Permanent link">&para;</a></h3>
-<p><code>CircuitBreaker</code> is not thread-safe. For concurrent workloads, use <code>AsyncCircuitBreaker</code> with asyncio.</p>
-<p>Currently, Python's Global Interpreter Lock (GIL) means that multi-threaded Python code doesn't achieve true parallelism for CPU-bound tasks. As a result, most I/O-bound Python applications benefit more from asyncio than from threading. Modern Python web frameworks (FastAPI, Starlette, aiohttp) are asyncio-based, making <code>AsyncCircuitBreaker</code> the natural choice.</p>
+<p>By keeping state local, Fluxgate remains lightweight, fast, and resilient, with zero external dependencies.</p>
+<h3 id="circuitbreaker-is-not-thread-safe"><code>CircuitBreaker</code> is Not Thread-Safe<a class="headerlink" href="#circuitbreaker-is-not-thread-safe" title="Permanent link">&para;</a></h3>
+<p>For concurrent applications, Fluxgate strongly encourages using <code>AsyncCircuitBreaker</code> with <code>asyncio</code>, not multi-threading with <code>CircuitBreaker</code>.</p>
+<p>The standard <code>CircuitBreaker</code> class is <strong>not thread-safe</strong>. This is an intentional choice reflecting the current state of Python's concurrency ecosystem.</p>
+<ul>
+<li>Due to Python's Global Interpreter Lock (GIL), multi-threading is not an effective strategy for parallelizing CPU-bound code and offers limited benefits for I/O-bound code compared to <code>asyncio</code>.</li>
+<li>The modern Python ecosystem has overwhelmingly embraced <code>asyncio</code> for high-performance I/O-bound tasks. Web frameworks (FastAPI, Starlette, aiohttp), database drivers (asyncpg), and HTTP clients (httpx) are all built on the <code>asyncio</code> event loop.</li>
+<li><code>AsyncCircuitBreaker</code> is the natural, idiomatic, and most performant way to use a circuit breaker in these modern applications.</li>
+</ul>
+<p>Focusing on a first-class <code>asyncio</code> experience provides a safer, more efficient, and more future-proof library.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../comparison/">Comparison</a> - Compare with other Python libraries</li>
-<li><a href="../../components/">Components</a> - Detailed component documentation</li>
+<li><a href="../comparison/">Comparison</a>: See how Fluxgate compares to other Python libraries.</li>
+<li><a href="../../components/">Components Overview</a>: Dive into the components that make up the library.</li>
 </ul>
 
 

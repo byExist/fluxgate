@@ -1672,82 +1672,70 @@
     <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://api.example.com/pay&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">amount</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
-<p>The circuit breaker operates in three main states:</p>
-<div class="highlight"><pre><span></span><code>CLOSED --[tripper]--&gt; OPEN --[retry]--&gt; HALF_OPEN --[!tripper]--&gt; CLOSED
-                       ^                   |
-                       +----[tripper]------+
+<p>A circuit breaker is a state machine that determines whether to allow or block calls to a service. It operates in three main states:</p>
+<div class="highlight"><pre><span></span><code>┌─────────┐           ┌──────┐
+│ CLOSED  │──────────&gt;│ OPEN │&lt;─────┐
+└─────────┘ [tripper] └──────┘      │
+     ^                    │         │
+     │                    │[retry]  │[tripper]
+     │                    v         │
+     │               ┌───────────┐  │
+     └───────────────│ HALF_OPEN │──┘
+        [!tripper]   └───────────┘
 </code></pre></div>
 <ul>
-<li><strong>CLOSED</strong>: Normal operation, all calls pass through</li>
-<li><strong>OPEN</strong>: Failure threshold exceeded, calls are blocked</li>
-<li><strong>HALF_OPEN</strong>: Testing recovery, limited calls allowed</li>
+<li><strong>CLOSED</strong>: This is the default state. All calls are permitted and a <code>tracker</code> monitors their outcomes. If the failure rate exceeds a configured threshold (the <code>tripper</code> condition), the breaker "trips" and moves to the <code>OPEN</code> state.</li>
+<li><strong>OPEN</strong>: In this state, the circuit breaker blocks all calls to the service, preventing further failures. After a configured <code>retry</code> timeout, it transitions to <code>HALF_OPEN</code>.</li>
+<li><strong>HALF_OPEN</strong>: The breaker allows a limited number of "probe" calls (controlled by a <code>permit</code>) to test if the service has recovered. If these calls succeed, the breaker returns to <code>CLOSED</code>. If they fail, it trips again and returns to <code>OPEN</code>.</li>
 </ul>
 <h2 id="core-components">Core Components<a class="headerlink" href="#core-components" title="Permanent link">&para;</a></h2>
-<p>Fluxgate uses composable components to build flexible failure detection logic:</p>
+<p>Fluxgate's power comes from its composable components. You can mix and match them to create precise and flexible failure detection logic tailored to your needs.</p>
 <table>
 <thead>
 <tr>
 <th>Component</th>
 <th>Purpose</th>
-<th>Examples</th>
+<th>Common Implementations</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Windows</strong></td>
-<td>Track call history</td>
-<td><code>CountWindow(100)</code> - last 100 calls</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td><code>TimeWindow(60)</code> - last 60 seconds</td>
+<td>Collects and stores recent call outcomes (success/failure).</td>
+<td><code>CountWindow(100)</code>: Stores the last 100 calls.<br/><code>TimeWindow(60)</code>: Stores calls from the last 60 seconds.</td>
 </tr>
 <tr>
 <td><strong>Trackers</strong></td>
-<td>Define what to track</td>
-<td><code>TypeOf(ConnectionError)</code> - track specific errors</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td><code>Custom(func)</code> - custom logic</td>
+<td>Decides whether a call's outcome should be tracked as a failure.</td>
+<td><code>TypeOf(ConnectionError)</code>: Tracks specific exception types.<br/><code>Custom(func)</code>: Use your own function for complex logic.</td>
 </tr>
 <tr>
 <td><strong>Trippers</strong></td>
-<td>When to open circuit</td>
-<td><code>FailureRate(0.5)</code> - 50% failure rate</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td><code>AvgLatency(2.0)</code> - slow responses</td>
+<td>Defines the condition for tripping the circuit from <code>CLOSED</code> to <code>OPEN</code>.</td>
+<td><code>FailureRate(0.5)</code>: Trips if failure rate exceeds 50%.<br/><code>AvgLatency(2.0)</code>: Trips if average response time is over 2 seconds.</td>
 </tr>
 <tr>
 <td><strong>Retries</strong></td>
-<td>When to retry</td>
-<td><code>Cooldown(60.0)</code> - wait 60 seconds</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td><code>Backoff(10.0)</code> - exponential backoff</td>
+<td>Determines when the circuit should transition from <code>OPEN</code> to <code>HALF_OPEN</code>.</td>
+<td><code>Cooldown(60.0)</code>: Waits for a fixed 60-second cooldown.<br/><code>Backoff(10.0)</code>: Uses an exponential backoff strategy starting at 10 seconds.</td>
 </tr>
 <tr>
 <td><strong>Permits</strong></td>
-<td>Control recovery</td>
-<td><code>Random(0.5)</code> - allow 50% of calls</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td><code>RampUp(0.1, 0.8, 60)</code> - gradual ramp</td>
+<td>Manages how many "probe" calls are allowed in the <code>HALF_OPEN</code> state.</td>
+<td><code>Random(0.5)</code>: Allows 50% of calls to pass through.<br/><code>RampUp(0.1, 0.8, 60)</code>: Gradually increases the allowed call ratio over 60 seconds.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="async-support">Async Support<a class="headerlink" href="#async-support" title="Permanent link">&para;</a></h2>
 <p>Full support for asyncio applications:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncCircuitBreaker</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncCircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trackers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeOf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Random</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">AsyncCircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;async_api&quot;</span><span class="p">,</span>
@@ -1761,11 +1749,17 @@
 
 <span class="nd">@cb</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_async_api</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://api.example.com/data&quot;</span><span class="p">)</span>
+    <span class="k">pass</span>  <span class="c1"># In production: async HTTP call</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_async_api</span><span class="p">()</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <h2 id="production-example">Production Example<a class="headerlink" href="#production-example" title="Permanent link">&para;</a></h2>
 <p>A production-ready circuit breaker for an external payment API:</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>

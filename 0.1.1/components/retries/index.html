@@ -761,15 +761,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-retry" class="md-nav__link">
+  <a href="#choosing-the-right-retry-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing a Retry
+        Choosing the Right Retry Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Choosing a Retry">
+    <nav class="md-nav" aria-label="Choosing the Right Retry Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -787,7 +787,7 @@
   <a href="#choose-always" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Always
+        When should I use Always?
       
     </span>
   </a>
@@ -798,7 +798,7 @@
   <a href="#choose-never" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Never
+        When should I use Never?
       
     </span>
   </a>
@@ -809,7 +809,7 @@
   <a href="#choose-cooldown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Cooldown
+        When should I use Cooldown?
       
     </span>
   </a>
@@ -820,7 +820,7 @@
   <a href="#choose-backoff" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Backoff
+        When should I use Backoff?
       
     </span>
   </a>
@@ -831,7 +831,7 @@
   <a href="#using-jitter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Jitter
+        A Note on Jitter
       
     </span>
   </a>
@@ -1597,15 +1597,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-retry" class="md-nav__link">
+  <a href="#choosing-the-right-retry-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing a Retry
+        Choosing the Right Retry Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Choosing a Retry">
+    <nav class="md-nav" aria-label="Choosing the Right Retry Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1623,7 +1623,7 @@
   <a href="#choose-always" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Always
+        When should I use Always?
       
     </span>
   </a>
@@ -1634,7 +1634,7 @@
   <a href="#choose-never" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Never
+        When should I use Never?
       
     </span>
   </a>
@@ -1645,7 +1645,7 @@
   <a href="#choose-cooldown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Cooldown
+        When should I use Cooldown?
       
     </span>
   </a>
@@ -1656,7 +1656,7 @@
   <a href="#choose-backoff" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose Backoff
+        When should I use Backoff?
       
     </span>
   </a>
@@ -1667,7 +1667,7 @@
   <a href="#using-jitter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Jitter
+        A Note on Jitter
       
     </span>
   </a>
@@ -1711,90 +1711,93 @@
 
 
 <h1 id="retries">Retries<a class="headerlink" href="#retries" title="Permanent link">&para;</a></h1>
-<p>Retry determines when to transition from OPEN to HALF_OPEN state.</p>
+<p>A Retry strategy defines the "cooling-off" period for a circuit breaker. It controls when the breaker should attempt to recover by transitioning from the <code>OPEN</code> state to the <code>HALF_OPEN</code> state. Choosing the right strategy is key to balancing fast recovery with giving a struggling service enough time to heal.</p>
 <table>
 <thead>
 <tr>
 <th>Retry Type</th>
 <th>Transition Timing</th>
-<th>Use Case</th>
+<th>Best For...</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Always</strong></td>
 <td>Immediately</td>
-<td>Quick recovery attempts</td>
+<td>Non-critical services where immediate retries are acceptable.</td>
 </tr>
 <tr>
 <td><strong>Never</strong></td>
-<td>No transition</td>
-<td>Manual recovery</td>
+<td>Manual only</td>
+<td>When recovery requires manual intervention by an operator.</td>
 </tr>
 <tr>
 <td><strong>Cooldown</strong></td>
-<td>After fixed wait time</td>
-<td>Fixed wait period</td>
+<td>After a fixed delay</td>
+<td>A simple, predictable wait time before attempting recovery.</td>
 </tr>
 <tr>
 <td><strong>Backoff</strong></td>
-<td>Exponential backoff</td>
-<td>Increasing wait on repeated failures</td>
+<td>After an exponentially increasing delay</td>
+<td>An adaptive approach that waits longer after repeated failures.</td>
 </tr>
 </tbody>
 </table>
+<hr />
 <h2 id="always">Always<a class="headerlink" href="#always" title="Permanent link">&para;</a></h2>
-<p>Immediately attempts HALF_OPEN transition on every call.</p>
+<p>This strategy moves the circuit to <code>HALF_OPEN</code> immediately after it opens. On any subsequent call, it will attempt a recovery.</p>
+<div class="admonition warning">
+<p class="admonition-title">Use with Caution</p>
+<p><code>Always</code> can be dangerous, as it encourages a "thundering herd" problem where many clients retry simultaneously, overwhelming a service that is trying to recover. It's best used for non-critical services where failures are known to be very brief.</p>
+</div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Always</span>
 
-<span class="c1"># Immediate recovery attempts</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Always</span><span class="p">(),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="c1"># Not generally recommended for production.</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">Always</span><span class="p">(),</span> <span class="o">...</span><span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="never">Never<a class="headerlink" href="#never" title="Permanent link">&para;</a></h2>
-<p>Keeps OPEN state until manual reset() is called.</p>
+<p>This strategy keeps the circuit in the <code>OPEN</code> state indefinitely until it is manually reset. This is useful when a service requires human intervention to be fixed.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Never</span>
 
-<span class="c1"># Manual recovery only</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Never</span><span class="p">(),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">Never</span><span class="p">(),</span> <span class="o">...</span><span class="p">)</span>
 
-<span class="c1"># Manual recovery</span>
+<span class="c1"># An operator must manually reset the breaker after fixing the service.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 </code></pre></div>
+<hr />
 <h2 id="cooldown">Cooldown<a class="headerlink" href="#cooldown" title="Permanent link">&para;</a></h2>
-<p>Transitions to HALF_OPEN after a fixed wait period.</p>
+<p>This is a simple and common strategy that waits for a fixed <code>duration</code> (in seconds) before moving to <code>HALF_OPEN</code>.</p>
+<p>It's a good default choice for services that tend to recover in a predictable amount of time.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span>
 
-<span class="c1"># Wait 60 seconds before recovery attempt</span>
+<span class="c1"># Wait for 60 seconds before the first recovery attempt.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">retry</span><span class="o">=</span><span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
-
-<span class="c1"># Add jitter to prevent thundering herd</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>  <span class="c1"># ±10% random</span>
-    <span class="o">...</span>
-<span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="backoff">Backoff<a class="headerlink" href="#backoff" title="Permanent link">&para;</a></h2>
-<p>Wait time increases exponentially with each retry.</p>
+<p>This is the most robust and recommended strategy for production systems. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.</p>
+<p>The wait time is calculated as <code>initial * (multiplier ** consecutive_failures)</code>.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
 
-<span class="c1"># Start at 10s, double each time, max 300s</span>
+<span class="c1"># The wait time starts at 10s, doubles after each failed recovery attempt,</span>
+<span class="c1"># and is capped at a maximum of 300s.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span>
@@ -1804,27 +1807,16 @@
     <span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
-<span class="c1"># Wait times by retry count:</span>
-<span class="c1"># 0 → 10s</span>
-<span class="c1"># 1 → 20s</span>
-<span class="c1"># 2 → 40s</span>
-<span class="c1"># 3 → 80s</span>
-<span class="c1"># 4 → 160s</span>
-<span class="c1"># 5+ → 300s</span>
-
-<span class="c1"># Add jitter</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span>
-        <span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
-        <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
-        <span class="n">max_duration</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span>
-        <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span>  <span class="c1"># ±10% random</span>
-    <span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="c1"># Sequence of wait times:</span>
+<span class="c1"># 1st attempt -&gt; 10s</span>
+<span class="c1"># 2nd attempt -&gt; 20s</span>
+<span class="c1"># 3rd attempt -&gt; 40s</span>
+<span class="c1"># 4th attempt -&gt; 80s</span>
+<span class="c1"># 5th attempt -&gt; 160s</span>
+<span class="c1"># 6th+ attempt -&gt; 300s (capped by max_duration)</span>
 </code></pre></div>
-<h2 id="choosing-a-retry">Choosing a Retry<a class="headerlink" href="#choosing-a-retry" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="choosing-the-right-retry-strategy">Choosing the Right Retry Strategy<a class="headerlink" href="#choosing-the-right-retry-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1838,11 +1830,11 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Recovery Speed</strong></td>
+<td><strong>Recovery</strong></td>
 <td>Immediate</td>
-<td>Not possible</td>
-<td>Fixed time</td>
-<td>Gradual increase</td>
+<td>Manual</td>
+<td>Fixed Delay</td>
+<td>Exponential Delay</td>
 </tr>
 <tr>
 <td><strong>Service Load</strong></td>
@@ -1852,66 +1844,62 @@
 <td>Low</td>
 </tr>
 <tr>
-<td><strong>Repeated Failure Handling</strong></td>
-<td>None</td>
+<td><strong>Handles Repeated Failures?</strong></td>
+<td>No</td>
 <td>N/A</td>
-<td>None</td>
-<td>Excellent</td>
+<td>No</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><strong>Complexity</strong></td>
-<td>Simple</td>
-<td>Simple</td>
+<td>Very Simple</td>
+<td>Very Simple</td>
 <td>Simple</td>
 <td>Medium</td>
 </tr>
+<tr>
+<td><strong>Recommended?</strong></td>
+<td>No</td>
+<td>For special cases</td>
+<td>Good default</td>
+<td><strong>Best for production</strong></td>
+</tr>
 </tbody>
 </table>
-<h3 id="choose-always">Choose Always<a class="headerlink" href="#choose-always" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
+<h3 id="choose-always">When should I use <code>Always</code>?<a class="headerlink" href="#choose-always" title="Permanent link">&para;</a></h3>
+<p>Only for non-critical services where failures are known to be extremely brief and the service can handle a high volume of retries.</p>
+<h3 id="choose-never">When should I use <code>Never</code>?<a class="headerlink" href="#choose-never" title="Permanent link">&para;</a></h3>
+<p>When a service requires manual intervention to fix. The circuit breaker will not attempt to recover on its own.</p>
 <ul>
-<li>Mostly transient failures</li>
-<li>Quick recovery is critical</li>
-<li>Service load is not a concern</li>
+<li><strong>Use case</strong>: During a planned deployment or when a service is taken down for maintenance.</li>
 </ul>
-<p><strong>Examples:</strong> Momentary network disconnection, temporary DNS errors</p>
-<h3 id="choose-never">Choose Never<a class="headerlink" href="#choose-never" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
+<h3 id="choose-cooldown">When should I use <code>Cooldown</code>?<a class="headerlink" href="#choose-cooldown" title="Permanent link">&para;</a></h3>
+<p>This is a great, simple default. It's best when you have a general idea of how long the service takes to recover.</p>
 <ul>
-<li>Manual intervention required</li>
-<li>Decision needed after monitoring</li>
+<li><strong>Use case</strong>: Protecting a service that has a predictable recovery time, like an external API with a fixed rate-limiting window.</li>
 </ul>
-<p><strong>Examples:</strong> During deployment, service under maintenance</p>
-<h3 id="choose-cooldown">Choose Cooldown<a class="headerlink" href="#choose-cooldown" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
+<h3 id="choose-backoff">When should I use <code>Backoff</code>?<a class="headerlink" href="#choose-backoff" title="Permanent link">&para;</a></h3>
+<p>This is the <strong>strongly recommended</strong> strategy for most production environments. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.</p>
 <ul>
-<li>Predictable recovery time</li>
-<li>Fixed wait time is sufficient</li>
-<li>Thundering herd prevention needed (use jitter)</li>
+<li><strong>Use case</strong>: Protecting a critical downstream service that may be slow to restart or recover from an outage.</li>
 </ul>
-<p><strong>Examples:</strong> External API rate limits, scheduled maintenance</p>
-<h3 id="choose-backoff">Choose Backoff<a class="headerlink" href="#choose-backoff" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>High likelihood of repeated failures</li>
-<li>Need to gradually reduce service load</li>
-<li>Recovery time is unpredictable</li>
-</ul>
-<p><strong>Examples:</strong> Service recovering from failure, overload conditions</p>
-<h3 id="using-jitter">Using Jitter<a class="headerlink" href="#using-jitter" title="Permanent link">&para;</a></h3>
-<p><strong>Add jitter when:</strong></p>
-<ul>
-<li>Multiple circuit breakers attempt recovery simultaneously</li>
-<li>Want to prevent thundering herd problem</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="c1"># jitter_ratio=0.1 → ±10% random</span>
-<span class="c1"># duration=60.0 → actual wait: 54~66s</span>
-<span class="n">retry</span> <span class="o">=</span> <span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<h3 id="using-jitter">A Note on Jitter<a class="headerlink" href="#using-jitter" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Always Add Jitter</p>
+<p>For both <code>Cooldown</code> and <code>Backoff</code>, it is highly recommended to add <strong>jitter</strong>. Jitter adds a small amount of randomness to the wait time, which helps prevent a "thundering herd" scenario where multiple instances of your service all try to recover at the exact same time.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span><span class="p">,</span> <span class="n">Backoff</span>
+
+<span class="c1"># For a 60s cooldown, jitter adds a +/- 6s random variation (54s to 66s).</span>
+<span class="n">retry_cooldown</span> <span class="o">=</span> <span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c1"># The same applies to each step of the backoff.</span>
+<span class="n">retry_backoff</span> <span class="o">=</span> <span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../permits/">Permits</a> - Call permission policies in HALF_OPEN state</li>
-<li><a href="../trippers/">Trippers</a> - Circuit state transition conditions</li>
+<li><a href="../permits/">Permits</a>: Configure how many "probe" calls are allowed during the <code>HALF_OPEN</code> recovery state.</li>
+<li><a href="../trippers/">Trippers</a>: Define the conditions that cause the circuit to trip in the first place.</li>
 </ul>
 
 

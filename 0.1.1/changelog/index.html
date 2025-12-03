@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-notes" class="md-skip">
+        <a href="#changelog" class="md-skip">
           Skip to content
         </a>
       
@@ -1087,15 +1087,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#011" class="md-nav__link">
+  <a href="#011-2024-xx-xx" class="md-nav__link">
     <span class="md-ellipsis">
       
-        0.1.1
+        [0.1.1] - 2024-XX-XX
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="0.1.1">
+    <nav class="md-nav" aria-label="[0.1.1] - 2024-XX-XX">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1440,15 +1440,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#011" class="md-nav__link">
+  <a href="#011-2024-xx-xx" class="md-nav__link">
     <span class="md-ellipsis">
       
-        0.1.1
+        [0.1.1] - 2024-XX-XX
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="0.1.1">
+    <nav class="md-nav" aria-label="[0.1.1] - 2024-XX-XX">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1487,20 +1487,21 @@
   
 
 
-<h1 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h1>
-<h2 id="011">0.1.1<a class="headerlink" href="#011" title="Permanent link">&para;</a></h2>
-<p>Initial release.</p>
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to this project will be documented in this file.</p>
+<h2 id="011-2024-xx-xx">[0.1.1] - 2024-XX-XX<a class="headerlink" href="#011-2024-xx-xx" title="Permanent link">&para;</a></h2>
+<p>This is the initial public release of Fluxgate.</p>
 <h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
 <ul>
-<li>✨ Add <code>CircuitBreaker</code> and <code>AsyncCircuitBreaker</code> for sync and async support.</li>
-<li>✨ Add sliding windows: <code>CountWindow</code> (count-based) and <code>TimeWindow</code> (time-based).</li>
-<li>✨ Add composable trackers with <code>&amp;</code>, <code>|</code>, <code>~</code> operators: <code>All</code>, <code>TypeOf</code>, <code>Custom</code>.</li>
-<li>✨ Add composable trippers with <code>&amp;</code>, <code>|</code> operators: <code>Closed</code>, <code>HalfOpened</code>, <code>MinRequests</code>, <code>FailureRate</code>, <code>AvgLatency</code>, <code>SlowRate</code>.</li>
-<li>✨ Add retry strategies: <code>Never</code>, <code>Always</code>, <code>Cooldown</code>, <code>Backoff</code>.</li>
-<li>✨ Add permit strategies: <code>Random</code>, <code>RampUp</code>.</li>
-<li>✨ Add listeners for monitoring: <code>LogListener</code>, <code>PrometheusListener</code>, <code>SlackListener</code>.</li>
-<li>✨ Add manual control methods: <code>disable()</code>, <code>enable()</code>, <code>force_open()</code>, <code>reset()</code>.</li>
-<li>✨ Full type hints with <code>py.typed</code> marker.</li>
+<li>✨ <strong>Core</strong>: Initial implementation of <code>CircuitBreaker</code> and <code>AsyncCircuitBreaker</code>.</li>
+<li>✨ <strong>Windows</strong>: Sliding window strategies (<code>CountWindow</code>, <code>TimeWindow</code>).</li>
+<li>✨ <strong>Trackers</strong>: Composable failure trackers (<code>All</code>, <code>TypeOf</code>, <code>Custom</code>) with <code>&amp;</code>, <code>|</code>, and <code>~</code> operators.</li>
+<li>✨ <strong>Trippers</strong>: Composable tripping conditions (<code>Closed</code>, <code>HalfOpened</code>, <code>MinRequests</code>, <code>FailureRate</code>, <code>AvgLatency</code>, <code>SlowRate</code>) with <code>&amp;</code> and <code>|</code> operators.</li>
+<li>✨ <strong>Retries</strong>: Recovery strategies (<code>Never</code>, <code>Always</code>, <code>Cooldown</code>, <code>Backoff</code>).</li>
+<li>✨ <strong>Permits</strong>: Gradual recovery strategies (<code>Random</code>, <code>RampUp</code>).</li>
+<li>✨ <strong>Listeners</strong>: Built-in monitoring and alerting integrations (<code>LogListener</code>, <code>PrometheusListener</code>, <code>SlackListener</code>).</li>
+<li>✨ <strong>Manual Control</strong>: Methods for manual intervention (<code>disable</code>, <code>metrics_only</code>, <code>force_open</code>, <code>reset</code>).</li>
+<li>✨ <strong>Typing</strong>: Full type hinting and <code>py.typed</code> compliance for excellent IDE support.</li>
 </ul>
 
 

@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#retries" class="md-skip">
+        <a href="#retry" class="md-skip">
           콘텐츠로 이동
         </a>
       
@@ -763,15 +763,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-retry" class="md-nav__link">
+  <a href="#retry_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        선택 가이드
+        올바른 Retry 선택
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="선택 가이드">
+    <nav class="md-nav" aria-label="올바른 Retry 선택">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -789,7 +789,7 @@
   <a href="#choose-always" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Always를 선택하세요
+        Always는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -800,7 +800,7 @@
   <a href="#choose-never" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Never를 선택하세요
+        Never는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -811,7 +811,7 @@
   <a href="#choose-cooldown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cooldown을 선택하세요
+        Cooldown은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -822,7 +822,7 @@
   <a href="#choose-backoff" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backoff를 선택하세요
+        Backoff는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -833,7 +833,7 @@
   <a href="#using-jitter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Jitter 사용
+        지터에 대한 참고 사항
       
     </span>
   </a>
@@ -1599,15 +1599,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-a-retry" class="md-nav__link">
+  <a href="#retry_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        선택 가이드
+        올바른 Retry 선택
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="선택 가이드">
+    <nav class="md-nav" aria-label="올바른 Retry 선택">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1625,7 +1625,7 @@
   <a href="#choose-always" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Always를 선택하세요
+        Always는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1636,7 +1636,7 @@
   <a href="#choose-never" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Never를 선택하세요
+        Never는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1647,7 +1647,7 @@
   <a href="#choose-cooldown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cooldown을 선택하세요
+        Cooldown은 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1658,7 +1658,7 @@
   <a href="#choose-backoff" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backoff를 선택하세요
+        Backoff는 언제 사용해야 하나요?
       
     </span>
   </a>
@@ -1669,7 +1669,7 @@
   <a href="#using-jitter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Jitter 사용
+        지터에 대한 참고 사항
       
     </span>
   </a>
@@ -1712,91 +1712,94 @@
   
 
 
-<h1 id="retries">Retries<a class="headerlink" href="#retries" title="Permanent link">&para;</a></h1>
-<p>Retry는 OPEN 상태에서 HALF_OPEN 상태로 전환할 시점을 결정합니다.</p>
+<h1 id="retry">Retry<a class="headerlink" href="#retry" title="Permanent link">&para;</a></h1>
+<p>Retry는 Circuit Breaker의 "쿨다운" 기간을 정의합니다. <code>OPEN</code> 상태에서 <code>HALF_OPEN</code> 상태로 전환하여 복구를 시도해야 하는 시점을 제어합니다.</p>
 <table>
 <thead>
 <tr>
-<th>Retry 타입</th>
+<th>Retry 유형</th>
 <th>전환 시점</th>
-<th>사용 사례</th>
+<th>적합한 경우</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Always</strong></td>
 <td>즉시</td>
-<td>빠른 복구 시도</td>
+<td>즉각적인 Retry가 허용되는 중요하지 않은 서비스</td>
 </tr>
 <tr>
 <td><strong>Never</strong></td>
-<td>전환 불가</td>
-<td>수동 복구</td>
+<td>수동으로만</td>
+<td>복구에 운영자의 수동 개입이 필요한 경우</td>
 </tr>
 <tr>
 <td><strong>Cooldown</strong></td>
-<td>고정 대기 시간 후</td>
-<td>일정 시간 대기</td>
+<td>고정 지연 후</td>
+<td>일정 시간 대기 후 복구를 시도하기 원하는 경우</td>
 </tr>
 <tr>
 <td><strong>Backoff</strong></td>
-<td>지수 백오프</td>
-<td>반복 실패 시 대기 시간 증가</td>
+<td>지수적으로 증가하는 지연 후</td>
+<td>반복적인 실패 후 더 오래 기다리는 적응형 접근 방식</td>
 </tr>
 </tbody>
 </table>
+<hr />
 <h2 id="always">Always<a class="headerlink" href="#always" title="Permanent link">&para;</a></h2>
-<p>매 호출마다 즉시 HALF_OPEN으로 전환을 시도합니다.</p>
+<p>회로가 열린 직후 <code>HALF_OPEN</code>으로 이동시킵니다. 이후 모든 호출에서 복구를 시도합니다.</p>
+<div class="admonition warning">
+<p class="admonition-title">주의해서 사용하십시오</p>
+<p><code>Always</code>는 많은 클라이언트가 동시에 Retry하여 복구 중인 서비스에 과부하를 주는 "동시다발적인 요청" 문제를 야기할 수 있으므로 위험할 수 있습니다. 실패가 매우 짧은 것으로 알려진 중요하지 않은 서비스에 가장 적합합니다.</p>
+</div>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Always</span>
 
-<span class="c1"># 즉시 복구 시도</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Always</span><span class="p">(),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="c1"># 일반적으로 프로덕션 환경에서는 권장되지 않습니다.</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">Always</span><span class="p">(),</span> <span class="o">...</span><span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="never">Never<a class="headerlink" href="#never" title="Permanent link">&para;</a></h2>
-<p>수동으로 reset()을 호출할 때까지 OPEN 상태를 유지합니다.</p>
+<p>수동으로 재설정될 때까지 회로를 <code>OPEN</code> 상태로 무기한 유지합니다. 서비스 복구에 사람의 개입이 필요할 때 유용합니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Never</span>
 
-<span class="c1"># 수동 복구만 허용</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Never</span><span class="p">(),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">Never</span><span class="p">(),</span> <span class="o">...</span><span class="p">)</span>
 
-<span class="c1"># 수동 복구</span>
+<span class="c1"># 운영자는 서비스 복구 후 수동으로 브레이커를 재설정해야 합니다.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 </code></pre></div>
+<hr />
 <h2 id="cooldown">Cooldown<a class="headerlink" href="#cooldown" title="Permanent link">&para;</a></h2>
-<p>고정된 대기 시간 후 HALF_OPEN으로 전환합니다.</p>
+<p><code>HALF_OPEN</code>으로 이동하기 전에 고정된 <code>duration</code>(초 단위) 동안 기다립니다.</p>
+<p>예측 가능한 시간 내에 복구가 예상되는 서비스일 경우 선택할 수 있습니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span>
 
-<span class="c1"># 60초 대기 후 복구 시도</span>
+<span class="c1"># 첫 번째 복구 시도 전에 60초 동안 기다립니다.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">retry</span><span class="o">=</span><span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
-
-<span class="c1"># jitter 추가로 thundering herd 방지</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>  <span class="c1"># ±10% 랜덤</span>
-    <span class="o">...</span>
-<span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="backoff">Backoff<a class="headerlink" href="#backoff" title="Permanent link">&para;</a></h2>
-<p>재시도 횟수에 따라 대기 시간이 지수적으로 증가합니다.</p>
+<p>각 연속적인 실패 후에 대기 시간을 지수적으로 증가시켜, 서비스가 복구할 시간을 더 많이 제공합니다.</p>
+<p>대기 시간은 <code>initial * (multiplier ** consecutive_failures)</code>로 계산됩니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
 
-<span class="c1"># 10초부터 시작, 2배씩 증가, 최대 300초</span>
+<span class="c1"># 대기 시간은 10초에서 시작하여, 실패한 각 복구 시도 후에 두 배가 되며,</span>
+<span class="c1"># 최대 300초로 제한됩니다.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
     <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span>
@@ -1806,32 +1809,21 @@
     <span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
-<span class="c1"># 재시도 횟수별 대기 시간:</span>
-<span class="c1"># 0회 → 10초</span>
-<span class="c1"># 1회 → 20초</span>
-<span class="c1"># 2회 → 40초</span>
-<span class="c1"># 3회 → 80초</span>
-<span class="c1"># 4회 → 160초</span>
-<span class="c1"># 5회 이상 → 300초</span>
-
-<span class="c1"># jitter 추가</span>
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
-    <span class="n">retry</span><span class="o">=</span><span class="n">Backoff</span><span class="p">(</span>
-        <span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
-        <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
-        <span class="n">max_duration</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span>
-        <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span>  <span class="c1"># ±10% 랜덤</span>
-    <span class="p">),</span>
-    <span class="o">...</span>
-<span class="p">)</span>
+<span class="c1"># 대기 시간 시퀀스</span>
+<span class="c1"># 1차 시도 -&gt; 10초</span>
+<span class="c1"># 2차 시도 -&gt; 20초</span>
+<span class="c1"># 3차 시도 -&gt; 40초</span>
+<span class="c1"># 4차 시도 -&gt; 80초</span>
+<span class="c1"># 5차 시도 -&gt; 160초</span>
+<span class="c1"># 6차 이상 시도 -&gt; 300초 \(max_duration으로 제한\)</span>
 </code></pre></div>
-<h2 id="choosing-a-retry">선택 가이드<a class="headerlink" href="#choosing-a-retry" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="retry_1">올바른 Retry 선택<a class="headerlink" href="#retry_1" title="Permanent link">&para;</a></h2>
 <h3 id="comparison">비교<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>특성</th>
+<th>기능</th>
 <th>Always</th>
 <th>Never</th>
 <th>Cooldown</th>
@@ -1840,11 +1832,11 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>복구 속도</strong></td>
+<td><strong>복구</strong></td>
 <td>즉시</td>
-<td>불가능</td>
-<td>고정 시간</td>
-<td>점진적 증가</td>
+<td>수동</td>
+<td>고정 지연</td>
+<td>지수 지연</td>
 </tr>
 <tr>
 <td><strong>서비스 부하</strong></td>
@@ -1854,66 +1846,62 @@
 <td>낮음</td>
 </tr>
 <tr>
-<td><strong>반복 실패 대응</strong></td>
-<td>없음</td>
-<td>N/A</td>
-<td>없음</td>
-<td>우수</td>
+<td><strong>반복 실패 처리</strong></td>
+<td>아니요</td>
+<td>해당 없음</td>
+<td>아니요</td>
+<td>예</td>
 </tr>
 <tr>
-<td><strong>사용 복잡도</strong></td>
-<td>단순</td>
-<td>단순</td>
-<td>단순</td>
+<td><strong>복잡성</strong></td>
+<td>매우 간단</td>
+<td>매우 간단</td>
+<td>간단</td>
 <td>중간</td>
+</tr>
+<tr>
+<td><strong>권장 여부</strong></td>
+<td>아니요</td>
+<td>특수 사례용</td>
+<td>좋은 기본값</td>
+<td><strong>프로덕션에 가장 적합</strong></td>
 </tr>
 </tbody>
 </table>
-<h3 id="choose-always">Always를 선택하세요<a class="headerlink" href="#choose-always" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
+<h3 id="choose-always"><code>Always</code>는 언제 사용해야 하나요?<a class="headerlink" href="#choose-always" title="Permanent link">&para;</a></h3>
+<p>실패가 극히 짧고 서비스가 많은 Retry 볼륨을 처리할 수 있는 것으로 알려진 중요하지 않은 서비스에만 사용합니다.</p>
+<h3 id="choose-never"><code>Never</code>는 언제 사용해야 하나요?<a class="headerlink" href="#choose-never" title="Permanent link">&para;</a></h3>
+<p>서비스 복구에 수동 개입이 필요할 때 사용합니다. Circuit Breaker는 자체적으로 복구를 시도하지 않습니다.</p>
 <ul>
-<li>일시적 장애가 대부분인 경우</li>
-<li>빠른 복구가 중요한 경우</li>
-<li>서비스 부하가 문제되지 않는 경우</li>
+<li><strong>사용 사례</strong>: 계획된 배포 중이거나 서비스가 유지보수를 위해 중단되었을 때.</li>
 </ul>
-<p><strong>예시:</strong> 네트워크 순간 단절, 일시적 DNS 오류</p>
-<h3 id="choose-never">Never를 선택하세요<a class="headerlink" href="#choose-never" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
+<h3 id="choose-cooldown"><code>Cooldown</code>은 언제 사용해야 하나요?<a class="headerlink" href="#choose-cooldown" title="Permanent link">&para;</a></h3>
+<p>간단한 기본값입니다. 서비스가 복구하는 데 걸리는 시간에 대한 일반적인 예측치가 있을 때 가장 좋습니다.</p>
 <ul>
-<li>수동 개입이 필요한 경우</li>
-<li>모니터링 후 결정이 필요한 경우</li>
+<li><strong>사용 사례</strong>: 고정된 속도 제한 Window를 가진 외부 API와 같이 예측 가능한 복구 시간을 가진 서비스를 보호할 때.</li>
 </ul>
-<p><strong>예시:</strong> 배포 중단, 점검 중인 서비스</p>
-<h3 id="choose-cooldown">Cooldown을 선택하세요<a class="headerlink" href="#choose-cooldown" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
+<h3 id="choose-backoff"><code>Backoff</code>는 언제 사용해야 하나요?<a class="headerlink" href="#choose-backoff" title="Permanent link">&para;</a></h3>
+<p>대부분의 프로덕션 환경에서 권장됩니다. 이는 반복적인 실패 시 복구할 시간을 더 많이 제공합니다.</p>
 <ul>
-<li>예측 가능한 복구 시간</li>
-<li>고정된 대기 시간으로 충분한 경우</li>
-<li>Thundering herd 방지 필요 (jitter 사용)</li>
+<li><strong>사용 사례</strong>: 다시 시작하거나 중단에서 복구하는 데 느릴 수 있는 중요한 하위 스트림 서비스를 보호할 때.</li>
 </ul>
-<p><strong>예시:</strong> 외부 API rate limit, 스케줄된 점검</p>
-<h3 id="choose-backoff">Backoff를 선택하세요<a class="headerlink" href="#choose-backoff" title="Permanent link">&para;</a></h3>
-<p><strong>적합한 경우:</strong></p>
-<ul>
-<li>반복 실패 가능성이 높은 경우</li>
-<li>서비스 부하를 점진적으로 줄여야 하는 경우</li>
-<li>복구 시간을 예측하기 어려운 경우</li>
-</ul>
-<p><strong>예시:</strong> 장애 복구 중인 서비스, 과부하 상태</p>
-<h3 id="using-jitter">Jitter 사용<a class="headerlink" href="#using-jitter" title="Permanent link">&para;</a></h3>
-<p><strong>Jitter를 추가하세요:</strong></p>
-<ul>
-<li>다수의 circuit breaker가 동시에 복구를 시도하는 경우</li>
-<li>Thundering herd 문제를 방지하고 싶은 경우</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="c1"># jitter_ratio=0.1 → ±10% 랜덤</span>
-<span class="c1"># duration=60.0 → 실제 대기: 54~66초</span>
-<span class="n">retry</span> <span class="o">=</span> <span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<h3 id="using-jitter">지터에 대한 참고 사항<a class="headerlink" href="#using-jitter" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">지터를 추가하세요</p>
+<p>어플리케이션 서비스가 여러 인스턴스로 동작하는 경우, <code>Cooldown</code>과 <code>Backoff</code> 모두에 <strong>jitter</strong>를 추가하세요. 동시에 복구를 시도하는 "동시다발적인 요청" 시나리오를 방지하는 데 도움이 됩니다.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cooldown</span><span class="p">,</span> <span class="n">Backoff</span>
+
+<span class="c1"># 60초 쿨다운의 경우, 지터는 +/- 6초의 무작위 변동을 추가합니다 \(54초에서 66초\).</span>
+<span class="n">retry_cooldown</span> <span class="o">=</span> <span class="n">Cooldown</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c1"># 동일하게 백오프의 각 단계에도 적용됩니다.</span>
+<span class="n">retry_backoff</span> <span class="o">=</span> <span class="n">Backoff</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">jitter_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../permits/">Permits</a> - HALF_OPEN 상태에서 호출 허용 정책</li>
-<li><a href="../trippers/">Trippers</a> - Circuit 상태 전환 조건</li>
+<li><a href="../permits/">Permits</a>: <code>HALF_OPEN</code> 복구 상태에서 허용되는 "프로브" 호출 수를 구성합니다.</li>
+<li><a href="../trippers/">Trippers</a>: 회로가 트립되는 조건을 정의합니다.</li>
 </ul>
 
 

@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#trippers" class="md-skip">
+        <a href="#api-trippers" class="md-skip">
           Skip to content
         </a>
       
@@ -1767,7 +1767,10 @@
   
 
 
-<h1 id="trippers">Trippers<a class="headerlink" href="#trippers" title="Permanent link">&para;</a></h1>
+<h1 id="api-trippers">API: Trippers<a class="headerlink" href="#api-trippers" title="Permanent link">&para;</a></h1>
+<p>This page documents the available tripping strategies. Trippers are responsible for evaluating metrics from a <code>window</code> to decide if the circuit should change state.</p>
+<p>For a high-level guide on choosing and combining trippers, see the <a href="../../components/trippers/">Trippers Component Guide</a>.</p>
+<hr />
 
 
 <div class="doc doc-object doc-class">
@@ -1825,7 +1828,7 @@
 
 
 <a href="#fluxgate.trippers.Closed.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">_metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">_metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1905,7 +1908,7 @@
 
 
 <a href="#fluxgate.trippers.HalfOpened.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">_metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">_metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2028,7 +2031,7 @@
 
 
 <a href="#fluxgate.trippers.MinRequests.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2151,7 +2154,7 @@
 
 
 <a href="#fluxgate.trippers.FailureRate.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2280,7 +2283,7 @@
 
 
 <a href="#fluxgate.trippers.AvgLatency.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2410,7 +2413,7 @@ Slow calls are determined by the circuit breaker's slow_threshold.</p>
 
 
 <a href="#fluxgate.trippers.SlowRate.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.StateEnum (fluxgate.state.StateEnum)" href="../core/#fluxgate.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__call__</span><span class="p">(</span><span class="n">metric</span><span class="p">:</span> <span class="n"><span title="fluxgate.metric.Metric">Metric</span></span><span class="p">,</span> <span class="n">_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            fluxgate.state.StateEnum" href="../core/#fluxgate.state.StateEnum">StateEnum</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

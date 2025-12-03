@@ -645,17 +645,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#countwindow-basic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#countwindow-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -667,10 +656,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#countwindow-use-cases" class="md-nav__link">
+  <a href="#countwindow-basic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage Scenarios
+        Basic Usage
       
     </span>
   </a>
@@ -695,17 +684,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#timewindow-basic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#timewindow-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -717,10 +695,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#timewindow-use-cases" class="md-nav__link">
+  <a href="#timewindow-basic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage Scenarios
+        Basic Usage
       
     </span>
   </a>
@@ -759,7 +737,7 @@
   <a href="#choose-countwindow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose CountWindow
+        When should I use CountWindow?
       
     </span>
   </a>
@@ -770,7 +748,7 @@
   <a href="#choose-timewindow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose TimeWindow
+        When should I use TimeWindow?
       
     </span>
   </a>
@@ -797,7 +775,7 @@
   <a href="#auto-reset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reset
+        Automatic Reset
       
     </span>
   </a>
@@ -1621,17 +1599,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#countwindow-basic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#countwindow-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1643,10 +1610,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#countwindow-use-cases" class="md-nav__link">
+  <a href="#countwindow-basic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage Scenarios
+        Basic Usage
       
     </span>
   </a>
@@ -1671,17 +1638,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#timewindow-basic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#timewindow-how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1693,10 +1649,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#timewindow-use-cases" class="md-nav__link">
+  <a href="#timewindow-basic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage Scenarios
+        Basic Usage
       
     </span>
   </a>
@@ -1735,7 +1691,7 @@
   <a href="#choose-countwindow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose CountWindow
+        When should I use CountWindow?
       
     </span>
   </a>
@@ -1746,7 +1702,7 @@
   <a href="#choose-timewindow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choose TimeWindow
+        When should I use TimeWindow?
       
     </span>
   </a>
@@ -1773,7 +1729,7 @@
   <a href="#auto-reset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reset
+        Automatic Reset
       
     </span>
   </a>
@@ -1823,75 +1779,63 @@
 
 
 <h1 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h1>
-<p>Windows track recent calls (successes/failures, response times) and provide metrics that trippers use to determine circuit state.</p>
+<p>Windows are the memory of the circuit breaker. They store recent call outcomes (like successes, failures, and response times) and provide the metrics that <code>trippers</code> use to decide whether to open the circuit.</p>
+<p>Fluxgate provides two types of windows:</p>
 <table>
 <thead>
 <tr>
 <th>Window Type</th>
 <th>Tracking Method</th>
-<th>Use Cases</th>
+<th>Best For...</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>CountWindow</strong></td>
 <td>Last N calls</td>
-<td>Fixed call count evaluation</td>
+<td>Services with stable traffic, where you want to evaluate a fixed number of recent operations.</td>
 </tr>
 <tr>
 <td><strong>TimeWindow</strong></td>
 <td>Last N seconds</td>
-<td>Time-based evaluation, traffic variations</td>
+<td>Services with variable or bursty traffic, where time-based evaluation is more meaningful.</td>
 </tr>
 </tbody>
 </table>
+<hr />
 <h2 id="countwindow">CountWindow<a class="headerlink" href="#countwindow" title="Permanent link">&para;</a></h2>
-<p>Tracks a fixed number of recent calls.</p>
-<h3 id="countwindow-basic">Basic Usage<a class="headerlink" href="#countwindow-basic" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>
-
-<span class="c1"># Track last 100 calls</span>
-<span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
+<p><code>CountWindow</code> tracks a fixed number of the most recent calls. It's a great choice for services with stable and predictable traffic patterns.</p>
 <h3 id="countwindow-how-it-works">How It Works<a class="headerlink" href="#countwindow-how-it-works" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Maintains only the most recent N calls in memory</li>
-<li>When window is full, evicts the oldest record</li>
-<li>Consistent evaluation even with low call volumes</li>
-</ul>
-<h3 id="countwindow-use-cases">Usage Scenarios<a class="headerlink" href="#countwindow-use-cases" title="Permanent link">&para;</a></h3>
+<p>It maintains a fixed-size circular buffer in memory. When a new call is recorded, it overwrites the oldest one if the window is full. This guarantees that the window always contains exactly the last N calls, providing a consistent volume for evaluation.</p>
+<h3 id="countwindow-basic">Basic Usage<a class="headerlink" href="#countwindow-basic" title="Permanent link">&para;</a></h3>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>
 
-<span class="c1"># API with stable traffic patterns</span>
+<span class="c1"># This breaker will base its decisions on the last 100 calls.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stable_api&quot;</span><span class="p">,</span>
-    <span class="n">window</span><span class="o">=</span><span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">),</span>  <span class="c1"># Evaluate last 100 calls</span>
+    <span class="n">window</span><span class="o">=</span><span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
+<hr />
 <h2 id="timewindow">TimeWindow<a class="headerlink" href="#timewindow" title="Permanent link">&para;</a></h2>
-<p>Tracks calls from the last N seconds based on time.</p>
-<h3 id="timewindow-basic">Basic Usage<a class="headerlink" href="#timewindow-basic" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeWindow</span>
-
-<span class="c1"># Track last 60 seconds</span>
-<span class="n">window</span> <span class="o">=</span> <span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-</code></pre></div>
+<p><code>TimeWindow</code> tracks calls that have occurred over the last N seconds. It's ideal for services with irregular or bursty traffic where a time-based perspective is more important than a call count.</p>
 <h3 id="timewindow-how-it-works">How It Works<a class="headerlink" href="#timewindow-how-it-works" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Divides time into 1-second buckets</li>
-<li>Each bucket aggregates all calls during that second</li>
-<li>Old buckets automatically expire and are reused</li>
-</ul>
-<h3 id="timewindow-use-cases">Usage Scenarios<a class="headerlink" href="#timewindow-use-cases" title="Permanent link">&para;</a></h3>
+<p>It uses a series of time-based buckets (one for each second in the window). When a call is recorded, its outcome is aggregated into the bucket corresponding to the current timestamp. Old buckets that fall outside the time window expire automatically and are reused.</p>
+<p>This approach ensures that a sudden burst of failures doesn't dominate the metrics for too long.</p>
+<h3 id="timewindow-basic">Basic Usage<a class="headerlink" href="#timewindow-basic" title="Permanent link">&para;</a></h3>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeWindow</span>
 
-<span class="c1"># API with variable traffic</span>
+<span class="c1"># This breaker will base its decisions on calls made in the last 60 seconds.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;variable_traffic_api&quot;</span><span class="p">,</span>
-    <span class="n">window</span><span class="o">=</span><span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># Evaluate last 60 seconds</span>
+    <span class="n">window</span><span class="o">=</span><span class="n">TimeWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -1907,65 +1851,61 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Tracking</strong></td>
-<td>Last N calls</td>
-<td>Last N seconds</td>
-</tr>
-<tr>
-<td><strong>Memory</strong></td>
-<td>Exactly N records</td>
-<td>N buckets (1-second each)</td>
+<td><strong>Memory Usage</strong></td>
+<td>Proportional to the number of calls (<code>size</code>).</td>
+<td>Proportional to the duration in seconds (<code>size</code>).</td>
 </tr>
 <tr>
 <td><strong>Traffic Spikes</strong></td>
-<td>Old data pushed out quickly</td>
-<td>Maintains data for consistent duration</td>
+<td>A burst of calls can quickly flush out old data.</td>
+<td>Retains data for the full duration, smoothing out bursts.</td>
 </tr>
 <tr>
 <td><strong>Low Traffic</strong></td>
-<td>Fast metric collection</td>
-<td>Slower data collection</td>
+<td>Gathers a full set of metrics faster.</td>
+<td>May take longer to collect enough data to be meaningful.</td>
 </tr>
 <tr>
-<td><strong>Evaluation Range</strong></td>
-<td>Varies with traffic patterns</td>
-<td>Always consistent (N seconds)</td>
+<td><strong>Evaluation Basis</strong></td>
+<td>A fixed number of calls.</td>
+<td>A fixed duration of time.</td>
 </tr>
 <tr>
-<td><strong>Overhead</strong></td>
-<td>Low</td>
-<td>Slightly higher</td>
+<td><strong>Granularity</strong></td>
+<td>Per-call.</td>
+<td>Per-second.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="choose-countwindow">Choose CountWindow<a class="headerlink" href="#choose-countwindow" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
+<h3 id="choose-countwindow">When should I use <code>CountWindow</code>?<a class="headerlink" href="#choose-countwindow" title="Permanent link">&para;</a></h3>
+<p><code>CountWindow</code> is an excellent choice when you have:</p>
 <ul>
-<li>Stable and predictable traffic</li>
-<li>Memory efficiency is important</li>
-<li>Fast metric collection needed</li>
+<li><strong>Stable and predictable traffic</strong>: The rate of calls doesn't fluctuate dramatically.</li>
+<li><strong>A need for memory efficiency</strong>: It often consumes less memory than <code>TimeWindow</code> for equivalent coverage.</li>
+<li><strong>A desire for fast evaluation</strong>: It can fill up and provide meaningful metrics quickly.</li>
 </ul>
-<p><strong>Examples:</strong> Internal microservice communication, batch jobs</p>
-<h3 id="choose-timewindow">Choose TimeWindow<a class="headerlink" href="#choose-timewindow" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
+<p><strong>Common use cases</strong>: Internal microservice-to-microservice communication, background processing, or batch jobs.</p>
+<h3 id="choose-timewindow">When should I use <code>TimeWindow</code>?<a class="headerlink" href="#choose-timewindow" title="Permanent link">&para;</a></h3>
+<p><code>TimeWindow</code> is generally recommended and is a safer default choice, especially when you have:</p>
 <ul>
-<li>Irregular traffic patterns</li>
-<li>Time-based policies needed</li>
-<li>Real-time monitoring is important</li>
+<li><strong>Irregular or bursty traffic</strong>: It handles sudden spikes in traffic gracefully.</li>
+<li><strong>A need for time-based policies</strong>: Your SLOs are likely defined in terms of time (e.g., "99.9% uptime over any 5-minute window").</li>
+<li><strong>A focus on real-time responsiveness</strong>: It ensures that decisions are always based on a recent time period, regardless of call volume.</li>
 </ul>
-<p><strong>Examples:</strong> Public APIs, user-facing services, external service calls</p>
+<p><strong>Common use cases</strong>: Public-facing APIs, user-facing services, or calls to volatile external services.</p>
+<hr />
 <h2 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
-<p>Both window types provide the same metrics:</p>
+<p>Both window types provide the same rich set of metrics for <code>trippers</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.windows</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountWindow</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.metric</span><span class="w"> </span><span class="kn">import</span> <span class="n">Record</span>
 
 <span class="n">window</span> <span class="o">=</span> <span class="n">CountWindow</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
-<span class="c1"># Record calls</span>
-<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Record</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1234567890.0</span><span class="p">))</span>
-<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Record</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1234567891.0</span><span class="p">))</span>
+<span class="c1"># Record calls manually</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Record</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Record</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">1.2</span><span class="p">))</span>
 
-<span class="c1"># Get metrics</span>
+<span class="c1"># Get the aggregated metric object</span>
 <span class="n">metric</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">get_metric</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total calls: </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">total_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed calls: </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">failure_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1973,16 +1913,17 @@
 </code></pre></div>
 <p><strong>Available Metrics:</strong></p>
 <ul>
-<li><code>total_count</code> - Total number of calls</li>
-<li><code>failure_count</code> - Number of failed calls</li>
-<li><code>total_duration</code> - Total response time</li>
-<li><code>slow_count</code> - Number of slow calls</li>
-<li><code>avg_duration</code> - Average response time (computed property)</li>
-<li><code>failure_rate</code> - Failure rate (computed property)</li>
-<li><code>slow_rate</code> - Slow call rate (computed property)</li>
+<li><code>total_count</code>: Total number of calls recorded in the window.</li>
+<li><code>failure_count</code>: Number of calls tracked as failures.</li>
+<li><code>total_duration</code>: Sum of the durations of all calls.</li>
+<li><code>slow_count</code>: Number of calls that exceeded the <code>slow_threshold</code>.</li>
+<li><code>avg_duration</code>: The average response time (<code>total_duration / total_count</code>).</li>
+<li><code>failure_rate</code>: The ratio of failed calls (<code>failure_count / total_count</code>).</li>
+<li><code>slow_rate</code>: The ratio of slow calls (<code>slow_count / total_count</code>).</li>
 </ul>
-<h2 id="auto-reset">Reset<a class="headerlink" href="#auto-reset" title="Permanent link">&para;</a></h2>
-<p>Windows are reset when the circuit breaker's state changes.</p>
+<hr />
+<h2 id="auto-reset">Automatic Reset<a class="headerlink" href="#auto-reset" title="Permanent link">&para;</a></h2>
+<p>Windows automatically clear their metrics when the circuit breaker transitions between states (e.g., <code>OPEN</code> → <code>HALF_OPEN</code> or <code>HALF_OPEN</code> → <code>CLOSED</code>). This ensures that each recovery attempt and each new <code>CLOSED</code> period begins with a clean slate.</p>
 <h2 id="performance">Performance Considerations<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1995,26 +1936,26 @@
 <tbody>
 <tr>
 <td><strong>Memory</strong></td>
-<td>O(N) - N records</td>
-<td>O(N) - N buckets (1-second)</td>
+<td>O(N), where N is <code>size</code></td>
+<td>O(N), where N is <code>size</code></td>
 </tr>
 <tr>
-<td><strong>record()</strong></td>
+<td><strong><code>record()</code></strong></td>
 <td>O(1)</td>
 <td>O(1)</td>
 </tr>
 <tr>
-<td><strong>get_metric()</strong></td>
+<td><strong><code>get_metric()</code></strong></td>
 <td>O(1)</td>
 <td>O(1)</td>
 </tr>
 </tbody>
 </table>
-<p>Both implementations are efficient with negligible overhead in most production environments.</p>
+<p>Both implementations are highly optimized and designed for negligible overhead in most production environments.</p>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../trackers/">Trackers</a> - Define which exceptions to track</li>
-<li><a href="../trippers/">Trippers</a> - Control circuit based on window metrics</li>
+<li><a href="../trackers/">Trackers</a>: Define what counts as a failure.</li>
+<li><a href="../trippers/">Trippers</a>: Use these metrics to build tripping logic.</li>
 </ul>
 
 

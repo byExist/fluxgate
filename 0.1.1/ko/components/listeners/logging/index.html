@@ -863,46 +863,7 @@
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        사용법
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="사용법">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        동기 Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#circuit-breaker_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        비동기 Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#custom-log-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        커스텀 로그 레벨
+        기본 사용법
       
     </span>
   </a>
@@ -913,7 +874,7 @@
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        구조화된 로깅
+        구조화된 (JSON) 로깅 구현
       
     </span>
   </a>
@@ -924,7 +885,7 @@
   <a href="#file-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        파일 로깅
+        파일 로깅 구성
       
     </span>
   </a>
@@ -1505,46 +1466,7 @@
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        사용법
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="사용법">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        동기 Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#circuit-breaker_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        비동기 Circuit Breaker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#custom-log-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        커스텀 로그 레벨
+        기본 사용법
       
     </span>
   </a>
@@ -1555,7 +1477,7 @@
   <a href="#structured-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        구조화된 로깅
+        구조화된 (JSON) 로깅 구현
       
     </span>
   </a>
@@ -1566,7 +1488,7 @@
   <a href="#file-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        파일 로깅
+        파일 로깅 구성
       
     </span>
   </a>
@@ -1605,16 +1527,20 @@
 
 
 <h1 id="loglistener">LogListener<a class="headerlink" href="#loglistener" title="Permanent link">&para;</a></h1>
-<p>Python 표준 라이브러리의 <code>logging</code> 모듈을 사용하여 Circuit Breaker의 상태 전환을 로깅하는 리스너입니다.</p>
-<h2 id="usage">사용법<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<h3 id="circuit-breaker">동기 Circuit Breaker<a class="headerlink" href="#circuit-breaker" title="Permanent link">&para;</a></h3>
+<p><code>LogListener</code>는 Circuit Breaker의 동작을 관찰하는 가장 간단한 방법을 제공합니다. Python의 표준 <code>logging</code> 모듈에 연결하여 상태 전환을 기록하며, 서킷 브레이커가 어떻게 작동하는지에 대한 명확하고 시간순으로 된 보기를 제공합니다.</p>
+<p><code>CircuitBreaker</code> 및 <code>AsyncCircuitBreaker</code> 에서 활용할 수 있습니다.</p>
+<h2 id="usage">기본 사용법<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p><code>LogListener</code>를 Circuit Breaker의 <code>listeners</code> 목록에 추가합니다.</p>
+<!--pytest.mark.skip-->
+
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
+<span class="c1"># 콘솔 로깅을 위한 기본 설정</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">)</span>
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
@@ -1623,91 +1549,67 @@
     <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()],</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>출력 예시:</strong></p>
+<p>Circuit Breaker가 상태를 변경하면 다음과 같은 로그 레코드를 생성합니다.</p>
 <div class="highlight"><pre><span></span><code>[2025-01-15 10:30:45] Circuit Breaker &#39;payment_api&#39; transitioned from CLOSED to OPEN
 [2025-01-15 10:31:45] Circuit Breaker &#39;payment_api&#39; transitioned from OPEN to HALF_OPEN
 [2025-01-15 10:31:50] Circuit Breaker &#39;payment_api&#39; transitioned from HALF_OPEN to CLOSED
 </code></pre></div>
-<h3 id="circuit-breaker_1">비동기 Circuit Breaker<a class="headerlink" href="#circuit-breaker_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncCircuitBreaker</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
-
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-
-<span class="n">cb</span> <span class="o">=</span> <span class="n">AsyncCircuitBreaker</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;async_api&quot;</span><span class="p">,</span>
-    <span class="o">...</span><span class="p">,</span>
-    <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()],</span>
-<span class="p">)</span>
-</code></pre></div>
-<h2 id="custom-log-level">커스텀 로그 레벨<a class="headerlink" href="#custom-log-level" title="Permanent link">&para;</a></h2>
-<p>다른 로그 레벨을 사용하려면 커스텀 리스너를 작성하세요:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateEnum</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">WarningLogListener</span><span class="p">(</span><span class="n">IListener</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;OPEN 상태 전환만 WARNING 레벨로 로깅&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">))</span>
-        <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">] Circuit Breaker &#39;</span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;transitioned from </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span> <span class="o">==</span> <span class="n">StateEnum</span><span class="o">.</span><span class="n">OPEN</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="structured-logging">구조화된 로깅<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>
-<p>JSON 형태로 로깅:</p>
+<hr />
+<h2 id="structured-logging">구조화된 (JSON) 로깅 구현<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>
+<p>최신 플랫폼에서 더 나은 가시성을 위해 JSON과 같은 구조화된 형식으로 로그를 출력하는 사용자 정의 Listener를 만들 수 있습니다.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">JsonLogListener</span><span class="p">(</span><span class="n">IListener</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="n">Signal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;circuit_breaker_transition&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Circuit breaker transition&quot;</span><span class="p">,</span>
             <span class="s2">&quot;circuit_name&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">circuit_name</span><span class="p">,</span>
-            <span class="s2">&quot;old_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="s2">&quot;new_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="s2">&quot;previous_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">old_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;current_state&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">new_state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp_utc&quot;</span><span class="p">:</span> <span class="n">signal</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
         <span class="p">}</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">))</span>
+
+<span class="c1"># 사용</span>
+<span class="n">json_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;json_logger&quot;</span><span class="p">)</span>
+<span class="n">cb_listener</span> <span class="o">=</span> <span class="n">JsonLogListener</span><span class="p">(</span><span class="n">json_logger</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="file-logging">파일 로깅<a class="headerlink" href="#file-logging" title="Permanent link">&para;</a></h2>
+<h2 id="file-logging">파일 로깅 구성<a class="headerlink" href="#file-logging" title="Permanent link">&para;</a></h2>
+<p>Circuit Breaker 로그를 파일로 보내려면 애플리케이션의 로깅 설정에서 적절한 핸들러를 구성합니다. <code>LogListener</code>는 이 구성을 자동으로 사용합니다.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">logging.handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotatingFileHandler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 
+<span class="c1"># 로테이팅 파일 핸들러 구성</span>
 <span class="n">handler</span> <span class="o">=</span> <span class="n">RotatingFileHandler</span><span class="p">(</span>
-    <span class="s1">&#39;circuit_breaker.log&#39;</span><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;circuit_breaker.log&#39;</span><span class="p">,</span>
     <span class="n">maxBytes</span><span class="o">=</span><span class="mi">10</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 10MB</span>
-    <span class="n">backupCount</span><span class="o">=</span><span class="mi">5</span>
+    <span class="n">backupCount</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span>
-    <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">))</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="c1"># 루트 로거에 핸들러 추가</span>
+<span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+<span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">root_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">LogListener</span><span class="p">()])</span>
+<span class="c1"># LogListener는 이제 루트 로거를 통해 파일에 기록합니다.</span>
+<span class="n">log_listener</span> <span class="o">=</span> <span class="n">LogListener</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../prometheus/">PrometheusListener</a> - 메트릭 기반 모니터링</li>
-<li><a href="../slack/">SlackListener</a> - 실시간 알림</li>
-<li><a href="../">Overview</a> - 리스너 개요로 돌아가기</li>
+<li><a href="../prometheus/">PrometheusListener</a>: 시계열 모니터링을 위한 메트릭 노출.</li>
+<li><a href="../slack/">SlackListener</a>: 상태 변경에 대한 실시간 알림 전송.</li>
+<li><a href="../">Listener 개요</a>: 메인 Listener 페이지로 돌아갑니다.</li>
 </ul>
 
 

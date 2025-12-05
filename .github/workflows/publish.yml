@@ -9,9 +9,12 @@ permissions:
   id-token: write
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  ci:
+    uses: byExist/fluxgate/.github/workflows/ci.yml@de826d6080a46de1dda8945f44d637cede304dcf
 
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 

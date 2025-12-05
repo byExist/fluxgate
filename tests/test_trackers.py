@@ -1,5 +1,7 @@
 """Tests for exception trackers (All, TypeOf, Custom, and logical operators)."""
 
+import pytest
+
 from fluxgate.trackers import All, TypeOf, Custom
 
 
@@ -19,6 +21,12 @@ def test_all_with_negation():
     assert tracker(ValueError("test")) is False
     assert tracker(TypeError("test")) is True
     assert tracker(RuntimeError("test")) is True
+
+
+def test_typeof_empty_types_raises():
+    """TypeOf raises ValueError when no types are provided."""
+    with pytest.raises(ValueError, match="At least one exception type is required"):
+        TypeOf()
 
 
 def test_typeof_matches_exception_types():

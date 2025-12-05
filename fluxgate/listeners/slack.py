@@ -40,7 +40,9 @@ def _build_message(
     thread: Optional[str] = None,
 ):
     transition = (signal.old_state, signal.new_state)
-    template = _TRANSITION_MESSAGE_DATA[transition]
+    template = _TRANSITION_MESSAGE_DATA.get(transition)
+    if template is None:
+        return None
     payload: dict[str, Any] = {
         "channel": channel,
         "attachments": [
@@ -120,6 +122,8 @@ class SlackListener(IListener):
             signal=signal,
             thread=self._open_threads.get(signal.circuit_name),
         )
+        if message is None:
+            return
         response = self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
         )
@@ -175,6 +179,8 @@ class AsyncSlackListener(IAsyncListener):
             signal=signal,
             thread=self._open_threads.get(signal.circuit_name),
         )
+        if message is None:
+            return
         response = await self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
         )

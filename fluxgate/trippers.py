@@ -149,10 +149,10 @@ class FailureRate(TripperBase):
 class AvgLatency(TripperBase):
     """Tripper based on average latency threshold.
 
-    Returns true when average call duration exceeds the threshold.
+    Returns true when average call duration reaches or exceeds the threshold.
 
     Examples:
-        >>> # Trip when average latency exceeds 2 seconds
+        >>> # Trip when average latency reaches 2 seconds
         >>> tripper = AvgLatency(2.0)
 
     Args:
@@ -170,7 +170,7 @@ class AvgLatency(TripperBase):
         if metric.total_count == 0:
             return False
         avg_duration = metric.total_duration / metric.total_count
-        return avg_duration > self._threshold
+        return avg_duration >= self._threshold
 
 
 class SlowRate(TripperBase):

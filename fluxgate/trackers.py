@@ -107,9 +107,14 @@ class TypeOf(TrackerBase):
 
     Args:
         *types: Exception types to track as failures
+
+    Raises:
+        ValueError: If no exception types are provided
     """
 
     def __init__(self, *types: type[Exception]) -> None:
+        if not types:
+            raise ValueError("At least one exception type is required")
         self._types = types
 
     def __call__(self, exception: Exception) -> bool:

@@ -2,6 +2,17 @@
 
 이 프로젝트의 모든 변경 사항은 이 파일에 문서화됩니다.
 
+## [0.4.0] - 2025.12.05
+
+### Breaking Changes
+
+- **`AvgLatency`가 `>` 대신 `>=` 사용**: 이제 평균 지연 시간이 임계값에 **도달하거나 초과**할 때 트립합니다. 다른 비율 기반 tripper(`FailureRate`, `SlowRate`)와 일관성을 유지합니다.
+- **`TypeOf`에 최소 하나의 예외 타입 필수**: 인자 없이 `TypeOf()`를 생성하면 이제 `ValueError`가 발생합니다.
+
+### 수정
+
+- **`SlackListener`가 지원되지 않는 전환에서 더 이상 크래시하지 않음**: 이전에는 미리 정의된 메시지 템플릿에 없는 상태 전환(예: `DISABLED`, `FORCED_OPEN`, `METRICS_ONLY`, 또는 `OPEN`에서 `CLOSED`로의 수동 `reset()`)이 `KeyError`를 발생시켰습니다. 이제 이러한 전환은 조용히 무시됩니다.
+
 ## [0.3.1] - 2025.12.05
 
 ### Breaking Changes

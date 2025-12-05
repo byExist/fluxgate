@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025.12.05
+
+### Breaking Changes
+
+- **`AvgLatency` now uses `>=` instead of `>`**: The tripper now trips when the average latency **reaches or exceeds** the threshold, consistent with other rate-based trippers (`FailureRate`, `SlowRate`).
+- **`TypeOf` now requires at least one exception type**: Creating `TypeOf()` without arguments now raises `ValueError`.
+
+### Fixed
+
+- **`SlackListener` no longer crashes on unsupported transitions**: Previously, state transitions not in the predefined message templates (e.g., `DISABLED`, `FORCED_OPEN`, `METRICS_ONLY`, or manual `reset()` from `OPEN` to `CLOSED`) would raise `KeyError`. Now these transitions are silently ignored.
+
 ## [0.3.1] - 2025.12.05
 
 ### Breaking Changes

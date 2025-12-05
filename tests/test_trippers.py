@@ -103,7 +103,7 @@ def test_failure_rate():
 
 
 def test_avg_latency():
-    """AvgLatency trips when average duration exceeds threshold."""
+    """AvgLatency trips when average duration reaches or exceeds threshold."""
     tripper = AvgLatency(threshold=1.0)
 
     # Below threshold (5.0 / 10 = 0.5s avg)
@@ -112,7 +112,7 @@ def test_avg_latency():
 
     # At threshold (10.0 / 10 = 1.0s avg)
     metric = Metric(total_count=10, failure_count=0, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED, 0) is False  # Must be GREATER than
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Above threshold (15.0 / 10 = 1.5s avg)
     metric = Metric(total_count=10, failure_count=0, total_duration=15.0, slow_count=0)

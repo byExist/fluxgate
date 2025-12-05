@@ -10,11 +10,11 @@
 
 이 구성은 다음을 수행합니다.
 
-- 마지막 100개 호출에 대한 실패 추적 \( `CountWindow` \).
-- `httpx.HTTPError`를 실패로 간주 \( `TypeOf` \).
-- 최소 10개 호출이 있고 실패율이 50%를 초과하면 회로 트립 \( `MinRequests` , `FailureRate` \).
-- 복구 시도 전에 60초 대기 \( `Cooldown` \).
-- 복구 중 50%의 호출 허용 \( `Random` \).
+- 마지막 100개 호출에 대한 실패 추적 (`CountWindow`).
+- `httpx.HTTPError`를 실패로 간주 (`TypeOf`).
+- 최소 10개 호출이 있고 실패율이 50%를 초과하면 회로 트립 (`MinRequests`, `FailureRate`).
+- 복구 시도 전에 60초 대기 (`Cooldown`).
+- 복구 중 50%의 호출 허용 (`Random`).
 
 ```python
 import httpx
@@ -47,7 +47,7 @@ def charge_payment(amount: float):
 
 ---
 
-## 2. 웹 프레임워크와 통합 \(FastAPI\)
+## 2. 웹 프레임워크와 통합 (FastAPI)
 
 웹 프레임워크와 통합할 때, 일반적으로 `CallNotPermittedError`를 잡아서 `503 Service Unavailable`과 같은 사용자 친화적인 오류 응답을 반환하고 싶을 것입니다.
 
@@ -149,7 +149,7 @@ async def check_inventory(product_id: str):
 
 호출이 차단되거나 실패하면 캐시된 데이터를 반환하는 것과 같은 대체 로직을 실행하는 경우가 많습니다. 이를 "폴백"이라고 합니다.
 
-### `fallback` 데코레이터 인자 사용 \(권장\)
+### `fallback` 데코레이터 인자 사용 (권장)
 
 이것이 가장 깔끔한 접근 방식입니다. 보호된 함수가 **어떤** 예외를 발생시키든 제공된 함수가 자동으로 호출됩니다. 폴백 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 

@@ -16,14 +16,14 @@ pip install fluxgate[prometheus]
 
 두 가지 핵심 메트릭을 내보냅니다.
 
-### `circuit_breaker_state` \(Gauge\)
+### `circuit_breaker_state` (Gauge)
 
 이 메트릭은 Circuit Breaker의 **현재 상태**를 나타냅니다. Gauge이므로 값이 오르거나 내릴 수 있습니다.
 
 **라벨:**
 
 - `circuit_name`: Circuit Breaker의 이름.
-- `state`: 상태의 이름 \(`closed`, `open`, `half_open` 등\).
+- `state`: 상태의 이름 (`closed`, `open`, `half_open` 등).
 
 **값:**
 
@@ -44,7 +44,7 @@ pip install fluxgate[prometheus]
     sum(circuit_breaker_state) by (state)
     ```
 
-### `circuit_breaker_state_transition_total` \(Counter\)
+### `circuit_breaker_state_transition_total` (Counter)
 
 이 메트릭은 Circuit Breaker가 한 상태에서 다른 상태로 전환된 총 횟수를 **계산**합니다. Counter이므로 값은 항상 증가하기만 합니다.
 
@@ -97,7 +97,7 @@ cb = CircuitBreaker(
 # 메트릭은 http://localhost:8000/metrics 에서 확인 가능합니다.
 ```
 
-### 웹 프레임워크와의 통합 \(FastAPI\)
+### 웹 프레임워크와의 통합 (FastAPI)
 
 FastAPI 또는 Flask와 같은 웹 프레임워크를 사용할 때는 별도의 서버를 시작하는 대신 Prometheus 메트릭 엔드포인트를 애플리케이션에 직접 통합해야 합니다.
 
@@ -160,15 +160,15 @@ inventory_cb = CircuitBreaker(name="inventory_api", ..., listeners=[listener])
 
 다음은 Grafana 대시보드에서 이러한 메트릭을 시각화하는 방법의 몇 가지 예시입니다.
 
-### 패널: "현재 열린 Circuit" \(Stat\)
+### 패널: "현재 열린 Circuit" (Stat)
 
 - **쿼리**: `sum(circuit_breaker_state{state="open"})`
 - **시각화**: Stat
 - **단위**: 없음
-- **임계값**: 기본: 0, 단계 1: 1 \(경고\), 단계 2: 5 \(치명적\)
+- **임계값**: 기본: 0, 단계 1: 1 (경고), 단계 2: 5 (치명적)
 - **설명**: 현재 `OPEN` 상태에 있는 모든 Circuit Breaker의 실시간 수를 보여줍니다.
 
-### 패널: "Circuit 트립률 \(5분\)" \(Time Series\)
+### 패널: "Circuit 트립률 (5분)" (Time Series)
 
 - **쿼리**: `sum(rate(circuit_breaker_state_transition_total{new_state="open"}[5m])) by (circuit_name)`
 - **시각화**: 시계열
@@ -176,7 +176,7 @@ inventory_cb = CircuitBreaker(name="inventory_api", ..., listeners=[listener])
 - **범례**: `{{circuit_name}}`
 - **설명**: 지난 5분 동안 평균화된, Circuit이 열린 초당 트립률을 보여줍니다. 추세를 파악하고 문제 있는 서비스를 식별하는 데 유용합니다.
 
-### 패널: "Circuit 상태 개요" \(Pie Chart\)
+### 패널: "Circuit 상태 개요" (Pie Chart)
 
 - **쿼리**: `sum(circuit_breaker_state) by (state)`
 - **시각화**: 파이 차트

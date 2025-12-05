@@ -50,7 +50,7 @@ cb.reset()
 
 ## Cooldown
 
-`HALF_OPEN`으로 이동하기 전에 고정된 `duration`\(초 단위\) 동안 기다립니다.
+`HALF_OPEN`으로 이동하기 전에 고정된 `duration`(초 단위) 동안 기다립니다.
 
 예측 가능한 시간 내에 복구가 예상되는 서비스일 경우 선택할 수 있습니다.
 
@@ -99,7 +99,7 @@ cb = CircuitBreaker(
 # 3차 시도 -> 40초
 # 4차 시도 -> 80초
 # 5차 시도 -> 160초
-# 6차 이상 시도 -> 300초 \(max_duration으로 제한\)
+# 6차 이상 시도 -> 300초 (max_duration으로 제한)
 ```
 
 ---
@@ -146,7 +146,7 @@ cb = CircuitBreaker(
 ```python
 from fluxgate.retries import Cooldown, Backoff
 
-# 60초 쿨다운의 경우, 지터는 +/- 6초의 무작위 변동을 추가합니다 \(54초에서 66초\).
+# 60초 쿨다운의 경우, 지터는 +/- 6초의 무작위 변동을 추가합니다 (54초에서 66초).
 retry_cooldown = Cooldown(duration=60.0, jitter_ratio=0.1)
 
 # 동일하게 백오프의 각 단계에도 적용됩니다.

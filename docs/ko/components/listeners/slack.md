@@ -24,7 +24,7 @@ pip install fluxgate[slack]
 사이드바에서 **OAuth & Permissions**로 이동하여 "Scopes" 섹션까지 아래로 스크롤합니다. 다음 **봇 토큰 범위**를 추가합니다.
 
 - `chat:write`: 메시지를 보내기 위함.
-- `chat:write.public`: 공개 채널에 메시지를 보내기 위함 \(선택 사항\).
+- `chat:write.public`: 공개 채널에 메시지를 보내기 위함 (선택 사항).
 
 ### 3. 앱 설치 및 토큰 복사
 

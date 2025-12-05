@@ -368,7 +368,7 @@ import httpx
 from fluxgate import CircuitBreaker
 from fluxgate.windows import CountWindow
 from fluxgate.trackers import Custom
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
+from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
@@ -384,11 +384,14 @@ payment_cb = CircuitBreaker(
     name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
-    tripper=MinRequests(20) & (
-        # In CLOSED, trip on 60% failure rate or 30% slow call rate.
-        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
-        # In HALF_OPEN, use stricter criteria to confirm recovery.
-        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+    tripper=(
+        # Fast trip on 5 consecutive failures (protects during cold start).
+        FailureStreak(5) |
+        # Statistical trip based on failure/slow rates once enough data is collected.
+        (MinRequests(20) & (
+            (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
+            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+        ))
     ),
     retry=Backoff(
         initial=10.0,

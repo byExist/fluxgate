@@ -125,7 +125,7 @@ import httpx
 from fluxgate import CircuitBreaker
 from fluxgate.windows import CountWindow
 from fluxgate.trackers import Custom
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
+from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
@@ -141,10 +141,11 @@ payment_cb = CircuitBreaker(
     name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
-    tripper=MinRequests(20) & (
+    # 연속 실패 시 빠른 트립 또는 실패율 기반 통계적 트립
+    tripper=FailureStreak(5) | (MinRequests(20) & (
         (Closed() & FailureRate(0.6)) |
         (HalfOpened() & FailureRate(0.5))
-    ),
+    )),
     retry=Backoff(initial=10.0, multiplier=2.0, max_duration=300.0, jitter_ratio=0.1),
     permit=RampUp(initial=0.1, final=0.5, duration=60.0),
     listeners=[LogListener(), PrometheusListener()],

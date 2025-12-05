@@ -108,16 +108,17 @@ import httpx
 from fluxgate import AsyncCircuitBreaker
 from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.trippers import Closed, MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Backoff
 from fluxgate.permits import Random
 
 # More conservative policy for the critical payment service.
+# FailureStreak provides fast protection during cold start before MinRequests is met.
 payment_cb = AsyncCircuitBreaker(
     name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(20) & FailureRate(0.4),
+    tripper=FailureStreak(5) | (Closed() & MinRequests(20) & FailureRate(0.4)),
     retry=Backoff(initial=30.0, max_duration=600.0),
     permit=Random(ratio=0.5),
     slow_threshold=float("inf"),

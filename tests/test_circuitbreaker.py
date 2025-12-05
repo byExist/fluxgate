@@ -14,7 +14,7 @@ from fluxgate import (
 from fluxgate.signal import Signal
 from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import MinRequests, FailureRate
+from fluxgate.trippers import MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Cooldown
 from fluxgate.permits import Random
 
@@ -1440,3 +1440,49 @@ async def test_async_call_with_fallback_passes_args():
 
     result = await cb.call_with_fallback(add, lambda e: 0, 3, 5)
     assert result == 8
+
+
+def test_failure_streak_trips_circuit():
+    """FailureStreak tripper opens circuit after N consecutive failures."""
+    cb = CircuitBreaker(
+        name="test",
+        window=CountWindow(size=100),
+        tracker=TypeOf(ValueError),
+        tripper=FailureStreak(3),
+        retry=Cooldown(duration=10.0),
+        permit=Random(ratio=1.0),
+        listeners=[],
+        slow_threshold=1.0,
+    )
+
+    def failing_func():
+        raise ValueError("fail")
+
+    def success_func():
+        return "ok"
+
+    # First 2 failures - should not trip
+    for _ in range(2):
+        try:
+            cb.call(failing_func)
+        except ValueError:
+            pass
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    # Success resets counter
+    cb.call(success_func)
+
+    # 2 more failures - should not trip (counter was reset)
+    for _ in range(2):
+        try:
+            cb.call(failing_func)
+        except ValueError:
+            pass
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    # 3rd consecutive failure - should trip
+    try:
+        cb.call(failing_func)
+    except ValueError:
+        pass
+    assert cb.info().state == StateEnum.OPEN.value

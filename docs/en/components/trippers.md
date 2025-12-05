@@ -9,6 +9,7 @@ Trippers are the brain of the circuit breaker. They analyze the metrics provided
 | **FailureRate** | Checks if the failure percentage is too high. | Trip when the error rate becomes unacceptable. |
 | **AvgLatency** | Checks if the average response time is too slow. | Trip when overall performance degrades. |
 | **SlowRate** | Checks if the percentage of slow calls is too high. | Trip based on the rate of outlier slow requests. |
+| **FailureStreak** | Checks for consecutive failures. | Fast trip on cold start or complete service outage. |
 
 ---
 
@@ -90,6 +91,22 @@ cb = CircuitBreaker(
 )
 ```
 
+### FailureStreak
+
+`FailureStreak(count)` returns `True` when the number of consecutive failures reaches `count`. This is useful for fast failure detection during cold start or when an external service is completely down.
+
+```python
+from fluxgate.trippers import FailureStreak, MinRequests, FailureRate
+
+# Trip after 5 consecutive failures
+tripper = FailureStreak(5)
+
+# Combine with FailureRate for comprehensive protection:
+# - Fast trip on 5 consecutive failures (cold start protection)
+# - OR statistical trip after 20 requests with 50% failure rate
+tripper = FailureStreak(5) | (MinRequests(20) & FailureRate(0.5))
+```
+
 ---
 
 ## Combining Trippers with Logical Operators {#operators}
@@ -140,11 +157,11 @@ tripper = (
 
 ### Comparison {#comparison}
 
-| Feature | `Closed`/`HalfOpened` | `MinRequests` | `FailureRate` | `AvgLatency` | `SlowRate` |
-|---|---|---|---|---|---|
-| **Purpose** | Apply rules to a specific state. | Ensure a meaningful sample size. | Check the ratio of failed calls. | Check the average performance. | Check the ratio of slow calls. |
-| **Standalone?** | No | Almost never | Yes | Yes | Yes |
-| **Commonly Combined With** | `&` with metric-based trippers | `&` with other metric-based trippers | `&` with `MinRequests` | `&` with `MinRequests` | `&` with `MinRequests` |
+| Feature | `Closed`/`HalfOpened` | `MinRequests` | `FailureRate` | `AvgLatency` | `SlowRate` | `FailureStreak` |
+|---|---|---|---|---|---|---|
+| **Purpose** | Apply rules to a specific state. | Ensure a meaningful sample size. | Check the ratio of failed calls. | Check the average performance. | Check the ratio of slow calls. | Fast trip on consecutive failures. |
+| **Standalone?** | No | Almost never | Yes | Yes | Yes | Yes |
+| **Commonly Combined With** | `&` with metric-based trippers | `&` with other metric-based trippers | `&` with `MinRequests` | `&` with `MinRequests` | `&` with `MinRequests` | `\|` with `MinRequests & FailureRate` |
 
 ### Always Use `MinRequests` {#use-minrequests}
 

@@ -2,6 +2,31 @@
 
 이 프로젝트의 모든 변경 사항은 이 파일에 문서화됩니다.
 
+## [0.3.0] - 2025.12.05
+
+### Breaking Changes
+
+- **`ITripper` 인터페이스 시그니처 변경**: `__call__` 메서드가 이제 선택적 `consecutive_failures` 파라미터를 받습니다. 커스텀 tripper 구현체는 시그니처를 업데이트해야 합니다:
+
+```python
+# 이전 (v0.2.x)
+def __call__(self, metric: Metric, state: StateEnum) -> bool: ...
+
+# 이후 (v0.3.0)
+def __call__(self, metric: Metric, state: StateEnum, consecutive_failures: int = 0) -> bool: ...
+```
+
+### 추가
+
+- **`FailureStreak` tripper**: N회 연속 실패 후 회로를 트립합니다. 콜드 스타트 또는 서비스 완전 장애 시 빠른 장애 감지에 유용합니다.
+
+```python
+from fluxgate.trippers import FailureStreak, MinRequests, FailureRate
+
+# 5회 연속 실패 시 빠른 트립, 또는 50% 실패율 시 통계적 트립
+tripper = FailureStreak(5) | (MinRequests(20) & FailureRate(0.5))
+```
+
 ## [0.2.0] - 2025.12.03
 
 ### Breaking Changes

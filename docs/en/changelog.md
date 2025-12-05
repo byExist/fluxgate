@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025.12.05
+
+### Breaking Changes
+
+- **`ITripper` interface signature changed**: The `__call__` method now accepts an optional `consecutive_failures` parameter. Custom tripper implementations must update their signature:
+
+```python
+# Before (v0.2.x)
+def __call__(self, metric: Metric, state: StateEnum) -> bool: ...
+
+# After (v0.3.0)
+def __call__(self, metric: Metric, state: StateEnum, consecutive_failures: int = 0) -> bool: ...
+```
+
+### Added
+
+- **`FailureStreak` tripper**: Trip the circuit after N consecutive failures. Useful for fast failure detection during cold start or complete service outage.
+
+```python
+from fluxgate.trippers import FailureStreak, MinRequests, FailureRate
+
+# Fast trip on 5 consecutive failures, or statistical trip on 50% failure rate
+tripper = FailureStreak(5) | (MinRequests(20) & FailureRate(0.5))
+```
+
 ## [0.2.0] - 2025.12.03
 
 ### Breaking Changes

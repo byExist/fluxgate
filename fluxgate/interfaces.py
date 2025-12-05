@@ -32,7 +32,9 @@ class ITracker(Protocol):
 
 
 class ITripper(Protocol):
-    def __call__(self, metric: Metric, state: StateEnum) -> bool: ...
+    def __call__(
+        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+    ) -> bool: ...
 
     def __and__(self, other: Self) -> ITripper: ...
 

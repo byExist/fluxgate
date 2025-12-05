@@ -370,7 +370,7 @@ import httpx
 from fluxgate import CircuitBreaker
 from fluxgate.windows import CountWindow
 from fluxgate.trackers import Custom
-from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate
+from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
@@ -387,11 +387,14 @@ payment_cb = CircuitBreaker(
     name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
-    tripper=MinRequests(20) & (
-        # CLOSED 상태에서는 60% 실패율 또는 30% 느린 호출율에서 트립됩니다.
-        (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
-        # HALF_OPEN 상태에서는 복구를 확인하기 위해 더 엄격한 기준을 사용합니다.
-        (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+    tripper=(
+        # 5회 연속 실패 시 빠른 트립 (콜드 스타트 보호).
+        FailureStreak(5) |
+        # 충분한 데이터가 수집되면 실패율/느린 호출율 기반 통계적 트립.
+        (MinRequests(20) & (
+            (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
+            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+        ))
     ),
     retry=Backoff(
         initial=10.0,

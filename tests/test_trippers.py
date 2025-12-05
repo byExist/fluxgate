@@ -9,6 +9,7 @@ from fluxgate.trippers import (
     FailureRate,
     AvgLatency,
     SlowRate,
+    FailureStreak,
 )
 from fluxgate.metric import Metric
 from fluxgate.state import StateEnum
@@ -214,3 +215,44 @@ def test_mixed_logical_operators():
     # (A | B) & C - (A or B) and C
     tripper = (MinRequests(20) | FailureRate(0.5)) & MinRequests(10)
     assert tripper(metric, StateEnum.CLOSED) is True
+
+
+def test_failure_streak_invalid_count():
+    """FailureStreak rejects invalid count."""
+    with pytest.raises(ValueError, match="Count must be greater than zero"):
+        FailureStreak(count=0)
+
+    with pytest.raises(ValueError, match="Count must be greater than zero"):
+        FailureStreak(count=-5)
+
+
+def test_failure_streak():
+    """FailureStreak trips when consecutive failure count reaches threshold."""
+    tripper = FailureStreak(count=5)
+    metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=0)
+
+    # Below threshold
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=3) is False
+
+    # At threshold
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=5) is True
+
+    # Above threshold
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=7) is True
+
+
+def test_failure_streak_with_or():
+    """FailureStreak can be combined with OR for fast failure detection."""
+    # Trip on 5 consecutive failures OR (20 requests with 50% failure rate)
+    tripper = FailureStreak(5) | (MinRequests(20) & FailureRate(0.5))
+    metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=0)
+
+    # Neither condition met
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=3) is False
+
+    # Only ConsecutiveFailures met (fast path)
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=5) is True
+
+    # Only MinRequests & FailureRate met
+    metric = Metric(total_count=20, failure_count=10, total_duration=20.0, slow_count=0)
+    assert tripper(metric, StateEnum.CLOSED, consecutive_failures=2) is True

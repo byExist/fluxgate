@@ -108,16 +108,17 @@ import httpx
 from fluxgate import AsyncCircuitBreaker
 from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
+from fluxgate.trippers import Closed, MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Backoff
 from fluxgate.permits import Random
 
 # 중요한 결제 서비스에 대한 더 보수적인 정책.
+# FailureStreak은 MinRequests가 충족되기 전 콜드 스타트 시 빠른 보호를 제공합니다.
 payment_cb = AsyncCircuitBreaker(
     name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(20) & FailureRate(0.4),
+    tripper=FailureStreak(5) | (Closed() & MinRequests(20) & FailureRate(0.4)),
     retry=Backoff(initial=30.0, max_duration=600.0),
     permit=Random(ratio=0.5),
     slow_threshold=float("inf"),

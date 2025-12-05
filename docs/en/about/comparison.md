@@ -7,7 +7,7 @@ This page provides a fair comparison between Fluxgate and other popular Python c
 | Feature | Fluxgate | circuitbreaker | pybreaker | aiobreaker |
 |---|:---:|:---:|:---:|:---:|
 | **Async Support** | ✅ | ✅ | (Tornado only) | ✅ |
-| **Primary Trigger Logic** | Failure Rate | Consecutive Failures | Consecutive Failures | Consecutive Failures |
+| **Primary Trigger Logic** | Failure Rate, Consecutive Failures | Consecutive Failures | Consecutive Failures | Consecutive Failures |
 | **Sliding Window** | ✅ (Count or Time) | ❌ | ❌ | ❌ |
 | **Latency-Based Triggers** | ✅ (`AvgLatency`, `SlowRate`) | ❌ | ❌ | ❌ |
 | **Composable Rules (&, \|)**| ✅ | ❌ | ❌ | ❌ |
@@ -25,7 +25,7 @@ This page provides a fair comparison between Fluxgate and other popular Python c
 
 Most libraries trip based on a simple **consecutive failure count**. This can be brittle; a single successful call can reset the counter to zero, even if the service is still unhealthy.
 
-Fluxgate uses a **failure rate over a sliding window**, which provides a much more accurate and stable assessment of service health.
+Fluxgate uses a **failure rate over a sliding window**, which provides a much more accurate and stable assessment of service health. Additionally, Fluxgate supports `FailureStreak` for consecutive failure detection, which is useful for fast protection during cold start or complete service outage. You can combine both approaches for maximum resilience.
 
 - **Other Libraries:**
 
@@ -136,7 +136,7 @@ When a service is recovering, you want to re-introduce traffic gradually to avoi
 
 You need the most robust and production-ready feature set.
 
-- You want to trigger based on **failure rates** or **latency**, not just consecutive failures.
+- You want to trigger based on **failure rates**, **latency**, or **consecutive failures** (`FailureStreak`).
 - You need **complex, composable rules** (e.g., different thresholds for different states).
 - You want to **gradually ramp up** traffic during recovery.
 - You are building a modern **asyncio** application.

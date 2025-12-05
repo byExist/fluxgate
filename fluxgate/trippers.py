@@ -13,6 +13,7 @@ __all__ = [
     "FailureRate",
     "AvgLatency",
     "SlowRate",
+    "FailureStreak",
 ]
 
 
@@ -20,8 +21,12 @@ class _And:
     def __init__(self, lhs: ITripper, rhs: ITripper) -> None:
         self._lhs, self._rhs = lhs, rhs
 
-    def __call__(self, metric: Metric, state: StateEnum) -> bool:
-        return self._lhs(metric, state) and self._rhs(metric, state)
+    def __call__(
+        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+    ) -> bool:
+        return self._lhs(metric, state, consecutive_failures) and self._rhs(
+            metric, state, consecutive_failures
+        )
 
     def __and__(self, other: ITripper) -> ITripper:
         return _And(self, other)
@@ -34,8 +39,12 @@ class _Or:
     def __init__(self, lhs: ITripper, rhs: ITripper) -> None:
         self._lhs, self._rhs = lhs, rhs
 
-    def __call__(self, metric: Metric, state: StateEnum) -> bool:
-        return self._lhs(metric, state) or self._rhs(metric, state)
+    def __call__(
+        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+    ) -> bool:
+        return self._lhs(metric, state, consecutive_failures) or self._rhs(
+            metric, state, consecutive_failures
+        )
 
     def __and__(self, other: ITripper) -> ITripper:
         return _And(self, other)
@@ -64,7 +73,9 @@ class Closed(TripperBase):
         >>> tripper = Closed() & FailureRate(0.5)
     """
 
-    def __call__(self, _metric: Metric, state: StateEnum) -> bool:
+    def __call__(
+        self, _metric: Metric, state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         return state == StateEnum.CLOSED
 
 
@@ -78,7 +89,9 @@ class HalfOpened(TripperBase):
         >>> tripper = HalfOpened() & FailureRate(0.3)
     """
 
-    def __call__(self, _metric: Metric, state: StateEnum) -> bool:
+    def __call__(
+        self, _metric: Metric, state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         return state == StateEnum.HALF_OPEN
 
 
@@ -100,7 +113,9 @@ class MinRequests(TripperBase):
             raise ValueError("Count must be greater than zero")
         self._count = count
 
-    def __call__(self, metric: Metric, _state: StateEnum) -> bool:
+    def __call__(
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         return metric.total_count >= self._count
 
 
@@ -122,7 +137,9 @@ class FailureRate(TripperBase):
             raise ValueError("Ratio must be between 0 and 1")
         self._ratio = ratio
 
-    def __call__(self, metric: Metric, _state: StateEnum) -> bool:
+    def __call__(
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         if metric.total_count == 0:
             return False
         failure_rate = metric.failure_count / metric.total_count
@@ -147,7 +164,9 @@ class AvgLatency(TripperBase):
             raise ValueError("Threshold must be greater than 0")
         self._threshold = threshold
 
-    def __call__(self, metric: Metric, _state: StateEnum) -> bool:
+    def __call__(
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         if metric.total_count == 0:
             return False
         avg_duration = metric.total_duration / metric.total_count
@@ -173,8 +192,39 @@ class SlowRate(TripperBase):
             raise ValueError("Ratio must be between 0 and 1")
         self._ratio = ratio
 
-    def __call__(self, metric: Metric, _state: StateEnum) -> bool:
+    def __call__(
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+    ) -> bool:
         if metric.total_count == 0:
             return False
         slow_rate = metric.slow_count / metric.total_count
         return slow_rate >= self._ratio
+
+
+class FailureStreak(TripperBase):
+    """Tripper based on consecutive failure count.
+
+    Returns true when the number of consecutive failures reaches the threshold.
+    Useful for fast failure detection during cold start or when external service
+    is completely down.
+
+    Examples:
+        >>> # Trip after 5 consecutive failures
+        >>> tripper = ConsecutiveFailures(5)
+        >>>
+        >>> # Combine with other trippers for comprehensive protection
+        >>> tripper = ConsecutiveFailures(5) | (MinRequests(20) & FailureRate(0.5))
+
+    Args:
+        count: Number of consecutive failures required to trip
+    """
+
+    def __init__(self, count: int) -> None:
+        if count <= 0:
+            raise ValueError("Count must be greater than zero")
+        self._count = count
+
+    def __call__(
+        self, _metric: Metric, _state: StateEnum, consecutive_failures: int = 0
+    ) -> bool:
+        return consecutive_failures >= self._count

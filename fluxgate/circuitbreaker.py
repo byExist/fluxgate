@@ -141,6 +141,7 @@ class CircuitBreaker:
         self._slow_threshold = slow_threshold
         self._changed_at = time.time()
         self._reopens = 0
+        self._consecutive_failures = 0
         self._state: CircuitBreaker._State = self._Closed(self)
 
     class _State(ABC):
@@ -166,13 +167,17 @@ class CircuitBreaker:
                 self.cb._window.record(
                     Record(success=True, duration=duration, is_slow=is_slow)
                 )
+                self.cb._consecutive_failures = 0
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
+                self.cb._consecutive_failures += 1
                 self.cb._window.record(Record(success=False))
                 metric = self.cb._window.get_metric()
-                if self.cb._tripper(metric, StateEnum.CLOSED):
+                if self.cb._tripper(
+                    metric, StateEnum.CLOSED, self.cb._consecutive_failures
+                ):
                     self.cb._transition_to(StateEnum.OPEN)
                 raise e
 
@@ -201,16 +206,22 @@ class CircuitBreaker:
                 self.cb._window.record(
                     Record(success=True, duration=duration, is_slow=is_slow)
                 )
+                self.cb._consecutive_failures = 0
                 metric = self.cb._window.get_metric()
-                if not self.cb._tripper(metric, StateEnum.HALF_OPEN):
+                if not self.cb._tripper(
+                    metric, StateEnum.HALF_OPEN, self.cb._consecutive_failures
+                ):
                     self.cb._transition_to(StateEnum.CLOSED)
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
+                self.cb._consecutive_failures += 1
                 self.cb._window.record(Record(success=False))
                 metric = self.cb._window.get_metric()
-                if self.cb._tripper(metric, StateEnum.HALF_OPEN):
+                if self.cb._tripper(
+                    metric, StateEnum.HALF_OPEN, self.cb._consecutive_failures
+                ):
                     self.cb._transition_to(StateEnum.OPEN)
                 raise e
 
@@ -225,10 +236,12 @@ class CircuitBreaker:
                 self.cb._window.record(
                     Record(success=True, duration=duration, is_slow=is_slow)
                 )
+                self.cb._consecutive_failures = 0
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
+                self.cb._consecutive_failures += 1
                 self.cb._window.record(Record(success=False))
                 raise e
 
@@ -379,6 +392,7 @@ class CircuitBreaker:
         self._state = self._Closed(self)
         self._changed_at = time.time()
         self._reopens = 0
+        self._consecutive_failures = 0
         self._window.reset()
 
         if notify:
@@ -421,6 +435,7 @@ class CircuitBreaker:
             self._reopens += 1
         elif state == StateEnum.CLOSED:
             self._reopens = 0
+            self._consecutive_failures = 0
 
         if state == StateEnum.CLOSED:
             self._state = self._Closed(self)
@@ -532,6 +547,7 @@ class AsyncCircuitBreaker:
         self._slow_threshold = slow_threshold
         self._changed_at = time.time()
         self._reopens = 0
+        self._consecutive_failures = 0
         self._state: AsyncCircuitBreaker._State = self._Closed(self)
         self._state_lock = asyncio.Lock()
         self._half_open_semaphore = asyncio.Semaphore(max_half_open_calls)
@@ -571,11 +587,13 @@ class AsyncCircuitBreaker:
                     self.cb._window.record(
                         Record(success=True, duration=duration, is_slow=is_slow)
                     )
+                    self.cb._consecutive_failures = 0
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
                 async with self.cb._window_lock:
+                    self.cb._consecutive_failures += 1
                     self.cb._window.record(Record(success=False))
                     metric = self.cb._window.get_metric()
                 await self.cb._try_transition_to_open(metric, StateEnum.CLOSED)
@@ -622,6 +640,7 @@ class AsyncCircuitBreaker:
                         self.cb._window.record(
                             Record(success=True, duration=duration, is_slow=is_slow)
                         )
+                        self.cb._consecutive_failures = 0
                         metric = self.cb._window.get_metric()
                     await self.cb._try_transition_to_closed(metric)
                     return result
@@ -629,6 +648,7 @@ class AsyncCircuitBreaker:
                     if not self.cb._tracker(e):
                         raise e
                     async with self.cb._window_lock:
+                        self.cb._consecutive_failures += 1
                         self.cb._window.record(Record(success=False))
                         metric = self.cb._window.get_metric()
                     await self.cb._try_transition_to_open(metric, StateEnum.HALF_OPEN)
@@ -651,11 +671,13 @@ class AsyncCircuitBreaker:
                     self.cb._window.record(
                         Record(success=True, duration=duration, is_slow=is_slow)
                     )
+                    self.cb._consecutive_failures = 0
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
                 async with self.cb._window_lock:
+                    self.cb._consecutive_failures += 1
                     self.cb._window.record(Record(success=False))
                 raise e
 
@@ -857,7 +879,7 @@ class AsyncCircuitBreaker:
             current_state = self._state.get_state_enum()
             if current_state != from_state:
                 return False
-            if not self._tripper(metric, current_state):
+            if not self._tripper(metric, current_state, self._consecutive_failures):
                 return False
             await self._transition_to(StateEnum.OPEN, notify=True)
             return True
@@ -875,7 +897,7 @@ class AsyncCircuitBreaker:
             current_state = self._state.get_state_enum()
             if current_state != StateEnum.HALF_OPEN:
                 return False
-            if self._tripper(metric, current_state):
+            if self._tripper(metric, current_state, self._consecutive_failures):
                 return False
             await self._transition_to(StateEnum.CLOSED, notify=True)
             return True
@@ -887,6 +909,7 @@ class AsyncCircuitBreaker:
             self._reopens += 1
         elif state == StateEnum.CLOSED:
             self._reopens = 0
+            self._consecutive_failures = 0
 
         if state == StateEnum.CLOSED:
             self._state = self._Closed(self)

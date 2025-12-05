@@ -22,7 +22,7 @@ class _And:
         self._lhs, self._rhs = lhs, rhs
 
     def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+        self, metric: Metric, state: StateEnum, consecutive_failures: int
     ) -> bool:
         return self._lhs(metric, state, consecutive_failures) and self._rhs(
             metric, state, consecutive_failures
@@ -40,7 +40,7 @@ class _Or:
         self._lhs, self._rhs = lhs, rhs
 
     def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+        self, metric: Metric, state: StateEnum, consecutive_failures: int
     ) -> bool:
         return self._lhs(metric, state, consecutive_failures) or self._rhs(
             metric, state, consecutive_failures
@@ -74,7 +74,7 @@ class Closed(TripperBase):
     """
 
     def __call__(
-        self, _metric: Metric, state: StateEnum, _consecutive_failures: int = 0
+        self, _metric: Metric, state: StateEnum, _consecutive_failures: int
     ) -> bool:
         return state == StateEnum.CLOSED
 
@@ -90,7 +90,7 @@ class HalfOpened(TripperBase):
     """
 
     def __call__(
-        self, _metric: Metric, state: StateEnum, _consecutive_failures: int = 0
+        self, _metric: Metric, state: StateEnum, _consecutive_failures: int
     ) -> bool:
         return state == StateEnum.HALF_OPEN
 
@@ -114,7 +114,7 @@ class MinRequests(TripperBase):
         self._count = count
 
     def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
     ) -> bool:
         return metric.total_count >= self._count
 
@@ -138,7 +138,7 @@ class FailureRate(TripperBase):
         self._ratio = ratio
 
     def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
     ) -> bool:
         if metric.total_count == 0:
             return False
@@ -165,7 +165,7 @@ class AvgLatency(TripperBase):
         self._threshold = threshold
 
     def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
     ) -> bool:
         if metric.total_count == 0:
             return False
@@ -193,7 +193,7 @@ class SlowRate(TripperBase):
         self._ratio = ratio
 
     def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int = 0
+        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
     ) -> bool:
         if metric.total_count == 0:
             return False
@@ -225,6 +225,6 @@ class FailureStreak(TripperBase):
         self._count = count
 
     def __call__(
-        self, _metric: Metric, _state: StateEnum, consecutive_failures: int = 0
+        self, _metric: Metric, _state: StateEnum, consecutive_failures: int
     ) -> bool:
         return consecutive_failures >= self._count

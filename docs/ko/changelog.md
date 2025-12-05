@@ -2,11 +2,17 @@
 
 이 프로젝트의 모든 변경 사항은 이 파일에 문서화됩니다.
 
+## [0.3.1] - 2025.12.05
+
+### Breaking Changes
+
+- **`ITripper.consecutive_failures` 필수화**: `consecutive_failures` 파라미터가 더 이상 기본값을 갖지 않습니다. 커스텀 tripper 구현체는 이 인자를 명시적으로 전달해야 합니다.
+
 ## [0.3.0] - 2025.12.05
 
 ### Breaking Changes
 
-- **`ITripper` 인터페이스 시그니처 변경**: `__call__` 메서드가 이제 선택적 `consecutive_failures` 파라미터를 받습니다. 커스텀 tripper 구현체는 시그니처를 업데이트해야 합니다:
+- **`ITripper` 인터페이스 시그니처 변경**: `__call__` 메서드가 이제 `consecutive_failures` 파라미터를 받습니다. 커스텀 tripper 구현체는 시그니처를 업데이트해야 합니다:
 
 <!--pytest.mark.skip-->
 

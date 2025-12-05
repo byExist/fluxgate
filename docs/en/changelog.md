@@ -2,11 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2025.12.05
+
+### Breaking Changes
+
+- **`ITripper.consecutive_failures` is now required**: The `consecutive_failures` parameter no longer has a default value. Custom tripper implementations must pass this argument explicitly.
+
 ## [0.3.0] - 2025.12.05
 
 ### Breaking Changes
 
-- **`ITripper` interface signature changed**: The `__call__` method now accepts an optional `consecutive_failures` parameter. Custom tripper implementations must update their signature:
+- **`ITripper` interface signature changed**: The `__call__` method now accepts a `consecutive_failures` parameter. Custom tripper implementations must update their signature:
 
 <!--pytest.mark.skip-->
 

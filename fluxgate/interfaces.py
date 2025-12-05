@@ -33,7 +33,7 @@ class ITracker(Protocol):
 
 class ITripper(Protocol):
     def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int = 0
+        self, metric: Metric, state: StateEnum, consecutive_failures: int
     ) -> bool: ...
 
     def __and__(self, other: Self) -> ITripper: ...

@@ -57,15 +57,15 @@ def test_closed_and_halfopened_state_checks():
 
     # Closed tripper
     tripper = Closed()
-    assert tripper(metric, StateEnum.CLOSED) is True
-    assert tripper(metric, StateEnum.HALF_OPEN) is False
-    assert tripper(metric, StateEnum.OPEN) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
+    assert tripper(metric, StateEnum.HALF_OPEN, 0) is False
+    assert tripper(metric, StateEnum.OPEN, 0) is False
 
     # HalfOpened tripper
     tripper = HalfOpened()
-    assert tripper(metric, StateEnum.HALF_OPEN) is True
-    assert tripper(metric, StateEnum.CLOSED) is False
-    assert tripper(metric, StateEnum.OPEN) is False
+    assert tripper(metric, StateEnum.HALF_OPEN, 0) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
+    assert tripper(metric, StateEnum.OPEN, 0) is False
 
 
 def test_min_requests():
@@ -74,15 +74,15 @@ def test_min_requests():
 
     # Below threshold
     metric = Metric(total_count=5, failure_count=3, total_duration=5.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # At threshold
     metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Above threshold
     metric = Metric(total_count=15, failure_count=8, total_duration=15.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_failure_rate():
@@ -91,15 +91,15 @@ def test_failure_rate():
 
     # Below threshold (3/10 = 30%)
     metric = Metric(total_count=10, failure_count=3, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # At threshold (5/10 = 50%)
     metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Above threshold (7/10 = 70%)
     metric = Metric(total_count=10, failure_count=7, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_avg_latency():
@@ -108,15 +108,15 @@ def test_avg_latency():
 
     # Below threshold (5.0 / 10 = 0.5s avg)
     metric = Metric(total_count=10, failure_count=0, total_duration=5.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # At threshold (10.0 / 10 = 1.0s avg)
     metric = Metric(total_count=10, failure_count=0, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False  # Must be GREATER than
+    assert tripper(metric, StateEnum.CLOSED, 0) is False  # Must be GREATER than
 
     # Above threshold (15.0 / 10 = 1.5s avg)
     metric = Metric(total_count=10, failure_count=0, total_duration=15.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_slow_call_rate():
@@ -125,15 +125,15 @@ def test_slow_call_rate():
 
     # Below threshold (2/10 = 20%)
     metric = Metric(total_count=10, failure_count=0, total_duration=10.0, slow_count=2)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # At threshold (3/10 = 30%)
     metric = Metric(total_count=10, failure_count=0, total_duration=10.0, slow_count=3)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Above threshold (5/10 = 50%)
     metric = Metric(total_count=10, failure_count=0, total_duration=10.0, slow_count=5)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_and_operator():
@@ -143,15 +143,15 @@ def test_and_operator():
 
     # Fails MinRequests (5 < 10)
     metric = Metric(total_count=5, failure_count=3, total_duration=5.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # Passes MinRequests but fails FailureRate (3/10 = 30% < 50%)
     metric = Metric(total_count=10, failure_count=3, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # Passes both (10 >= 10 and 5/10 = 50%)
     metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=0)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_or_operator():
@@ -161,19 +161,19 @@ def test_or_operator():
 
     # Neither condition met
     metric = Metric(total_count=10, failure_count=2, total_duration=10.0, slow_count=1)
-    assert tripper(metric, StateEnum.CLOSED) is False
+    assert tripper(metric, StateEnum.CLOSED, 0) is False
 
     # Only FailureRate met (5/10 = 50%)
     metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=1)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Only SlowRate met (3/10 = 30%)
     metric = Metric(total_count=10, failure_count=2, total_duration=10.0, slow_count=3)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # Both met
     metric = Metric(total_count=10, failure_count=5, total_duration=10.0, slow_count=3)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_trippers_with_empty_metrics():
@@ -183,12 +183,12 @@ def test_trippers_with_empty_metrics():
     )
 
     # MinRequests should fail
-    assert MinRequests(10)(empty_metric, StateEnum.CLOSED) is False
+    assert MinRequests(10)(empty_metric, StateEnum.CLOSED, 0) is False
 
     # Ratio-based trippers should not trip on empty metrics
-    assert FailureRate(0.5)(empty_metric, StateEnum.CLOSED) is False
-    assert AvgLatency(1.0)(empty_metric, StateEnum.CLOSED) is False
-    assert SlowRate(0.3)(empty_metric, StateEnum.CLOSED) is False
+    assert FailureRate(0.5)(empty_metric, StateEnum.CLOSED, 0) is False
+    assert AvgLatency(1.0)(empty_metric, StateEnum.CLOSED, 0) is False
+    assert SlowRate(0.3)(empty_metric, StateEnum.CLOSED, 0) is False
 
 
 def test_nested_logical_operators():
@@ -197,11 +197,11 @@ def test_nested_logical_operators():
 
     # (A & B) & C - all three must pass
     tripper = (MinRequests(5) & FailureRate(0.5)) & MinRequests(10)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # (A | B) | C - any one must pass
     tripper = (MinRequests(20) | FailureRate(0.5)) | MinRequests(5)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_mixed_logical_operators():
@@ -210,11 +210,11 @@ def test_mixed_logical_operators():
 
     # (A & B) | C - either (A and B) or C
     tripper = (MinRequests(5) & FailureRate(0.5)) | MinRequests(20)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
     # (A | B) & C - (A or B) and C
     tripper = (MinRequests(20) | FailureRate(0.5)) & MinRequests(10)
-    assert tripper(metric, StateEnum.CLOSED) is True
+    assert tripper(metric, StateEnum.CLOSED, 0) is True
 
 
 def test_failure_streak_invalid_count():

@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - **`ITripper` interface signature changed**: The `__call__` method now accepts an optional `consecutive_failures` parameter. Custom tripper implementations must update their signature:
 
+<!--pytest.mark.skip-->
+
 ```python
 # Before (v0.2.x)
 def __call__(self, metric: Metric, state: StateEnum) -> bool: ...

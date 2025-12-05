@@ -8,6 +8,8 @@
 
 - **`ITripper` 인터페이스 시그니처 변경**: `__call__` 메서드가 이제 선택적 `consecutive_failures` 파라미터를 받습니다. 커스텀 tripper 구현체는 시그니처를 업데이트해야 합니다:
 
+<!--pytest.mark.skip-->
+
 ```python
 # 이전 (v0.2.x)
 def __call__(self, metric: Metric, state: StateEnum) -> bool: ...

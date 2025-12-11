@@ -121,7 +121,7 @@ In this state, the circuit breaker tracks metrics but never trips open.
 <!--pytest-codeblocks:cont-->
 
 ```python
-# Collect metrics before enabling the breaker in production.
+# Collect metrics before enabling the breaker.
 cb.metrics_only()
 
 # When ready, activate the circuit breaker's normal lifecycle.
@@ -192,7 +192,7 @@ cb = CircuitBreaker(
 
 @cb
 def charge_payment(amount: float):
-    pass  # In production: call payment API
+    pass  # Your payment API call here
 ```
 
 ### Direct Call Style {#call-usage}
@@ -203,7 +203,7 @@ The `call` method is useful for protecting functions that you can't modify with 
 
 ```python
 def process_payment(amount: float):
-    pass  # In production: call payment API
+    pass  # Your payment API call here
 
 # Protect the function by wrapping it with .call()
 result = cb.call(process_payment, amount=100.0)
@@ -239,7 +239,7 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def fetch_data():
-    pass  # In production: async HTTP call
+    pass  # Your async HTTP call here
 
 # Use await to call the async function
 async def main():
@@ -357,9 +357,9 @@ except Exception as e:
     raise
 ```
 
-## Complete Production Example {#complete-example}
+## Complete Example {#complete-example}
 
-Here is a complete example of a production-ready circuit breaker configured to protect a critical payment API.
+Here is a complete example of a fully configured circuit breaker to protect a critical payment API.
 
 <!--pytest.mark.skip-->
 

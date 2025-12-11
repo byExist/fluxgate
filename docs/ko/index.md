@@ -12,7 +12,7 @@ Circuit breaker는 분산 시스템에서 서비스 상태를 모니터링하고
 - **조합 가능**: 간단하고 재사용 가능한 컴포넌트를 사용하여 복잡한 실패 감지 로직 구성
 - **의존성 없음**: 코어 라이브러리는 외부 의존성이 없습니다.
 - **완전한 타입 힌팅**: IDE 지원을 위한 완벽한 타입 힌트
-- **프로덕션 준비 완료**: Prometheus, Slack 및 로깅을 통한 내장 모니터링
+- **모니터링 지원**: Prometheus, Slack 및 로깅을 통한 내장 모니터링
 
 ## 빠른 시작
 
@@ -44,7 +44,7 @@ cb = CircuitBreaker(
 
 @cb
 def call_payment_api(amount: float):
-    pass  # In production: call payment API
+    pass  # 결제 API 호출
 ```
 
 ### 작동 방식
@@ -106,7 +106,7 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def call_async_api():
-    pass  # In production: async HTTP call
+    pass  # 비동기 HTTP 호출
 
 async def main():
     result = await call_async_api()
@@ -114,9 +114,9 @@ async def main():
 asyncio.run(main())
 ```
 
-## 프로덕션 예제
+## 전체 예제
 
-외부 결제 API를 위한 예제입니다.
+외부 결제 API를 위한 전체 구성 예제입니다.
 
 <!--pytest.mark.skip-->
 

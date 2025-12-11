@@ -142,7 +142,7 @@ Windows automatically clear their metrics when the circuit breaker transitions b
 | **`record()`** | O(1) | O(1) |
 | **`get_metric()`** | O(1) | O(1) |
 
-Both implementations are highly optimized and designed for negligible overhead in most production environments.
+Both implementations are highly optimized and designed for negligible overhead.
 
 ## Next Steps {#next-steps}
 

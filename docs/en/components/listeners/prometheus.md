@@ -1,6 +1,6 @@
 # PrometheusListener
 
-The `PrometheusListener` is essential for production monitoring. It exports the state and transitions of your circuit breakers as metrics that can be scraped by a Prometheus server. This allows you to build dashboards, create alerts, and gain deep insights into the stability of your services over time.
+The `PrometheusListener` exports the state and transitions of your circuit breakers as metrics that can be scraped by a Prometheus server. This allows you to build dashboards, create alerts, and gain deep insights into the stability of your services over time.
 
 ## Installation {#installation}
 

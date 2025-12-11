@@ -1,6 +1,6 @@
 # PrometheusListener
 
-`PrometheusListener`는 프로덕션 모니터링에 필수적입니다. Circuit Breaker의 상태와 전환을 Prometheus 서버에서 스크랩할 수 있는 메트릭으로 내보냅니다. 이를 통해 대시보드를 구축하고, 알림을 생성하며, 시간이 지남에 따라 서비스의 안정성에 대한 깊은 통찰력을 얻을 수 있습니다.
+`PrometheusListener`는 Circuit Breaker의 상태와 전환을 Prometheus 서버에서 스크랩할 수 있는 메트릭으로 내보냅니다. 이를 통해 대시보드를 구축하고, 알림을 생성하며, 시간이 지남에 따라 서비스의 안정성에 대한 깊은 통찰력을 얻을 수 있습니다.
 
 ## 설치 {#installation}
 

@@ -12,7 +12,7 @@ Circuit breakers prevent cascading failures in distributed systems by monitoring
 - **Composable**: Build complex failure detection logic using simple, reusable components
 - **Zero Dependencies**: Core library has no external dependencies
 - **Fully Typed**: Complete type hints for better IDE support
-- **Production Ready**: Built-in monitoring with Prometheus, Slack, and logging
+- **Monitoring Ready**: Built-in monitoring with Prometheus, Slack, and logging
 
 ## Quick Start
 
@@ -106,7 +106,7 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def call_async_api():
-    pass  # In production: async HTTP call
+    pass  # Your async HTTP call here
 
 async def main():
     result = await call_async_api()
@@ -114,9 +114,9 @@ async def main():
 asyncio.run(main())
 ```
 
-## Production Example
+## Complete Example
 
-A production-ready circuit breaker for an external payment API:
+A fully configured circuit breaker for an external payment API:
 
 <!--pytest.mark.skip-->
 

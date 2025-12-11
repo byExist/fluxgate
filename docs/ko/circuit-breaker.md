@@ -123,7 +123,7 @@ cb = CircuitBreaker(
 <!--pytest-codeblocks:cont-->
 
 ```python
-# 프로덕션에서 브레이커를 활성화하기 전에 Metric을 수집합니다.
+# 브레이커를 활성화하기 전에 Metric을 수집합니다.
 cb.metrics_only()
 
 # 준비가 되면 circuit breaker의 일반적인 수명 주기를 활성화합니다.
@@ -196,7 +196,7 @@ cb = CircuitBreaker(
 
 @cb
 def charge_payment(amount: float):
-    pass  # In production: call payment API
+    pass  # 결제 API 호출
 ```
 
 ### 직접 호출 방식 {#call-usage}
@@ -207,7 +207,7 @@ def charge_payment(amount: float):
 
 ```python
 def process_payment(amount: float):
-    pass  # In production: call payment API
+    pass  # 결제 API 호출
 
 # .call()로 함수를 감싸서 보호합니다.
 result = cb.call(process_payment, amount=100.0)
@@ -243,7 +243,7 @@ cb = AsyncCircuitBreaker(
 
 @cb
 async def fetch_data():
-    pass  # In production: async HTTP call
+    pass  # 비동기 HTTP 호출
 
 # await를 사용하여 비동기 함수를 호출합니다.
 async def main():
@@ -361,7 +361,7 @@ except Exception as e:
     raise
 ```
 
-## 완전한 프로덕션 예제 {#complete-example}
+## 전체 예제 {#complete-example}
 
 <!--pytest.mark.skip-->
 

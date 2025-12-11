@@ -24,7 +24,7 @@ This strategy moves the circuit to `HALF_OPEN` immediately after it opens. On an
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
 
-# Not generally recommended for production.
+# Not generally recommended.
 cb = CircuitBreaker(name="api", retry=Always(), ...)
 ```
 
@@ -72,7 +72,7 @@ cb = CircuitBreaker(
 
 ## Backoff
 
-This is the most robust and recommended strategy for production systems. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.
+This is the most robust and recommended strategy. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.
 
 The wait time is calculated as `initial * (multiplier ** consecutive_failures)`.
 
@@ -114,7 +114,7 @@ cb = CircuitBreaker(
 | **Service Load** | High | None | Medium | Low |
 | **Handles Repeated Failures?** | No | N/A | No | Yes |
 | **Complexity** | Very Simple | Very Simple | Simple | Medium |
-| **Recommended?** | No | For special cases | Good default | **Best for production** |
+| **Recommended?** | No | For special cases | Good default | **Recommended** |
 
 ### When should I use `Always`? {#choose-always}
 
@@ -134,7 +134,7 @@ This is a great, simple default. It's best when you have a general idea of how l
 
 ### When should I use `Backoff`? {#choose-backoff}
 
-This is the **strongly recommended** strategy for most production environments. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.
+This is the **recommended** strategy for most use cases. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.
 
 - **Use case**: Protecting a critical downstream service that may be slow to restart or recover from an outage.
 

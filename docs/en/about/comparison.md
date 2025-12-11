@@ -134,7 +134,7 @@ When a service is recovering, you want to re-introduce traffic gradually to avoi
 
 ### When should you choose `Fluxgate`?
 
-You need the most robust and production-ready feature set.
+You need the most robust and feature-rich circuit breaker.
 
 - You want to trigger based on **failure rates**, **latency**, or **consecutive failures** (`FailureStreak`).
 - You need **complex, composable rules** (e.g., different thresholds for different states).

@@ -40,7 +40,7 @@ cb = CircuitBreaker(
 
 ## RampUp
 
-This strategy provides a smoother, more gentle recovery by gradually increasing the admission rate over time. It's the recommended choice for most production systems.
+This strategy provides a smoother, more gentle recovery by gradually increasing the admission rate over time. It's the recommended choice for most use cases.
 
 ### How It Works {#rampup-how-it-works}
 
@@ -81,7 +81,7 @@ This strategy is excellent for protecting load-sensitive services like databases
 | **Admission Rate** | Constant | Increases over time |
 | **Recovery Style** | Immediate fixed rate | Gradual ramp-up |
 | **Load Spike Risk** | Higher (with a high ratio) | Very low |
-| **Recommended?** | For simple cases | **Best for production** |
+| **Recommended?** | For simple cases | **Recommended** |
 
 ### When should I use `Random`? {#choose-random}
 
@@ -104,7 +104,7 @@ permit = Random(ratio=0.8)
 
 ### When should I use `RampUp`? {#choose-rampup}
 
-`RampUp` is the **strongly recommended** strategy for most production environments. It provides the safest recovery path by slowly re-introducing traffic, giving the service time to warm up caches, re-establish connections, and scale up.
+`RampUp` is the **recommended** strategy for most use cases. It provides the safest recovery path by slowly re-introducing traffic, giving the service time to warm up caches, re-establish connections, and scale up.
 
 **Recommended Settings:**
 
@@ -137,7 +137,7 @@ from fluxgate import CircuitBreaker
 from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
-# A robust production setup using Backoff and RampUp.
+# A robust setup using Backoff and RampUp.
 cb = CircuitBreaker(
     name="api",
     retry=Backoff(initial=10.0, multiplier=2.0),

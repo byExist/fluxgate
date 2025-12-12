@@ -742,7 +742,7 @@
   <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        완전한 프로덕션 예제
+        전체 예제
       
     </span>
   </a>
@@ -1866,7 +1866,7 @@
   <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        완전한 프로덕션 예제
+        전체 예제
       
     </span>
   </a>
@@ -2008,7 +2008,7 @@
 <p>활성 보호를 활성화하기 전에 새 서비스에서 또는 로드 테스트 중에 안전하게 Metric을 수집합니다.</p>
 <!--pytest-codeblocks:cont-->
 
-<div class="highlight"><pre><span></span><code><span class="c1"># 프로덕션에서 브레이커를 활성화하기 전에 Metric을 수집합니다.</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># 브레이커를 활성화하기 전에 Metric을 수집합니다.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">metrics_only</span><span class="p">()</span>
 
 <span class="c1"># 준비가 되면 circuit breaker의 일반적인 수명 주기를 활성화합니다.</span>
@@ -2067,14 +2067,14 @@
 
 <span class="nd">@cb</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">charge_payment</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">pass</span>  <span class="c1"># In production: call payment API</span>
+    <span class="k">pass</span>  <span class="c1"># 결제 API 호출</span>
 </code></pre></div>
 <h3 id="call-usage">직접 호출 방식<a class="headerlink" href="#call-usage" title="Permanent link">&para;</a></h3>
 <p><code>call</code> 메서드는 데코레이터로 수정할 수 없는 함수(예: 서드파티 라이브러리의 함수)를 보호해야 할 때 유용합니다.</p>
 <!--pytest-codeblocks:cont-->
 
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_payment</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">pass</span>  <span class="c1"># In production: call payment API</span>
+    <span class="k">pass</span>  <span class="c1"># 결제 API 호출</span>
 
 <span class="c1"># .call()로 함수를 감싸서 보호합니다.</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">cb</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">process_payment</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
@@ -2107,7 +2107,7 @@
 
 <span class="nd">@cb</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_data</span><span class="p">():</span>
-    <span class="k">pass</span>  <span class="c1"># In production: async HTTP call</span>
+    <span class="k">pass</span>  <span class="c1"># 비동기 HTTP 호출</span>
 
 <span class="c1"># await를 사용하여 비동기 함수를 호출합니다.</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
@@ -2202,7 +2202,7 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;API 호출 실패: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">raise</span>
 </code></pre></div>
-<h2 id="complete-example">완전한 프로덕션 예제<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
+<h2 id="complete-example">전체 예제<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <!--pytest.mark.skip-->
 
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>

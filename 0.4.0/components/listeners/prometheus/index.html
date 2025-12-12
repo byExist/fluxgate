@@ -1781,7 +1781,7 @@
 
 
 <h1 id="prometheuslistener">PrometheusListener<a class="headerlink" href="#prometheuslistener" title="Permanent link">&para;</a></h1>
-<p>The <code>PrometheusListener</code> is essential for production monitoring. It exports the state and transitions of your circuit breakers as metrics that can be scraped by a Prometheus server. This allows you to build dashboards, create alerts, and gain deep insights into the stability of your services over time.</p>
+<p>The <code>PrometheusListener</code> exports the state and transitions of your circuit breakers as metrics that can be scraped by a Prometheus server. This allows you to build dashboards, create alerts, and gain deep insights into the stability of your services over time.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>This listener requires the <code>prometheus-client</code> library. You can install it as an extra:</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate<span class="o">[</span>prometheus<span class="o">]</span>

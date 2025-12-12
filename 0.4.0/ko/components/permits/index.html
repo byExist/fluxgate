@@ -1795,7 +1795,7 @@
 <tr>
 <td><strong>권장</strong></td>
 <td>간단한 경우</td>
-<td><strong>프로덕션에 가장 적합</strong></td>
+<td><strong>권장</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1811,7 +1811,7 @@
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="choose-rampup"><code>RampUp</code>은 언제 사용해야 하나요?<a class="headerlink" href="#choose-rampup" title="Permanent link">&para;</a></h3>
-<p><code>RampUp</code>은 대부분의 프로덕션 환경에서 권장됩니다. 트래픽을 천천히 재도입하여 서비스가 캐시를 워밍업하고 연결을 재설정하며 스케일업할 시간을 제공함으로써 가장 안전한 복구 경로를 제공합니다.</p>
+<p><code>RampUp</code>은 대부분의 사용 사례에서 <strong>권장</strong>됩니다. 트래픽을 천천히 재도입하여 서비스가 캐시를 워밍업하고 연결을 재설정하며 스케일업할 시간을 제공함으로써 가장 안전한 복구 경로를 제공합니다.</p>
 <p><strong>권장 설정:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.permits</span><span class="w"> </span><span class="kn">import</span> <span class="n">RampUp</span>
 

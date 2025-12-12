@@ -575,10 +575,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#production-example" class="md-nav__link">
+  <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production Example
+        Complete Example
       
     </span>
   </a>
@@ -1593,10 +1593,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#production-example" class="md-nav__link">
+  <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production Example
+        Complete Example
       
     </span>
   </a>
@@ -1644,7 +1644,7 @@
 <li><strong>Composable</strong>: Build complex failure detection logic using simple, reusable components</li>
 <li><strong>Zero Dependencies</strong>: Core library has no external dependencies</li>
 <li><strong>Fully Typed</strong>: Complete type hints for better IDE support</li>
-<li><strong>Production Ready</strong>: Built-in monitoring with Prometheus, Slack, and logging</li>
+<li><strong>Monitoring Ready</strong>: Built-in monitoring with Prometheus, Slack, and logging</li>
 </ul>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
@@ -1751,15 +1751,15 @@
 
 <span class="nd">@cb</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_async_api</span><span class="p">():</span>
-    <span class="k">pass</span>  <span class="c1"># In production: async HTTP call</span>
+    <span class="k">pass</span>  <span class="c1"># Your async HTTP call here</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_async_api</span><span class="p">()</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
-<h2 id="production-example">Production Example<a class="headerlink" href="#production-example" title="Permanent link">&para;</a></h2>
-<p>A production-ready circuit breaker for an external payment API:</p>
+<h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
+<p>A fully configured circuit breaker for an external payment API:</p>
 <!--pytest.mark.skip-->
 
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>

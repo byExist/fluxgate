@@ -1755,7 +1755,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Always</span>
 
-<span class="c1"># Not generally recommended for production.</span>
+<span class="c1"># Not generally recommended.</span>
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">Always</span><span class="p">(),</span> <span class="o">...</span><span class="p">)</span>
 </code></pre></div>
 <hr />
@@ -1789,7 +1789,7 @@
 </code></pre></div>
 <hr />
 <h2 id="backoff">Backoff<a class="headerlink" href="#backoff" title="Permanent link">&para;</a></h2>
-<p>This is the most robust and recommended strategy for production systems. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.</p>
+<p>This is the most robust and recommended strategy. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.</p>
 <p>The wait time is calculated as <code>initial * (multiplier ** consecutive_failures)</code>.</p>
 <!--pytest.mark.skip-->
 
@@ -1862,7 +1862,7 @@
 <td>No</td>
 <td>For special cases</td>
 <td>Good default</td>
-<td><strong>Best for production</strong></td>
+<td><strong>Recommended</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1879,7 +1879,7 @@
 <li><strong>Use case</strong>: Protecting a service that has a predictable recovery time, like an external API with a fixed rate-limiting window.</li>
 </ul>
 <h3 id="choose-backoff">When should I use <code>Backoff</code>?<a class="headerlink" href="#choose-backoff" title="Permanent link">&para;</a></h3>
-<p>This is the <strong>strongly recommended</strong> strategy for most production environments. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.</p>
+<p>This is the <strong>recommended</strong> strategy for most use cases. It gracefully backs off from a struggling service, giving it more time to recover after repeated failures.</p>
 <ul>
 <li><strong>Use case</strong>: Protecting a critical downstream service that may be slow to restart or recover from an outage.</li>
 </ul>

@@ -580,7 +580,7 @@
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        프로덕션 예제
+        전체 예제
       
     </span>
   </a>
@@ -1598,7 +1598,7 @@
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        프로덕션 예제
+        전체 예제
       
     </span>
   </a>
@@ -1646,7 +1646,7 @@
 <li><strong>조합 가능</strong>: 간단하고 재사용 가능한 컴포넌트를 사용하여 복잡한 실패 감지 로직 구성</li>
 <li><strong>의존성 없음</strong>: 코어 라이브러리는 외부 의존성이 없습니다.</li>
 <li><strong>완전한 타입 힌팅</strong>: IDE 지원을 위한 완벽한 타입 힌트</li>
-<li><strong>프로덕션 준비 완료</strong>: Prometheus, Slack 및 로깅을 통한 내장 모니터링</li>
+<li><strong>모니터링 지원</strong>: Prometheus, Slack 및 로깅을 통한 내장 모니터링</li>
 </ul>
 <h2 id="_1">빠른 시작<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <h3 id="_2">설치<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
@@ -1672,7 +1672,7 @@
 
 <span class="nd">@cb</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">call_payment_api</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">pass</span>  <span class="c1"># In production: call payment API</span>
+    <span class="k">pass</span>  <span class="c1"># 결제 API 호출</span>
 </code></pre></div>
 <h3 id="_4">작동 방식<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <p>Circuit breaker는 서비스에 대한 호출을 허용할지 또는 차단할지 결정하는 상태 머신입니다. 다음 세 가지 주요 상태로 작동합니다.</p>
@@ -1753,15 +1753,15 @@
 
 <span class="nd">@cb</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_async_api</span><span class="p">():</span>
-    <span class="k">pass</span>  <span class="c1"># In production: async HTTP call</span>
+    <span class="k">pass</span>  <span class="c1"># 비동기 HTTP 호출</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_async_api</span><span class="p">()</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
-<h2 id="_7">프로덕션 예제<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
-<p>외부 결제 API를 위한 예제입니다.</p>
+<h2 id="_7">전체 예제<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<p>외부 결제 API를 위한 전체 구성 예제입니다.</p>
 <!--pytest.mark.skip-->
 
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>

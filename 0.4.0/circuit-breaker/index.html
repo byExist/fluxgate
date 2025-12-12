@@ -740,7 +740,7 @@
   <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complete Production Example
+        Complete Example
       
     </span>
   </a>
@@ -1864,7 +1864,7 @@
   <a href="#complete-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complete Production Example
+        Complete Example
       
     </span>
   </a>
@@ -2006,7 +2006,7 @@
 </ul>
 <!--pytest-codeblocks:cont-->
 
-<div class="highlight"><pre><span></span><code><span class="c1"># Collect metrics before enabling the breaker in production.</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Collect metrics before enabling the breaker.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">metrics_only</span><span class="p">()</span>
 
 <span class="c1"># When ready, activate the circuit breaker&#39;s normal lifecycle.</span>
@@ -2065,14 +2065,14 @@
 
 <span class="nd">@cb</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">charge_payment</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">pass</span>  <span class="c1"># In production: call payment API</span>
+    <span class="k">pass</span>  <span class="c1"># Your payment API call here</span>
 </code></pre></div>
 <h3 id="call-usage">Direct Call Style<a class="headerlink" href="#call-usage" title="Permanent link">&para;</a></h3>
 <p>The <code>call</code> method is useful for protecting functions that you can't modify with a decorator, such as functions from a third-party library.</p>
 <!--pytest-codeblocks:cont-->
 
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_payment</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">pass</span>  <span class="c1"># In production: call payment API</span>
+    <span class="k">pass</span>  <span class="c1"># Your payment API call here</span>
 
 <span class="c1"># Protect the function by wrapping it with .call()</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">cb</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">process_payment</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
@@ -2105,7 +2105,7 @@
 
 <span class="nd">@cb</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_data</span><span class="p">():</span>
-    <span class="k">pass</span>  <span class="c1"># In production: async HTTP call</span>
+    <span class="k">pass</span>  <span class="c1"># Your async HTTP call here</span>
 
 <span class="c1"># Use await to call the async function</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
@@ -2200,8 +2200,8 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;API call failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">raise</span>
 </code></pre></div>
-<h2 id="complete-example">Complete Production Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
-<p>Here is a complete example of a production-ready circuit breaker configured to protect a critical payment API.</p>
+<h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
+<p>Here is a complete example of a fully configured circuit breaker to protect a critical payment API.</p>
 <!--pytest.mark.skip-->
 
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>

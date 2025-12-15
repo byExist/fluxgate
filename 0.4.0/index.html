@@ -1674,16 +1674,12 @@
 </code></pre></div>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
 <p>A circuit breaker is a state machine that determines whether to allow or block calls to a service. It operates in three main states:</p>
-<div class="highlight"><pre><span></span><code>┌─────────┐           ┌──────┐
-│ CLOSED  │──────────&gt;│ OPEN │&lt;─────┐
-└─────────┘ [tripper] └──────┘      │
-     ^                    │         │
-     │                    │[retry]  │[tripper]
-     │                    v         │
-     │               ┌───────────┐  │
-     └───────────────│ HALF_OPEN │──┘
-        [!tripper]   └───────────┘
-</code></pre></div>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; CLOSED
+    CLOSED --&gt; OPEN: tripper
+    OPEN --&gt; HALF_OPEN: retry
+    HALF_OPEN --&gt; CLOSED: !tripper
+    HALF_OPEN --&gt; OPEN: tripper</code></pre>
 <ul>
 <li><strong>CLOSED</strong>: This is the default state. All calls are permitted and a <code>tracker</code> monitors their outcomes. If the failure rate exceeds a configured threshold (the <code>tripper</code> condition), the breaker "trips" and moves to the <code>OPEN</code> state.</li>
 <li><strong>OPEN</strong>: In this state, the circuit breaker blocks all calls to the service, preventing further failures. After a configured <code>retry</code> timeout, it transitions to <code>HALF_OPEN</code>.</li>

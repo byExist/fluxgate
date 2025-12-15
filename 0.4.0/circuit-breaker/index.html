@@ -1913,16 +1913,12 @@
 </ul>
 <h2 id="state-transitions">State Transitions<a class="headerlink" href="#state-transitions" title="Permanent link">&para;</a></h2>
 <p>A circuit breaker automatically transitions between three main states: <code>CLOSED</code>, <code>OPEN</code>, and <code>HALF_OPEN</code>. It also provides manual override states (<code>DISABLED</code>, <code>FORCED_OPEN</code>, <code>METRICS_ONLY</code>) for maintenance and testing.</p>
-<div class="highlight"><pre><span></span><code>┌─────────┐           ┌──────┐
-│ CLOSED  │──────────&gt;│ OPEN │&lt;─────┐
-└─────────┘ [tripper] └──────┘      │
-     ^                    │         │
-     │                    │[retry]  │[tripper]
-     │                    v         │
-     │               ┌───────────┐  │
-     └───────────────│ HALF_OPEN │──┘
-        [!tripper]   └───────────┘
-</code></pre></div>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; CLOSED
+    CLOSED --&gt; OPEN: tripper
+    OPEN --&gt; HALF_OPEN: retry
+    HALF_OPEN --&gt; CLOSED: !tripper
+    HALF_OPEN --&gt; OPEN: tripper</code></pre>
 <h3 id="state-closed">CLOSED: The Normal State<a class="headerlink" href="#state-closed" title="Permanent link">&para;</a></h3>
 <p>This is the default operational state where all calls pass through to the protected service. The circuit breaker continuously monitors calls in the background.</p>
 <ul>

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2025.12.15
+
+### Added
+
+- **Sensible defaults for CircuitBreaker**: All component parameters now have default values, allowing simpler initialization with just a name:
+
+```python
+from fluxgate import CircuitBreaker
+
+cb = CircuitBreaker("my-service")
+
+@cb
+def call_api():
+    return requests.get("https://api.example.com")
+```
+
+Default values:
+
+- `window`: `CountWindow(100)`
+- `tracker`: `All()`
+- `tripper`: `MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0))`
+- `retry`: `Cooldown(60.0)`
+- `permit`: `RampUp(0.0, 1.0, 60.0)`
+- `slow_threshold`: `60.0`
+
 ## [0.4.0] - 2025.12.05
 
 ### Breaking Changes

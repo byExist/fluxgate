@@ -41,21 +41,12 @@ Fluxgate uses a **failure rate over a sliding window**, which provides a much mo
 
     ```python
     from fluxgate import CircuitBreaker
-    from fluxgate.windows import CountWindow
-    from fluxgate.trackers import All
     from fluxgate.trippers import MinRequests, FailureRate
-    from fluxgate.retries import Cooldown
-    from fluxgate.permits import Random
 
-    # Opens if the failure rate is over 50% in the last 100 calls.
+    # Opens if the failure rate exceeds 50%
     cb = CircuitBreaker(
         name="api",
-        window=CountWindow(size=100),
-        tracker=All(),
         tripper=MinRequests(10) & FailureRate(0.5),
-        retry=Cooldown(duration=60.0),
-        permit=Random(ratio=0.5),
-        slow_threshold=float("inf"),
     )
     ```
 
@@ -88,11 +79,7 @@ Fluxgate can trip based on response time, not just exceptions. This is critical 
 
     ```python
     from fluxgate import CircuitBreaker
-    from fluxgate.windows import CountWindow
-    from fluxgate.trackers import All
     from fluxgate.trippers import MinRequests, AvgLatency, SlowRate
-    from fluxgate.retries import Cooldown
-    from fluxgate.permits import Random
 
     # Trip when average latency is over 2 seconds.
     tripper = MinRequests(10) & AvgLatency(2.0)
@@ -100,12 +87,8 @@ Fluxgate can trip based on response time, not just exceptions. This is critical 
     # Trip when more than 30% of calls are slower than 1 second.
     cb = CircuitBreaker(
         name="api",
-        window=CountWindow(size=100),
-        tracker=All(),
         tripper=MinRequests(10) & SlowRate(0.3),
-        retry=Cooldown(duration=60.0),
-        permit=Random(ratio=0.5),
-        slow_threshold=1.0,  # Required: defines what "slow" means
+        slow_threshold=1.0,  # Defines what "slow" means
     )
     ```
 

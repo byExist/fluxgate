@@ -8,31 +8,21 @@
 
 가장 일반적인 사용 사례입니다. 목표는 느리거나 실패하는 외부 서비스로부터 애플리케이션을 보호하는 것입니다.
 
-이 구성은 다음을 수행합니다.
+기본 설정으로 Fluxgate는 다음을 수행합니다:
 
-- 마지막 100개 호출에 대한 실패 추적 (`CountWindow`).
-- `httpx.HTTPError`를 실패로 간주 (`TypeOf`).
-- 최소 10개 호출이 있고 실패율이 50%를 초과하면 회로 트립 (`MinRequests`, `FailureRate`).
-- 복구 시도 전에 60초 대기 (`Cooldown`).
-- 복구 중 50%의 호출 허용 (`Random`).
+- 마지막 100개 호출에 대한 실패 추적
+- 50% 실패율에서 트립 (최소 100회 호출 후)
+- 복구 전 60초 대기
+- 복구 중 50%의 호출 허용
 
 ```python
 import httpx
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
+    tracker=TypeOf(httpx.HTTPError),  # HTTP 에러만 추적
 )
 
 @cb
@@ -57,9 +47,7 @@ def charge_payment(amount: float):
 from fastapi import FastAPI, HTTPException
 import httpx
 from fluxgate import AsyncCircuitBreaker, CallNotPermittedError
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
 from fluxgate.retries import Cooldown
 
 app = FastAPI()
@@ -67,10 +55,8 @@ app = FastAPI()
 # 중요한 외부 서비스를 위한 단일 circuit breaker.
 external_api_cb = AsyncCircuitBreaker(
     name="external_product_api",
-    window=CountWindow(size=100),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=30.0),
+    retry=Cooldown(duration=30.0),  # 더 빠른 복구를 위해 짧은 쿨다운
 )
 
 # 핵심 로직을 위한 별도의 함수가 좋은 관행입니다.
@@ -108,9 +94,8 @@ import httpx
 from fluxgate import AsyncCircuitBreaker
 from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate, FailureStreak
+from fluxgate.trippers import MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Backoff
-from fluxgate.permits import Random
 
 # 중요한 결제 서비스에 대한 더 보수적인 정책.
 # FailureStreak은 MinRequests가 충족되기 전 콜드 스타트 시 빠른 보호를 제공합니다.
@@ -118,10 +103,8 @@ payment_cb = AsyncCircuitBreaker(
     name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=FailureStreak(5) | (Closed() & MinRequests(20) & FailureRate(0.4)),
+    tripper=FailureStreak(5) | (MinRequests(20) & FailureRate(0.4)),
     retry=Backoff(initial=30.0, max_duration=600.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
 )
 
 # 덜 중요한 인벤토리 서비스에 대한 더 공격적인 정책.
@@ -129,10 +112,8 @@ inventory_cb = AsyncCircuitBreaker(
     name="inventory_service",
     window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.6),
+    tripper=MinRequests(10) & FailureRate(0.6),
     retry=Backoff(initial=10.0, max_duration=300.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
 )
 
 @payment_cb
@@ -275,31 +256,21 @@ cb = CircuitBreaker(
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Cooldown
 from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
 from fluxgate.trippers import MinRequests, FailureRate
-from fluxgate.permits import Random
 
 def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
     """정의된 정책 이름에 따라 circuit breaker를 생성합니다."""
     if policy == "strict":
         return CircuitBreaker(
             name=name,
-            window=CountWindow(100),
-            tracker=All(),
             tripper=MinRequests(20) & FailureRate(0.4),
-            retry=Cooldown(60.0),
-            permit=Random(ratio=0.5),
-            slow_threshold=float("inf"),
         )
     elif policy == "lenient":
         return CircuitBreaker(
             name=name,
             window=CountWindow(50),
-            tracker=All(),
             tripper=MinRequests(10) & FailureRate(0.7),
             retry=Cooldown(30.0),
-            permit=Random(ratio=0.5),
-            slow_threshold=float("inf"),
         )
     else:
         raise ValueError(f"알 수 없는 정책: {policy}")

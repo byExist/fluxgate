@@ -19,8 +19,13 @@ from fluxgate.interfaces import (
     ITracker,
 )
 from fluxgate.metric import Record, Metric
+from fluxgate.permits import RampUp
+from fluxgate.retries import Cooldown
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
+from fluxgate.trackers import All
+from fluxgate.trippers import FailureRate, MinRequests, SlowRate
+from fluxgate.windows import CountWindow
 
 __all__ = [
     "CircuitBreaker",
@@ -82,37 +87,31 @@ class CircuitBreaker:
 
     Args:
         name: Circuit breaker identifier
-        window: Sliding window for metrics collection (CountWindow or TimeWindow)
-        tracker: Determines which exceptions to track as failures
+        window: Sliding window for metrics collection (default: CountWindow(100))
+        tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
-        retry: Strategy for transitioning from OPEN to HALF_OPEN
-        permit: Strategy for allowing calls in HALF_OPEN state
-        slow_threshold: Duration threshold in seconds to mark calls as slow
+            (default: MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0)))
+        retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
+        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
+        slow_threshold: Duration threshold in seconds to mark calls as slow (default: 60.0)
         listeners: Event listeners for state transitions (default: empty)
 
     Examples:
-        >>> from fluxgate import CircuitBreaker
-        >>> from fluxgate.windows import CountWindow
-        >>> from fluxgate.trackers import TypeOf
-        >>> from fluxgate.trippers import Closed, MinRequests, FailureRate
-        >>> from fluxgate.retries import Cooldown
-        >>> from fluxgate.permits import Random
-        >>> from fluxgate.listeners.log import LogListener
-        >>>
+        Basic usage with defaults:
+
+        >>> cb = CircuitBreaker("my-service")
+        >>> @cb
+        ... def call_api():
+        ...     return requests.get("https://api.example.com")
+
+        Custom configuration:
+
         >>> cb = CircuitBreaker(
         ...     name="payment_api",
-        ...     window=CountWindow(100),
         ...     tracker=TypeOf(ConnectionError),
-        ...     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-        ...     retry=Cooldown(60.0),
-        ...     permit=Random(0.5),
+        ...     tripper=MinRequests(10) & FailureRate(0.5),
         ...     slow_threshold=1.0,
-        ...     listeners=[LogListener()],
         ... )
-        >>>
-        >>> @cb
-        ... def call_payment_api(amount):
-        ...     return requests.post("https://api.payment.com", json={"amount": amount})
 
     Note:
         This implementation is NOT thread-safe. Each process maintains its own
@@ -123,20 +122,20 @@ class CircuitBreaker:
     def __init__(
         self,
         name: str,
-        window: IWindow,
-        tracker: ITracker,
-        tripper: ITripper,
-        retry: IRetry,
-        permit: IPermit,
-        slow_threshold: float,
+        window: IWindow | None = None,
+        tracker: ITracker | None = None,
+        tripper: ITripper | None = None,
+        retry: IRetry | None = None,
+        permit: IPermit | None = None,
+        slow_threshold: float = 60.0,
         listeners: Iterable[IListener] = (),
     ) -> None:
         self._name = name
-        self._window = window
-        self._tracker = tracker
-        self._tripper = tripper
-        self._retry = retry
-        self._permit = permit
+        self._window = window or CountWindow(100)
+        self._tracker = tracker or All()
+        self._tripper = tripper or MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0))
+        self._retry = retry or Cooldown(60.0)
+        self._permit = permit or RampUp(0.0, 1.0, 60.0)
         self._listeners = tuple(listeners)
         self._slow_threshold = slow_threshold
         self._changed_at = time.time()
@@ -484,41 +483,33 @@ class AsyncCircuitBreaker:
 
     Args:
         name: Circuit breaker identifier
-        window: Sliding window for metrics collection (CountWindow or TimeWindow)
-        tracker: Determines which exceptions to track as failures
+        window: Sliding window for metrics collection (default: CountWindow(100))
+        tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
-        retry: Strategy for transitioning from OPEN to HALF_OPEN
-        permit: Strategy for allowing calls in HALF_OPEN state
-        slow_threshold: Duration threshold in seconds to mark calls as slow
+            (default: MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0)))
+        retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
+        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
+        slow_threshold: Duration threshold in seconds to mark calls as slow (default: 60.0)
         max_half_open_calls: Maximum concurrent calls allowed in HALF_OPEN state (default: 10)
         listeners: Event listeners for state transitions (default: empty)
 
     Examples:
-        >>> import asyncio
-        >>> import httpx
-        >>> from fluxgate import AsyncCircuitBreaker
-        >>> from fluxgate.windows import CountWindow
-        >>> from fluxgate.trackers import TypeOf
-        >>> from fluxgate.trippers import Closed, MinRequests, FailureRate
-        >>> from fluxgate.retries import Cooldown
-        >>> from fluxgate.permits import Random
-        >>>
+        Basic usage with defaults:
+
+        >>> cb = AsyncCircuitBreaker("my-service")
+        >>> @cb
+        ... async def call_api():
+        ...     async with httpx.AsyncClient() as client:
+        ...         return await client.get("https://api.example.com")
+
+        Custom configuration:
+
         >>> cb = AsyncCircuitBreaker(
         ...     name="payment_api",
-        ...     window=CountWindow(100),
         ...     tracker=TypeOf(httpx.ConnectError),
-        ...     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-        ...     retry=Cooldown(60.0),
-        ...     permit=Random(0.5),
+        ...     tripper=MinRequests(10) & FailureRate(0.5),
         ...     slow_threshold=1.0,
-        ...     max_half_open_calls=5,
-        ...     listeners=[],
         ... )
-        >>>
-        >>> @cb
-        ... async def call_payment_api(amount):
-        ...     async with httpx.AsyncClient() as client:
-        ...         return await client.post("https://api.payment.com", json={"amount": amount})
 
     Note:
         Uses asyncio locks for thread safety within a single event loop.
@@ -528,21 +519,21 @@ class AsyncCircuitBreaker:
     def __init__(
         self,
         name: str,
-        window: IWindow,
-        tracker: ITracker,
-        tripper: ITripper,
-        retry: IRetry,
-        permit: IPermit,
-        slow_threshold: float,
+        window: IWindow | None = None,
+        tracker: ITracker | None = None,
+        tripper: ITripper | None = None,
+        retry: IRetry | None = None,
+        permit: IPermit | None = None,
+        slow_threshold: float = 60.0,
         max_half_open_calls: int = 10,
         listeners: Iterable[IListener | IAsyncListener] = (),
     ) -> None:
         self._name = name
-        self._window = window
-        self._tracker = tracker
-        self._tripper = tripper
-        self._retry = retry
-        self._permit = permit
+        self._window = window or CountWindow(100)
+        self._tracker = tracker or All()
+        self._tripper = tripper or MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0))
+        self._retry = retry or Cooldown(60.0)
+        self._permit = permit or RampUp(0.0, 1.0, 60.0)
         self._listeners = tuple(listeners)
         self._slow_threshold = slow_threshold
         self._changed_at = time.time()

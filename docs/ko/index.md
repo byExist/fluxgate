@@ -26,26 +26,19 @@ pip install fluxgate
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = CircuitBreaker(
-    name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-)
+cb = CircuitBreaker("payment_api")
 
 @cb
 def call_payment_api(amount: float):
     pass  # 결제 API 호출
 ```
+
+이게 전부입니다! Circuit breaker는 합리적인 기본값을 사용합니다.
+
+- 실패율이 50%를 초과하면 트립 (최소 100회 호출 후)
+- 복구 시도 전 60초 대기
+- 복구 중 60초에 걸쳐 0%에서 100%까지 점진적으로 호출 허용
 
 ### 작동 방식
 
@@ -82,24 +75,9 @@ Asyncio 애플리케이션을 완벽하게 지원합니다.
 
 ```python
 import asyncio
-import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = AsyncCircuitBreaker(
-    name="async_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-    max_half_open_calls=5,
-)
+cb = AsyncCircuitBreaker("async_api")
 
 @cb
 async def call_async_api():
@@ -138,7 +116,6 @@ payment_cb = CircuitBreaker(
     name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
-    # 연속 실패 시 빠른 트립 또는 실패율 기반 통계적 트립
     tripper=FailureStreak(5) | (MinRequests(20) & (
         (Closed() & FailureRate(0.6)) |
         (HalfOpened() & FailureRate(0.5))

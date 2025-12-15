@@ -8,31 +8,21 @@ This page provides practical, real-world examples to help you get started with F
 
 This is the most common use case. The goal is to protect our application from a slow or failing external service.
 
-This configuration will:
+With default settings, Fluxgate will:
 
-- Track failures over the last 100 calls (`CountWindow`).
-- Consider any `httpx.HTTPError` as a failure (`TypeOf`).
-- Trip the circuit if there are at least 10 calls and the failure rate exceeds 50% (`MinRequests`, `FailureRate`).
-- Wait for 60 seconds before attempting recovery (`Cooldown`).
-- Allow 50% of calls through during recovery (`Random`).
+- Track failures over the last 100 calls
+- Trip at 50% failure rate (after 100 calls minimum)
+- Wait 60 seconds before recovery
+- Allow 50% of calls during recovery
 
 ```python
 import httpx
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
+    tracker=TypeOf(httpx.HTTPError),  # Only track HTTP errors
 )
 
 @cb
@@ -57,9 +47,7 @@ When integrating with a web framework, you typically want to catch a `CallNotPer
 from fastapi import FastAPI, HTTPException
 import httpx
 from fluxgate import AsyncCircuitBreaker, CallNotPermittedError
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
 from fluxgate.retries import Cooldown
 
 app = FastAPI()
@@ -67,10 +55,8 @@ app = FastAPI()
 # A single circuit breaker for a critical external service.
 external_api_cb = AsyncCircuitBreaker(
     name="external_product_api",
-    window=CountWindow(size=100),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=30.0),
+    retry=Cooldown(duration=30.0),  # Shorter cooldown for faster recovery
 )
 
 # A separate function for your core logic is a good practice.
@@ -108,9 +94,8 @@ import httpx
 from fluxgate import AsyncCircuitBreaker
 from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate, FailureStreak
+from fluxgate.trippers import MinRequests, FailureRate, FailureStreak
 from fluxgate.retries import Backoff
-from fluxgate.permits import Random
 
 # More conservative policy for the critical payment service.
 # FailureStreak provides fast protection during cold start before MinRequests is met.
@@ -118,10 +103,8 @@ payment_cb = AsyncCircuitBreaker(
     name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=FailureStreak(5) | (Closed() & MinRequests(20) & FailureRate(0.4)),
+    tripper=FailureStreak(5) | (MinRequests(20) & FailureRate(0.4)),
     retry=Backoff(initial=30.0, max_duration=600.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
 )
 
 # More aggressive policy for the less critical inventory service.
@@ -129,10 +112,8 @@ inventory_cb = AsyncCircuitBreaker(
     name="inventory_service",
     window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.6),
+    tripper=MinRequests(10) & FailureRate(0.6),
     retry=Backoff(initial=10.0, max_duration=300.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
 )
 
 @payment_cb
@@ -275,31 +256,21 @@ A factory function is a powerful pattern for creating and managing many similar 
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Cooldown
 from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
 from fluxgate.trippers import MinRequests, FailureRate
-from fluxgate.permits import Random
 
 def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
     """Creates a circuit breaker based on a predefined policy name."""
     if policy == "strict":
         return CircuitBreaker(
             name=name,
-            window=CountWindow(100),
-            tracker=All(),
             tripper=MinRequests(20) & FailureRate(0.4),
-            retry=Cooldown(60.0),
-            permit=Random(ratio=0.5),
-            slow_threshold=float("inf"),
         )
     elif policy == "lenient":
         return CircuitBreaker(
             name=name,
             window=CountWindow(50),
-            tracker=All(),
             tripper=MinRequests(10) & FailureRate(0.7),
             retry=Cooldown(30.0),
-            permit=Random(ratio=0.5),
-            slow_threshold=float("inf"),
         )
     else:
         raise ValueError(f"Unknown policy: {policy}")

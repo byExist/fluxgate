@@ -26,26 +26,19 @@ pip install fluxgate
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = CircuitBreaker(
-    name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-)
+cb = CircuitBreaker("payment_api")
 
 @cb
 def call_payment_api(amount: float):
     return requests.post("https://api.example.com/pay", json={"amount": amount})
 ```
+
+That's it! The circuit breaker uses sensible defaults:
+
+- Trips when failure rate exceeds 50% (after 100 calls minimum)
+- Waits 60 seconds before attempting recovery
+- Gradually increases allowed calls from 0% to 100% over 60 seconds during recovery
 
 ### How It Works
 
@@ -82,24 +75,9 @@ Full support for asyncio applications:
 
 ```python
 import asyncio
-import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = AsyncCircuitBreaker(
-    name="async_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-    max_half_open_calls=5,
-)
+cb = AsyncCircuitBreaker("async_api")
 
 @cb
 async def call_async_api():
@@ -138,7 +116,6 @@ payment_cb = CircuitBreaker(
     name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
-    # Fast trip on consecutive failures OR statistical trip on failure rate
     tripper=FailureStreak(5) | (MinRequests(20) & (
         (Closed() & FailureRate(0.6)) |
         (HalfOpened() & FailureRate(0.5))

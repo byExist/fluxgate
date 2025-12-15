@@ -33,23 +33,9 @@ This is the default operational state where all calls pass through to the protec
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=All(),
-    # The tripper only trips if the circuit is in the CLOSED state,
-    # has at least 10 requests, and the failure rate is over 50%.
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-)
+# Use defaults: trips at 50% failure rate after 100 calls, 60s cooldown
+cb = CircuitBreaker("api")
 ```
 
 ### OPEN: The Failing State {#state-open}
@@ -89,22 +75,15 @@ This gradual recovery approach prevents a "thundering herd" from overwhelming a 
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
 from fluxgate.trippers import MinRequests, FailureRate
-from fluxgate.retries import Cooldown
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
     name="api",
-    window=CountWindow(size=100),
-    tracker=All(),
     # Use a stricter tripping condition during recovery testing.
     tripper=MinRequests(5) & FailureRate(0.3),
-    retry=Cooldown(duration=60.0),
     # Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-    slow_threshold=float("inf"),
 )
 ```
 
@@ -171,20 +150,11 @@ Using a decorator is the most common and convenient way to protect a function.
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError, TimeoutError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
+    tracker=TypeOf(ConnectionError, TimeoutError),  # Only track these errors
 )
 
 @cb
@@ -217,20 +187,11 @@ Fluxgate provides full support for modern `asyncio` applications via the `AsyncC
 import asyncio
 import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
-    window=CountWindow(size=100),
     tracker=TypeOf(httpx.ConnectError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
     max_half_open_calls=5,  # Limit concurrent calls in HALF_OPEN to 5.
 )
 
@@ -363,7 +324,6 @@ Here is a complete example of a fully configured circuit breaker to protect a cr
 ```python
 import httpx
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import Custom
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak
 from fluxgate.retries import Backoff
@@ -379,7 +339,6 @@ def is_retriable_error(e: Exception) -> bool:
 
 payment_cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
     tripper=(
         # Fast trip on 5 consecutive failures (protects during cold start).

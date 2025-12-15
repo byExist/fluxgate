@@ -33,23 +33,9 @@ stateDiagram-v2
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
-cb = CircuitBreaker(
-    name="api",
-    window=CountWindow(size=100),
-    tracker=All(),
-    # Tripper는 회로가 CLOSED 상태이고, 최소 10개의 요청이 있으며,
-    # 실패율이 50%를 초과할 때만 트립됩니다.
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
-)
+# 기본값 사용: 100회 호출 후 50% 실패율에서 트립, 60초 쿨다운
+cb = CircuitBreaker("api")
 ```
 
 ### OPEN: 실패 상태 {#state-open}
@@ -90,22 +76,15 @@ Retry로 일정 시간을 대기한 후 회로는 이 상태로 전환되어 서
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import All
 from fluxgate.trippers import MinRequests, FailureRate
-from fluxgate.retries import Cooldown
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
     name="api",
-    window=CountWindow(size=100),
-    tracker=All(),
     # 복구 테스트 중에는 더 엄격한 트립 조건을 사용합니다.
     tripper=MinRequests(5) & FailureRate(0.3),
-    retry=Cooldown(duration=60.0),
     # 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
-    slow_threshold=float("inf"),
 )
 ```
 
@@ -175,20 +154,11 @@ cb.reset()
 
 ```python
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
-    tracker=TypeOf(ConnectionError, TimeoutError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
+    tracker=TypeOf(ConnectionError, TimeoutError),  # 이 에러만 추적
 )
 
 @cb
@@ -221,20 +191,11 @@ Fluxgate는 `AsyncCircuitBreaker`를 통해 최신 `asyncio` 애플리케이션�
 import asyncio
 import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import Closed, MinRequests, FailureRate
-from fluxgate.retries import Cooldown
-from fluxgate.permits import Random
 
 cb = AsyncCircuitBreaker(
     name="async_api",
-    window=CountWindow(size=100),
     tracker=TypeOf(httpx.ConnectError),
-    tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    retry=Cooldown(duration=60.0),
-    permit=Random(ratio=0.5),
-    slow_threshold=float("inf"),
     max_half_open_calls=5,  # HALF_OPEN 상태에서 동시 호출을 5개로 제한합니다.
 )
 
@@ -365,7 +326,6 @@ except Exception as e:
 ```python
 import httpx
 from fluxgate import CircuitBreaker
-from fluxgate.windows import CountWindow
 from fluxgate.trackers import Custom
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak
 from fluxgate.retries import Backoff
@@ -382,7 +342,6 @@ def is_retriable_error(e: Exception) -> bool:
 
 payment_cb = CircuitBreaker(
     name="payment_api",
-    window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
     tripper=(
         # 5회 연속 실패 시 빠른 트립 (콜드 스타트 보호).

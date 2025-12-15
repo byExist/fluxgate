@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/changelog/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/changelog/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/changelog/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/circuit-breaker/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/circuit-breaker/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/circuit-breaker/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/examples/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/examples/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/examples/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/about/comparison/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/about/comparison/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/about/comparison/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/about/design/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/about/design/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/about/design/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/core/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/core/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/core/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/interfaces/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/interfaces/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/interfaces/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/listeners/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/listeners/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/listeners/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/permits/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/permits/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/permits/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/retries/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/retries/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/retries/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/trackers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/trackers/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/trackers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/trippers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/trippers/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/trippers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/api/windows/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/api/windows/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/api/windows/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/permits/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/permits/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/permits/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/retries/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/retries/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/retries/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/trackers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/trackers/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/trackers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/trippers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/trippers/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/trippers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/windows/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/windows/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/windows/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/listeners/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/listeners/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/listeners/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/listeners/logging/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/listeners/logging/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/listeners/logging/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/listeners/prometheus/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/listeners/prometheus/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/listeners/prometheus/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/components/listeners/slack/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1/components/listeners/slack/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1ko/components/listeners/slack/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/changelog/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/changelog/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1changelog/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/circuit-breaker/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/circuit-breaker/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1circuit-breaker/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/examples/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/examples/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1examples/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/about/comparison/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/about/comparison/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1about/comparison/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/about/design/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/about/design/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1about/design/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/core/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/core/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/core/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/interfaces/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/interfaces/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/interfaces/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/listeners/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/listeners/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/listeners/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/permits/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/permits/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/permits/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/retries/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/retries/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/retries/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/trackers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/trackers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/trackers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/trippers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/trippers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/trippers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/api/windows/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/api/windows/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1api/windows/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/permits/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/permits/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/permits/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/retries/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/retries/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/retries/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/trackers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/trackers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/trackers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/trippers/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/trippers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/trippers/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/windows/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/windows/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/windows/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/listeners/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/logging/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/logging/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/listeners/logging/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/prometheus/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/prometheus/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/listeners/prometheus/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/slack/</loc>
+        <lastmod>2025-12-15</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/0.4.1/ko/components/listeners/slack/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/0.4.1components/listeners/slack/"/>
+    </url>
+</urlset>

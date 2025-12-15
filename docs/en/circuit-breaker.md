@@ -14,16 +14,13 @@ It works just like an electrical circuit breaker in your home.
 
 A circuit breaker automatically transitions between three main states: `CLOSED`, `OPEN`, and `HALF_OPEN`. It also provides manual override states (`DISABLED`, `FORCED_OPEN`, `METRICS_ONLY`) for maintenance and testing.
 
-```text
-┌─────────┐           ┌──────┐
-│ CLOSED  │──────────>│ OPEN │<─────┐
-└─────────┘ [tripper] └──────┘      │
-     ^                    │         │
-     │                    │[retry]  │[tripper]
-     │                    v         │
-     │               ┌───────────┐  │
-     └───────────────│ HALF_OPEN │──┘
-        [!tripper]   └───────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> CLOSED
+    CLOSED --> OPEN: tripper
+    OPEN --> HALF_OPEN: retry
+    HALF_OPEN --> CLOSED: !tripper
+    HALF_OPEN --> OPEN: tripper
 ```
 
 ### CLOSED: The Normal State {#state-closed}

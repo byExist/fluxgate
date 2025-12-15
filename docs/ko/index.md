@@ -51,16 +51,13 @@ def call_payment_api(amount: float):
 
 Circuit breaker는 서비스에 대한 호출을 허용할지 또는 차단할지 결정하는 상태 머신입니다. 다음 세 가지 주요 상태로 작동합니다.
 
-```text
-┌─────────┐           ┌──────┐
-│ CLOSED  │──────────>│ OPEN │<─────┐
-└─────────┘ [tripper] └──────┘      │
-     ^                    │         │
-     │                    │[retry]  │[tripper]
-     │                    v         │
-     │               ┌───────────┐  │
-     └───────────────│ HALF_OPEN │──┘
-        [!tripper]   └───────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> CLOSED
+    CLOSED --> OPEN: tripper
+    OPEN --> HALF_OPEN: retry
+    HALF_OPEN --> CLOSED: !tripper
+    HALF_OPEN --> OPEN: tripper
 ```
 
 - **CLOSED**: 기본 상태입니다. 모든 호출이 허용되며 `tracker`가 호출 결과를 모니터링합니다. `tripper` 조건으로 정의된 실패율이 임계값을 초과하면, 브레이커가 "트립"되어 `OPEN` 상태로 전환됩니다.

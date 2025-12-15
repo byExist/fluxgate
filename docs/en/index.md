@@ -51,16 +51,13 @@ def call_payment_api(amount: float):
 
 A circuit breaker is a state machine that determines whether to allow or block calls to a service. It operates in three main states:
 
-```text
-┌─────────┐           ┌──────┐
-│ CLOSED  │──────────>│ OPEN │<─────┐
-└─────────┘ [tripper] └──────┘      │
-     ^                    │         │
-     │                    │[retry]  │[tripper]
-     │                    v         │
-     │               ┌───────────┐  │
-     └───────────────│ HALF_OPEN │──┘
-        [!tripper]   └───────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> CLOSED
+    CLOSED --> OPEN: tripper
+    OPEN --> HALF_OPEN: retry
+    HALF_OPEN --> CLOSED: !tripper
+    HALF_OPEN --> OPEN: tripper
 ```
 
 - **CLOSED**: This is the default state. All calls are permitted and a `tracker` monitors their outcomes. If the failure rate exceeds a configured threshold (the `tripper` condition), the breaker "trips" and moves to the `OPEN` state.

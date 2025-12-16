@@ -232,7 +232,7 @@ print(f"Current metrics: {info.metrics}")
 
 There may be times when you need to control the circuit breaker's state manually.
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 # Reset to CLOSED state and clear all metrics.

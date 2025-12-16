@@ -236,7 +236,7 @@ print(f"Current metrics: {info.metrics}")
 
 circuit breaker의 상태를 수동으로 제어해야 하는 경우가 있을 수 있습니다.
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 # CLOSED 상태로 재설정하고 모든 Metric을 지웁니다.

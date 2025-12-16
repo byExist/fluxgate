@@ -109,7 +109,7 @@ async def check_inventory(product_id: str):
 | **Tracker** | Which exceptions to track | `All()`, `TypeOf(HTTPError)`, `Custom(func)` |
 | **Tripper** | When to open the circuit | `MinRequests(n)`, `FailureRate(0.5)`, `FailureStreak(5)`, `SlowRate(0.5)`, `AvgLatency(1.0)`, `Closed()`, `HalfOpened()` |
 | **Retry** | When to attempt recovery | `Cooldown(60.0)`, `Backoff(initial=10.0)`, `Always()`, `Never()` |
-| **Permit** | How to allow calls during recovery | `Random(0.5)`, `RampUp(0.1, 1.0, 60.0)` |
+| **Permit** | How to allow calls during recovery | `All()`, `Random(0.5)`, `RampUp(0.1, 1.0, 60.0)` |
 
 ## Monitoring
 

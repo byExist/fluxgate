@@ -6,6 +6,8 @@ Permit 선택에 대한 개요는 [Permits 컴포넌트 가이드](../components
 
 ---
 
+::: fluxgate.permits.All
+
 ::: fluxgate.permits.Random
 
 ::: fluxgate.permits.RampUp

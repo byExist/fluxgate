@@ -105,24 +105,9 @@ def test_logging_listener_timestamp_formatting(caplog: LogCaptureFixture):
 async def test_logging_listener_with_async_circuit_breaker(caplog: LogCaptureFixture):
     """LogListener works with AsyncCircuitBreaker."""
     from fluxgate import AsyncCircuitBreaker
-    from fluxgate.windows import CountWindow
-    from fluxgate.trackers import TypeOf
-    from fluxgate.trippers import Closed
-    from fluxgate.retries import Never
-    from fluxgate.permits import Random
 
     listener = LogListener()
-    cb = AsyncCircuitBreaker(
-        name="async_test",
-        window=CountWindow(size=10),
-        tracker=TypeOf(Exception),
-        tripper=Closed(),
-        retry=Never(),
-        permit=Random(ratio=1.0),
-        listeners=[listener],
-        slow_threshold=1.0,
-        max_half_open_calls=1,
-    )
+    cb = AsyncCircuitBreaker(name="async_test", listeners=[listener])
 
     with caplog.at_level(logging.INFO):
         await cb.reset()

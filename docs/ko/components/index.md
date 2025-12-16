@@ -87,12 +87,14 @@ retry = Backoff(initial=10.0, multiplier=2.0, max_duration=300.0)
 
 Permit은 `HALF_OPEN` 상태에서 허용되는 호출 수를 관리하여 서비스 복구를 안전하게 테스트할 수 있도록 돕습니다.
 
+- **All**: 모든 호출을 허용합니다 (테스트용).
 - **Random**: 확률적으로 일정 비율의 호출을 통과시킵니다.
 - **RampUp**: 설정된 기간 동안 허용되는 호출 비율을 점진적으로 증가시킵니다.
 
 ```python
-from fluxgate.permits import Random, RampUp
+from fluxgate.permits import All, Random, RampUp
 
+permit = All()
 permit = Random(ratio=0.5)
 permit = RampUp(initial=0.1, final=0.8, duration=60.0)
 ```

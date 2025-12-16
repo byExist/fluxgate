@@ -6,6 +6,8 @@ For a high-level guide on choosing a permit strategy, see the [Permits Component
 
 ---
 
+::: fluxgate.permits.All
+
 ::: fluxgate.permits.Random
 
 ::: fluxgate.permits.RampUp

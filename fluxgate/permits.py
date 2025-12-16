@@ -5,7 +5,21 @@ from time import time
 
 from fluxgate.interfaces import IPermit
 
-__all__ = ["Random", "RampUp"]
+__all__ = ["All", "Random", "RampUp"]
+
+
+class All(IPermit):
+    """Permit strategy that always allows calls.
+
+    Useful for testing or when you want all calls to pass through
+    in HALF_OPEN state.
+
+    Examples:
+        >>> permit = All()
+    """
+
+    def __call__(self, _changed_at: float) -> bool:
+        return True
 
 
 class Random(IPermit):

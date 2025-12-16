@@ -84,12 +84,14 @@ retry = Backoff(initial=10.0, multiplier=2.0, max_duration=300.0)
 
 Control which calls are allowed in HALF_OPEN state.
 
+- **All** - Always allow (for testing)
 - **Random** - Probabilistic admission
 - **RampUp** - Gradual traffic increase
 
 ```python
-from fluxgate.permits import Random, RampUp
+from fluxgate.permits import All, Random, RampUp
 
+permit = All()
 permit = Random(ratio=0.5)
 permit = RampUp(initial=0.1, final=0.8, duration=60.0)
 ```

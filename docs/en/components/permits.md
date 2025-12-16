@@ -4,8 +4,33 @@ Permit strategies are the gatekeepers of the `HALF_OPEN` state. After a `retry` 
 
 | Permit Type | Behavior | Best For... |
 |---|---|---|
+| **All** | Always allows all calls. | Testing or when no rate limiting is needed. |
 | **Random** | Allows a random, fixed percentage of calls. | A simple, probabilistic approach to limiting traffic. |
 | **RampUp** | Gradually increases the percentage of allowed calls. | A sophisticated approach that gently re-introduces traffic. |
+
+---
+
+## All
+
+This strategy unconditionally allows all calls to pass through.
+
+### How It Works {#all-how-it-works}
+
+`All` simply returns `True` for every call, allowing 100% of traffic in the `HALF_OPEN` state. This is primarily useful for testing scenarios or when you want to rely solely on the `tripper` to control state transitions.
+
+<!--pytest.mark.skip-->
+
+```python
+from fluxgate import CircuitBreaker
+from fluxgate.permits import All
+
+# Allow all calls to pass through in the HALF_OPEN state.
+cb = CircuitBreaker(
+    name="api",
+    permit=All(),
+    ...
+)
+```
 
 ---
 
@@ -75,13 +100,13 @@ This strategy is excellent for protecting load-sensitive services like databases
 
 ### Comparison {#comparison}
 
-| Feature | Random | RampUp |
-|---|---|---|
-| **Complexity** | Simple | Medium |
-| **Admission Rate** | Constant | Increases over time |
-| **Recovery Style** | Immediate fixed rate | Gradual ramp-up |
-| **Load Spike Risk** | Higher (with a high ratio) | Very low |
-| **Recommended?** | For simple cases | **Recommended** |
+| Feature | All | Random | RampUp |
+|---|---|---|---|
+| **Complexity** | Trivial | Simple | Medium |
+| **Admission Rate** | 100% | Constant | Increases over time |
+| **Recovery Style** | No limiting | Immediate fixed rate | Gradual ramp-up |
+| **Load Spike Risk** | Highest | Higher (with a high ratio) | Very low |
+| **Recommended?** | For testing only | For simple cases | **Recommended** |
 
 ### When should I use `Random`? {#choose-random}
 

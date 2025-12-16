@@ -145,28 +145,12 @@ def test_prometheus_listener_all_states():
 async def test_prometheus_listener_with_async_circuit_breaker():
     """PrometheusListener works with AsyncCircuitBreaker."""
     from fluxgate import AsyncCircuitBreaker
-    from fluxgate.windows import CountWindow
-    from fluxgate.trackers import TypeOf
-    from fluxgate.trippers import Closed
-    from fluxgate.retries import Never
-    from fluxgate.permits import Random
 
     listener = PrometheusListener()
-    cb = AsyncCircuitBreaker(
-        name="async_prom_test",
-        window=CountWindow(size=10),
-        tracker=TypeOf(Exception),
-        tripper=Closed(),
-        retry=Never(),
-        permit=Random(ratio=1.0),
-        listeners=[listener],
-        slow_threshold=1.0,
-        max_half_open_calls=1,
-    )
+    cb = AsyncCircuitBreaker(name="async_prom_test", listeners=[listener])
 
     await cb.reset()
 
-    # Check that metrics were updated
     closed_value = _get_gauge_value(
         _STATE_GAUGE, circuit_name="async_prom_test", state="closed"
     )

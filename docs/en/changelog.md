@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2025.12.16
+
+### Added
+
+- **`All` permit strategy**: A simple permit that always allows all calls in `HALF_OPEN` state. Useful for testing or when you want to rely solely on the tripper for state transitions.
+
+```python
+from fluxgate import CircuitBreaker
+from fluxgate.permits import All
+
+cb = CircuitBreaker(name="api", permit=All())
+```
+
+- **`Template` TypedDict for SlackListener**: Customize Slack message templates by subclassing `SlackListener` and overriding `TRANSITION_TEMPLATES` and `FALLBACK_TEMPLATE` class attributes.
+
+```python
+from fluxgate.listeners.slack import SlackListener, Template
+from fluxgate.state import StateEnum
+
+class CustomSlackListener(SlackListener):
+    TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
+        (StateEnum.CLOSED, StateEnum.OPEN): {
+            "title": "🚨 Alert",
+            "color": "#FF0000",
+            "description": "Circuit opened!",
+        },
+    }
+```
+
 ## [0.4.1] - 2025.12.15
 
 ### Added

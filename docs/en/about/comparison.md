@@ -12,10 +12,9 @@ This page provides a fair comparison between Fluxgate and other popular Python c
 | **Latency-Based Triggers** | ✅ (`AvgLatency`, `SlowRate`) | ❌ | ❌ | ❌ |
 | **Composable Rules (&, \|)**| ✅ | ❌ | ❌ | ❌ |
 | **Gradual Recovery (`RampUp`)**| ✅ | ❌ | ❌ | ❌ |
-| **State Listeners** | ✅ | ✅ | ✅ | ✅ |
+| **State Listeners** | ✅ | ❌ | ✅ | ✅ |
 | **Built-in Monitoring** | ✅ (Prometheus, Slack) | ❌ | ❌ | ❌ |
 | **External State Storage** | ❌ | ❌ | ✅ (Redis) | ✅ (Redis) |
-| **Typed (PEP 484)** | ✅ (Complete) | ❌ (Partial) | ❌ (Partial) | ❌ (Partial) |
 
 ---
 

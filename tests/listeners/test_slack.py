@@ -1,6 +1,7 @@
 """Tests for SlackListener."""
 
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
+from typing import Any
+from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
 
@@ -9,74 +10,130 @@ from fluxgate.state import StateEnum
 
 pytest.importorskip("httpx")
 
-from fluxgate.listeners.slack import (
-    SlackListener,
-    AsyncSlackListener,
-    _build_message,  # type: ignore
-)
+from fluxgate.listeners.slack import SlackListener, AsyncSlackListener
 
 
-def test_build_message_closed_to_open():
-    """_build_message creates correct payload for CLOSED->OPEN transition."""
+@pytest.fixture
+def mock_slack_response() -> Mock:
+    """Create a mock Slack API response."""
+    response = Mock()
+    response.json.return_value = {"ok": True, "ts": "1234.5678"}
+    return response
+
+
+@pytest.fixture
+def mock_sync_client(mock_slack_response: Mock):
+    """Create a mock sync httpx client."""
+    with patch("httpx.Client") as mock_client_class:
+        mock_client = Mock()
+        mock_client.post.return_value = mock_slack_response
+        mock_client_class.return_value = mock_client
+        yield mock_client
+
+
+@pytest.fixture
+def mock_async_client(mock_slack_response: Mock):
+    """Create a mock async httpx client."""
+    with patch("httpx.AsyncClient") as mock_client_class:
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_slack_response
+        mock_client_class.return_value = mock_client
+        yield mock_client
+
+
+def get_posted_json(mock_client: Mock, call_index: int = 0) -> dict[str, Any]:
+    """Extract the JSON payload from a mock client's post call."""
+    return mock_client.post.call_args_list[call_index][1]["json"]
+
+
+def test_closed_to_open_sends_triggered_message(mock_sync_client: Mock):
+    """CLOSED -> OPEN sends triggered message."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
     signal = Signal(
-        circuit_name="test_circuit",
+        circuit_name="api",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1234567890.0,
     )
 
-    message = _build_message(channel="#alerts", signal=signal)
+    listener(signal)
 
-    assert message["channel"] == "#alerts"
-    assert len(message["attachments"]) == 1
-    attachment = message["attachments"][0]
-    assert attachment["color"] == "#FF4C4C"
-    assert "🚨 Circuit Breaker Triggered" in str(attachment)
-    assert "test_circuit" in str(attachment)
+    payload = get_posted_json(mock_sync_client)
+    assert payload["channel"] == "#alerts"
+    assert "🚨 Circuit Breaker Triggered" in str(payload)
+    assert "api" in str(payload)
 
 
-def test_build_message_with_thread():
-    """_build_message includes thread_ts when provided."""
+def test_open_to_half_open_sends_recovery_attempt_message(mock_sync_client: Mock):
+    """OPEN -> HALF_OPEN sends recovery attempt message."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
     signal = Signal(
-        circuit_name="test",
+        circuit_name="api",
         old_state=StateEnum.OPEN,
         new_state=StateEnum.HALF_OPEN,
         timestamp=1.0,
     )
 
-    message = _build_message(channel="#test", signal=signal, thread="1234.5678")
+    listener(signal)
 
-    assert message["thread_ts"] == "1234.5678"
+    payload = get_posted_json(mock_sync_client)
+    assert "🔄 Attempting Circuit Breaker Recovery" in str(payload)
 
 
-def test_build_message_recovery_broadcasts():
-    """_build_message sets reply_broadcast for recovery transitions."""
+def test_half_open_to_open_sends_re_triggered_message(mock_sync_client: Mock):
+    """HALF_OPEN -> OPEN sends re-triggered message."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
     signal = Signal(
-        circuit_name="test",
+        circuit_name="api",
+        old_state=StateEnum.HALF_OPEN,
+        new_state=StateEnum.OPEN,
+        timestamp=1.0,
+    )
+
+    listener(signal)
+
+    payload = get_posted_json(mock_sync_client)
+    assert "⚠️ Circuit Breaker Re-triggered" in str(payload)
+
+
+def test_half_open_to_closed_sends_recovered_message(mock_sync_client: Mock):
+    """HALF_OPEN -> CLOSED sends recovered message with broadcast."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+    signal = Signal(
+        circuit_name="api",
         old_state=StateEnum.HALF_OPEN,
         new_state=StateEnum.CLOSED,
         timestamp=1.0,
     )
 
-    message = _build_message(channel="#test", signal=signal)
+    listener(signal)
 
-    assert message["reply_broadcast"] is True
+    payload = get_posted_json(mock_sync_client)
+    assert "✅ Circuit Breaker Recovered" in str(payload)
+    assert payload.get("reply_broadcast") is True
 
 
-@patch("httpx.Client")
-def test_slack_listener_basic(mock_client_class: MagicMock) -> None:
-    """SlackListener sends messages to Slack API."""
-    mock_client = Mock()
-    mock_client_class.return_value = mock_client
-
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": True, "ts": "1234.5678"}
-    mock_client.post.return_value = mock_response
-
-    listener = SlackListener(channel="#alerts", token="xoxb-test-token")
-
+def test_unknown_transition_sends_fallback_message(mock_sync_client: Mock):
+    """Unknown transition sends fallback message."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
     signal = Signal(
-        circuit_name="test",
+        circuit_name="api",
+        old_state=StateEnum.DISABLED,
+        new_state=StateEnum.CLOSED,
+        timestamp=1.0,
+    )
+
+    listener(signal)
+
+    payload = get_posted_json(mock_sync_client)
+    assert "ℹ️ Circuit Breaker State Changed" in str(payload)
+
+
+def test_open_transition_starts_new_thread(mock_sync_client: Mock):
+    """First CLOSED -> OPEN starts a new thread (no thread_ts)."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+    signal = Signal(
+        circuit_name="api",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1.0,
@@ -84,85 +141,114 @@ def test_slack_listener_basic(mock_client_class: MagicMock) -> None:
 
     listener(signal)
 
-    mock_client.post.assert_called_once()
-    call_args = mock_client.post.call_args
-    assert call_args[0][0] == "https://slack.com/api/chat.postMessage"
-    assert call_args[1]["json"]["channel"] == "#alerts"
+    payload = get_posted_json(mock_sync_client)
+    assert "thread_ts" not in payload
 
 
-@patch("httpx.Client")
-def test_slack_listener_threading(mock_client_class: MagicMock) -> None:
-    """SlackListener tracks threads for related transitions."""
-    mock_client = Mock()
-    mock_client_class.return_value = mock_client
+def test_subsequent_transitions_use_thread(mock_sync_client: Mock):
+    """Subsequent transitions use the thread started by CLOSED -> OPEN."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
 
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": True, "ts": "1234.5678"}
-    mock_client.post.return_value = mock_response
-
-    listener = SlackListener(channel="#test", token="xoxb-test")
-
-    signal1 = Signal(
-        circuit_name="circuit_a",
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
-        timestamp=1.0,
+    # First: CLOSED -> OPEN
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
     )
-    listener(signal1)
 
-    assert "circuit_a" in listener._open_threads  # type: ignore
-    assert listener._open_threads["circuit_a"] == "1234.5678"  # type: ignore
-
-    signal2 = Signal(
-        circuit_name="circuit_a",
-        old_state=StateEnum.OPEN,
-        new_state=StateEnum.HALF_OPEN,
-        timestamp=2.0,
+    # Second: OPEN -> HALF_OPEN
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.HALF_OPEN,
+            timestamp=2.0,
+        )
     )
-    listener(signal2)
 
-    second_call_json = mock_client.post.call_args_list[1][1]["json"]
-    assert second_call_json["thread_ts"] == "1234.5678"
+    payload = get_posted_json(mock_sync_client, 1)
+    assert payload["thread_ts"] == "1234.5678"
 
 
-@patch("httpx.Client")
-def test_slack_listener_thread_cleanup(mock_client_class: MagicMock) -> None:
-    """SlackListener removes thread on recovery."""
-    mock_client = Mock()
-    mock_client_class.return_value = mock_client
+def test_recovery_clears_thread(mock_sync_client: Mock):
+    """Recovery (HALF_OPEN -> CLOSED) clears thread for next incident."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
 
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": True, "ts": "1234.5678"}
-    mock_client.post.return_value = mock_response
-
-    listener = SlackListener(channel="#test", token="xoxb-test")
-    listener._open_threads["test_circuit"] = "1234.5678"  # type: ignore
-
-    signal = Signal(
-        circuit_name="test_circuit",
-        old_state=StateEnum.HALF_OPEN,
-        new_state=StateEnum.CLOSED,
-        timestamp=1.0,
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
     )
-    listener(signal)
 
-    assert "test_circuit" not in listener._open_threads  # type: ignore
+    # Recover
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.HALF_OPEN,
+            new_state=StateEnum.CLOSED,
+            timestamp=2.0,
+        )
+    )
+
+    # New incident
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=3.0,
+        )
+    )
+
+    payload = get_posted_json(mock_sync_client, 2)
+    assert "thread_ts" not in payload
 
 
-@patch("httpx.Client")
-def test_slack_listener_error_handling(mock_client_class: MagicMock) -> None:
-    """SlackListener raises error on failed API call."""
-    mock_client = Mock()
-    mock_client_class.return_value = mock_client
+def test_separate_circuits_have_separate_threads(mock_sync_client: Mock):
+    """Different circuits don't share threads."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
 
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": False, "error": "channel_not_found"}
-    mock_client.post.return_value = mock_response
+    # Circuit A opens
+    listener(
+        Signal(
+            circuit_name="circuit_a",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Circuit B opens
+    listener(
+        Signal(
+            circuit_name="circuit_b",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=2.0,
+        )
+    )
+
+    payload_b = get_posted_json(mock_sync_client, 1)
+    assert "thread_ts" not in payload_b
+
+
+def test_raises_on_api_error(mock_sync_client: Mock):
+    """Raises RuntimeError on Slack API error."""
+    mock_sync_client.post.return_value.json.return_value = {
+        "ok": False,
+        "error": "channel_not_found",
+    }
 
     listener = SlackListener(channel="#invalid", token="xoxb-test")
-
     signal = Signal(
-        circuit_name="test",
+        circuit_name="api",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1.0,
@@ -172,20 +258,11 @@ def test_slack_listener_error_handling(mock_client_class: MagicMock) -> None:
         listener(signal)
 
 
-@patch("httpx.AsyncClient")
-async def test_async_slack_listener_basic(mock_client_class: MagicMock) -> None:
-    """AsyncSlackListener sends messages to Slack API."""
-    mock_client = AsyncMock()
-    mock_client_class.return_value = mock_client
-
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": True, "ts": "1234.5678"}
-    mock_client.post.return_value = mock_response
-
+async def test_async_listener_sends_message(mock_async_client: AsyncMock):
+    """AsyncSlackListener sends message to Slack."""
     listener = AsyncSlackListener(channel="#alerts", token="xoxb-test")
-
     signal = Signal(
-        circuit_name="test",
+        circuit_name="api",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1.0,
@@ -193,30 +270,35 @@ async def test_async_slack_listener_basic(mock_client_class: MagicMock) -> None:
 
     await listener(signal)
 
-    mock_client.post.assert_called_once()
-    call_args = mock_client.post.call_args
-    assert call_args[0][0] == "https://slack.com/api/chat.postMessage"
+    mock_async_client.post.assert_called_once()
+    payload = get_posted_json(mock_async_client)
+    assert payload["channel"] == "#alerts"
+    assert "🚨 Circuit Breaker Triggered" in str(payload)
 
 
-@patch("httpx.AsyncClient")
-async def test_async_slack_listener_threading(mock_client_class: MagicMock) -> None:
-    """AsyncSlackListener tracks threads for related transitions."""
-    mock_client = AsyncMock()
-    mock_client_class.return_value = mock_client
+async def test_async_listener_threading(mock_async_client: AsyncMock):
+    """AsyncSlackListener threads messages correctly."""
+    listener = AsyncSlackListener(channel="#alerts", token="xoxb-test")
 
-    mock_response = Mock()
-    mock_response.json.return_value = {"ok": True, "ts": "1234.5678"}
-    mock_client.post.return_value = mock_response
-
-    listener = AsyncSlackListener(channel="#test", token="xoxb-test")
-
-    signal1 = Signal(
-        circuit_name="circuit_a",
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
-        timestamp=1.0,
+    # First: CLOSED -> OPEN
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
     )
-    await listener(signal1)
 
-    assert "circuit_a" in listener._open_threads  # type: ignore
-    assert listener._open_threads["circuit_a"] == "1234.5678"  # type: ignore
+    # Second: OPEN -> HALF_OPEN
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.HALF_OPEN,
+            timestamp=2.0,
+        )
+    )
+
+    payload = get_posted_json(mock_async_client, 1)
+    assert payload["thread_ts"] == "1234.5678"

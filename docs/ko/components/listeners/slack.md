@@ -4,7 +4,7 @@
 
 ## 설치 {#installation}
 
-이 Listener는 `slack-sdk` 라이브러리가 필요합니다. 다음 명령어로 추가 설치할 수 있습니다.
+이 Listener는 HTTP 요청을 위해 `httpx`가 필요합니다. 다음 명령어로 추가 설치할 수 있습니다.
 
 ```bash
 pip install fluxgate[slack]
@@ -94,18 +94,13 @@ cb = AsyncCircuitBreaker(
 
 Listener는 대화를 체계적으로 유지하기 위해 스레드 메시지를 보냅니다.
 
-- **CLOSED → OPEN**
-    - 🚨 **Circuit Breaker Triggered**
-    - 새로운 스레드를 시작하기 위해 채널에 빨간색 메시지가 게시됩니다.
-- **OPEN → HALF_OPEN**
-    - 🔄 **Attempting Circuit Breaker Recovery**
-    - 원래 스레드에 회신으로 주황색 메시지가 게시됩니다.
-- **HALF_OPEN → OPEN**
-    - ⚠️ **Circuit Breaker Re-triggered**
-    - 복구 시도가 실패했음을 나타내는 빨간색 메시지가 회신으로 게시됩니다.
-- **HALF_OPEN → CLOSED**
-    - ✅ **Circuit Breaker Recovered**
-    - 복구 확인을 위해 회신으로 녹색 메시지가 게시되고, 메인 채널에도 브로드캐스트됩니다.
+| 전환 | 제목 | 색상 | 설명 |
+|---|---|---|---|
+| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | 빨간색 | 채널에 새 스레드 시작 |
+| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | 주황색 | 원래 스레드에 회신 |
+| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | 빨간색 | 복구 실패를 나타내는 회신 |
+| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | 녹색 | 회신 + 메인 채널에 브로드캐스트 |
+| 기타 모든 전환 | ℹ️ Circuit Breaker State Changed | 회색 | 수동 또는 비일반적 전환용 fallback |
 
 ---
 
@@ -136,28 +131,51 @@ class CriticalAlertListener(IListener):
 
 ### 사용자 정의 메시지 {#custom-messages}
 
-메시지 형식을 완전히 사용자 정의하려면 `slack_sdk`를 사용하여 자신만의 Listener를 작성할 수 있습니다.
+메시지 템플릿을 사용자 정의하려면(예: 다른 언어) `SlackListener`를 상속하고 클래스 속성을 오버라이드할 수 있습니다.
+
+각 템플릿은 세 개의 필수 키를 가진 `Template` TypedDict입니다:
+
+- `title`: 메시지 제목 (이모지 지원)
+- `color`: 첨부 파일 사이드바의 Hex 색상 코드
+- `description`: 상태 변경에 대한 상세 설명
 
 <!--pytest.mark.skip-->
 
 ```python
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-from fluxgate.interfaces import IListener
-from fluxgate.signal import Signal
+from fluxgate.listeners.slack import SlackListener, Template
 from fluxgate.state import StateEnum
 
-class CustomSlackListener(IListener):
-    def __init__(self, channel: str, token: str):
-        self.channel = channel
-        self.client = WebClient(token=token)
+class KoreanSlackListener(SlackListener):
+    """한국어 메시지를 사용하는 SlackListener."""
 
-    def __call__(self, signal: Signal) -> None:
-        if signal.new_state != StateEnum.OPEN:
-            return  # OPEN 상태에서만 알림
+    TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
+        (StateEnum.CLOSED, StateEnum.OPEN): {
+            "title": "🚨 서킷 브레이커 작동",
+            "color": "#FF4C4C",
+            "description": "요청 실패율이 임계값을 초과했습니다.",
+        },
+        (StateEnum.OPEN, StateEnum.HALF_OPEN): {
+            "title": "🔄 서킷 브레이커 복구 시도 중",
+            "color": "#FFA500",
+            "description": "부분 요청으로 서비스 상태를 테스트하고 있습니다.",
+        },
+        (StateEnum.HALF_OPEN, StateEnum.OPEN): {
+            "title": "⚠️ 서킷 브레이커 재작동",
+            "color": "#FF4C4C",
+            "description": "테스트 요청이 실패하여 열림 상태로 복귀합니다.",
+        },
+        (StateEnum.HALF_OPEN, StateEnum.CLOSED): {
+            "title": "✅ 서킷 브레이커 복구됨",
+            "color": "#36a64f",
+            "description": "테스트 요청이 성공하여 서비스가 정상입니다.",
+        },
+    }
 
-        message = f"'{signal.circuit_name}' 브레이커가 Trip되었습니다!"
-        self.client.chat_postMessage(channel=self.channel, text=message)
+    FALLBACK_TEMPLATE: Template = {
+        "title": "ℹ️ 서킷 브레이커 상태 변경",
+        "color": "#808080",
+        "description": "서킷 브레이커 상태가 변경되었습니다.",
+    }
 ```
 
 ---

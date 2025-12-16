@@ -4,7 +4,7 @@ The `SlackListener` and `AsyncSlackListener` push real-time notifications about 
 
 ## Installation {#installation}
 
-This listener requires the `slack-sdk` library. You can install it as an extra:
+This listener requires `httpx` for HTTP requests. You can install it as an extra:
 
 ```bash
 pip install fluxgate[slack]
@@ -94,18 +94,13 @@ cb = AsyncCircuitBreaker(
 
 The listener sends threaded messages to keep conversations organized.
 
-- **CLOSED → OPEN**
-    - 🚨 **Circuit Breaker Triggered**
-    - A red message is posted to the channel to start a new thread.
-- **OPEN → HALF_OPEN**
-    - 🔄 **Attempting Circuit Breaker Recovery**
-    - An orange message is posted as a reply in the original thread.
-- **HALF_OPEN → OPEN**
-    - ⚠️ **Circuit Breaker Re-triggered**
-    - A red message is posted as a reply, indicating the recovery attempt failed.
-- **HALF_OPEN → CLOSED**
-    - ✅ **Circuit Breaker Recovered**
-    - A green message is posted as a reply and is also broadcast back to the main channel to confirm recovery.
+| Transition | Title | Color | Description |
+|---|---|---|---|
+| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | Red | Starts a new thread in the channel |
+| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | Orange | Reply in the original thread |
+| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | Red | Reply indicating recovery failed |
+| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | Green | Reply + broadcast to main channel |
+| Any other | ℹ️ Circuit Breaker State Changed | Gray | Fallback for manual or uncommon transitions |
 
 ---
 
@@ -138,33 +133,51 @@ class CriticalAlertListener(IListener):
 
 ### Custom Messages {#custom-messages}
 
-To completely customize the message format, you can write your own listener using the `slack_sdk`.
+To customize message templates (e.g., for different languages), you can subclass `SlackListener` and override the class attributes.
+
+Each template is a `Template` TypedDict with three required keys:
+
+- `title`: The message title (supports emoji)
+- `color`: Hex color code for the attachment sidebar
+- `description`: Detailed description of the state change
 
 <!--pytest.mark.skip-->
 
 ```python
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-from fluxgate.interfaces import IListener
-from fluxgate.signal import Signal
+from fluxgate.listeners.slack import SlackListener, Template
 from fluxgate.state import StateEnum
 
-class CustomSlackListener(IListener):
-    def __init__(self, channel: str, token: str):
-        self.channel = channel
-        self.client = WebClient(token=token)
+class KoreanSlackListener(SlackListener):
+    """SlackListener with Korean messages."""
 
-    def __call__(self, signal: Signal) -> None:
-        if signal.new_state != StateEnum.OPEN:
-            return  # Only notify on OPEN
+    TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
+        (StateEnum.CLOSED, StateEnum.OPEN): {
+            "title": "🚨 서킷 브레이커 작동",
+            "color": "#FF4C4C",
+            "description": "요청 실패율이 임계값을 초과했습니다.",
+        },
+        (StateEnum.OPEN, StateEnum.HALF_OPEN): {
+            "title": "🔄 서킷 브레이커 복구 시도 중",
+            "color": "#FFA500",
+            "description": "부분 요청으로 서비스 상태를 테스트하고 있습니다.",
+        },
+        (StateEnum.HALF_OPEN, StateEnum.OPEN): {
+            "title": "⚠️ 서킷 브레이커 재작동",
+            "color": "#FF4C4C",
+            "description": "테스트 요청이 실패하여 열림 상태로 복귀합니다.",
+        },
+        (StateEnum.HALF_OPEN, StateEnum.CLOSED): {
+            "title": "✅ 서킷 브레이커 복구됨",
+            "color": "#36a64f",
+            "description": "테스트 요청이 성공하여 서비스가 정상입니다.",
+        },
+    }
 
-        try:
-            message = f"Yo, the '{signal.circuit_name}' breaker just tripped. Check it out!"
-            self.client.chat_postMessage(channel=self.channel, text=message)
-        except SlackApiError as e:
-            # It's important to handle errors so a listener failure
-            # doesn't crash the main application.
-            print(f"Error sending Slack notification: {e}")
+    FALLBACK_TEMPLATE: Template = {
+        "title": "ℹ️ 서킷 브레이커 상태 변경",
+        "color": "#808080",
+        "description": "서킷 브레이커 상태가 변경되었습니다.",
+    }
 ```
 
 ---

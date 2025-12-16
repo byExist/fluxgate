@@ -1,5 +1,5 @@
 import time
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional, TypedDict
 
 import httpx
 
@@ -7,10 +7,16 @@ from fluxgate.interfaces import IListener, IAsyncListener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
-__all__ = ["SlackListener", "AsyncSlackListener"]
+__all__ = ["SlackListener", "AsyncSlackListener", "Template"]
 
 
-_TRANSITION_MESSAGE_DATA: dict[tuple[StateEnum, StateEnum], dict[str, str]] = {
+class Template(TypedDict):
+    title: str
+    color: str
+    description: str
+
+
+_DEFAULT_TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
     (StateEnum.CLOSED, StateEnum.OPEN): {
         "title": "🚨 Circuit Breaker Triggered",
         "color": "#FF4C4C",
@@ -33,16 +39,20 @@ _TRANSITION_MESSAGE_DATA: dict[tuple[StateEnum, StateEnum], dict[str, str]] = {
     },
 }
 
+_DEFAULT_FALLBACK_TEMPLATE: Template = {
+    "title": "ℹ️ Circuit Breaker State Changed",
+    "color": "#808080",
+    "description": "Circuit breaker state has been changed.",
+}
+
 
 def _build_message(
     channel: str,
     signal: Signal,
+    template: Template,
     thread: Optional[str] = None,
-):
-    transition = (signal.old_state, signal.new_state)
-    template = _TRANSITION_MESSAGE_DATA.get(transition)
-    if template is None:
-        return None
+) -> dict[str, Any]:
+    """Build Slack message payload."""
     payload: dict[str, Any] = {
         "channel": channel,
         "attachments": [
@@ -95,6 +105,10 @@ class SlackListener(IListener):
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
         token: Slack bot token with chat:write permissions
 
+    Class Attributes:
+        TRANSITION_TEMPLATES: Override to customize messages for specific transitions.
+        FALLBACK_TEMPLATE: Override to customize the default message for other transitions.
+
     Examples:
         >>> from fluxgate import CircuitBreaker
         >>> from fluxgate.listeners.slack import SlackListener
@@ -105,7 +119,29 @@ class SlackListener(IListener):
         ... )
         >>>
         >>> cb = CircuitBreaker(..., listeners=[listener])
+
+        To customize messages (e.g., for Korean):
+
+        >>> class KoreanSlackListener(SlackListener):
+        ...     TRANSITION_TEMPLATES = {
+        ...         (StateEnum.CLOSED, StateEnum.OPEN): {
+        ...             "title": "🚨 서킷 브레이커 작동",
+        ...             "color": "#FF4C4C",
+        ...             "description": "요청 실패율이 임계값을 초과했습니다.",
+        ...         },
+        ...         # ... other transitions
+        ...     }
+        ...     FALLBACK_TEMPLATE = {
+        ...         "title": "ℹ️ 서킷 브레이커 상태 변경",
+        ...         "color": "#808080",
+        ...         "description": "서킷 브레이커 상태가 변경되었습니다.",
+        ...     }
     """
+
+    TRANSITION_TEMPLATES: ClassVar[dict[tuple[StateEnum, StateEnum], Template]] = (
+        _DEFAULT_TRANSITION_TEMPLATES
+    )
+    FALLBACK_TEMPLATE: ClassVar[Template] = _DEFAULT_FALLBACK_TEMPLATE
 
     def __init__(self, channel: str, token: str) -> None:
         self._channel = channel
@@ -116,14 +152,20 @@ class SlackListener(IListener):
         )
         self._open_threads: dict[str, str] = {}
 
+    def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
+        """Get message template with fallback for unknown transitions."""
+        return self.TRANSITION_TEMPLATES.get(
+            (old_state, new_state), self.FALLBACK_TEMPLATE
+        )
+
     def __call__(self, signal: Signal) -> None:
+        template = self._get_template(signal.old_state, signal.new_state)
         message = _build_message(
             channel=self._channel,
             signal=signal,
+            template=template,
             thread=self._open_threads.get(signal.circuit_name),
         )
-        if message is None:
-            return
         response = self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
         )
@@ -149,6 +191,10 @@ class AsyncSlackListener(IAsyncListener):
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
         token: Slack bot token with chat:write permissions
 
+    Class Attributes:
+        TRANSITION_TEMPLATES: Override to customize messages for specific transitions.
+        FALLBACK_TEMPLATE: Override to customize the default message for other transitions.
+
     Note:
         Uses httpx for async HTTP requests.
 
@@ -164,6 +210,11 @@ class AsyncSlackListener(IAsyncListener):
         >>> cb = AsyncCircuitBreaker(..., listeners=[listener])
     """
 
+    TRANSITION_TEMPLATES: ClassVar[dict[tuple[StateEnum, StateEnum], Template]] = (
+        SlackListener.TRANSITION_TEMPLATES
+    )
+    FALLBACK_TEMPLATE: ClassVar[Template] = SlackListener.FALLBACK_TEMPLATE
+
     def __init__(self, channel: str, token: str) -> None:
         self._channel = channel
         self._token = token
@@ -173,14 +224,20 @@ class AsyncSlackListener(IAsyncListener):
         )
         self._open_threads: dict[str, str] = {}
 
+    def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
+        """Get message template with fallback for unknown transitions."""
+        return self.TRANSITION_TEMPLATES.get(
+            (old_state, new_state), self.FALLBACK_TEMPLATE
+        )
+
     async def __call__(self, signal: Signal) -> None:
+        template = self._get_template(signal.old_state, signal.new_state)
         message = _build_message(
             channel=self._channel,
             signal=signal,
+            template=template,
             thread=self._open_threads.get(signal.circuit_name),
         )
-        if message is None:
-            return
         response = await self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
         )

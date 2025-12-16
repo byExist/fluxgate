@@ -1,0 +1,32 @@
+name: Create Release Tag
+
+on:
+  push:
+    branches: [master]
+    paths: [pyproject.toml]
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check version change and create tag
+        run: |
+          NEW_VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          OLD_VERSION=$(git show HEAD^:pyproject.toml | grep -Po '(?<=^version = ")[^"]*' || echo "")
+
+          if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
+            echo "Version changed: $OLD_VERSION → $NEW_VERSION"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "v$NEW_VERSION"
+            git push origin "v$NEW_VERSION"
+          else
+            echo "Version unchanged, skipping tag creation"
+          fi

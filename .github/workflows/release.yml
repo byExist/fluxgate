@@ -21,12 +21,18 @@ jobs:
           NEW_VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
           OLD_VERSION=$(git show HEAD^:pyproject.toml | grep -Po '(?<=^version = ")[^"]*' || echo "")
 
-          if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
-            echo "Version changed: $OLD_VERSION → $NEW_VERSION"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "v$NEW_VERSION"
-            git push origin "v$NEW_VERSION"
-          else
+          if [ "$NEW_VERSION" = "$OLD_VERSION" ]; then
             echo "Version unchanged, skipping tag creation"
+            exit 0
           fi
+
+          if git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then
+            echo "Tag v$NEW_VERSION already exists, skipping"
+            exit 0
+          fi
+
+          echo "Version changed: $OLD_VERSION → $NEW_VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v$NEW_VERSION"
+          git push origin "v$NEW_VERSION"

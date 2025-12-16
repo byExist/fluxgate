@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   ci:
-    uses: byExist/fluxgate/.github/workflows/ci.yml@de826d6080a46de1dda8945f44d637cede304dcf
+    uses: byExist/fluxgate/.github/workflows/ci.yml@master
 
   publish:
     needs: ci

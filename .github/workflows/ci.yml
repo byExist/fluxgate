@@ -3,8 +3,20 @@ name: CI
 on:
   push:
     branches: [master]
+    paths:
+      - "fluxgate/**"
+      - "tests/**"
+      - "docs/**"
+      - "pyproject.toml"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: [master]
+    paths:
+      - "fluxgate/**"
+      - "tests/**"
+      - "docs/**"
+      - "pyproject.toml"
+      - ".github/workflows/ci.yml"
   workflow_call:
 
 jobs:
@@ -56,3 +68,23 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -v
+
+  docs-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras --group test
+
+      - name: Test code examples in docs
+        run: uv run pytest --codeblocks docs/

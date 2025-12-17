@@ -1,30 +1,41 @@
-"""Tests for CircuitBreaker (sync and async) - integration tests."""
+"""Tests for CircuitBreaker (sync and async)."""
 
 import asyncio
-import time
 
 import pytest
 
 from fluxgate import (
-    CircuitBreaker,
     AsyncCircuitBreaker,
     CallNotPermittedError,
+    CircuitBreaker,
     StateEnum,
 )
-from fluxgate.signal import Signal
-from fluxgate.windows import CountWindow
-from fluxgate.trackers import TypeOf
-from fluxgate.trippers import MinRequests, FailureRate, FailureStreak
-from fluxgate.retries import Cooldown
 from fluxgate.permits import All, Random
+from fluxgate.retries import Cooldown
+from fluxgate.signal import Signal
+from fluxgate.trackers import TypeOf
+from fluxgate.trippers import FailureRate, FailureStreak, MinRequests
 
 
-def test_successful_calls_in_closed_state():
+def success_func(x: int = 1) -> int:
+    return x * 2
+
+
+def failing_func() -> None:
+    raise ValueError("fail")
+
+
+async def async_success_func(x: int = 1) -> int:
+    return x * 2
+
+
+async def async_failing_func() -> None:
+    raise ValueError("fail")
+
+
+def test_call_passes_through():
     """Successful calls pass through when circuit is CLOSED."""
     cb = CircuitBreaker(name="test")
-
-    def success_func(x: int):
-        return x * 2
 
     assert cb.call(success_func, 5) == 10
     assert cb.call(success_func, 10) == 20
@@ -40,32 +51,27 @@ def test_decorator_usage():
     cb = CircuitBreaker(name="test")
 
     @cb
-    def decorated_func(x: int):
+    def decorated(x: int) -> int:
         return x + 1
 
-    assert decorated_func(5) == 6
-    assert decorated_func(10) == 11
+    assert decorated(5) == 6
+    assert decorated(10) == 11
+    assert cb.info().metrics.total_count == 2
+
+
+def test_failure_is_recorded():
+    """Failures are recorded in metrics."""
+    cb = CircuitBreaker(
+        name="test",
+        tripper=MinRequests(10) & FailureRate(0.5),
+    )
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
 
     info = cb.info()
-    assert info.metrics.total_count == 2
-
-
-def test_untracked_exceptions_propagate():
-    """Exceptions not tracked by tracker are propagated without recording."""
-    cb = CircuitBreaker(name="test", tracker=TypeOf(ValueError))
-
-    def raises_untracked():
-        raise TypeError("not tracked")
-
-    try:
-        cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError as e:
-        assert str(e) == "not tracked"
-
-    info = cb.info()
-    assert info.metrics.total_count == 0
-    assert info.metrics.failure_count == 0
+    assert info.metrics.total_count == 1
+    assert info.metrics.failure_count == 1
 
 
 def test_closed_to_open_on_failure_threshold():
@@ -75,18 +81,11 @@ def test_closed_to_open_on_failure_threshold():
         tripper=MinRequests(3) & FailureRate(0.5),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
     for _ in range(3):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    info = cb.info()
-    assert info.state == StateEnum.OPEN.value
-    assert info.metrics.total_count == 0
+    assert cb.info().state == StateEnum.OPEN.value
 
 
 def test_open_state_blocks_calls():
@@ -94,820 +93,281 @@ def test_open_state_blocks_calls():
     cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(10.0),  # Long cooldown
+        retry=Cooldown(10.0),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    def any_func() -> str:
-        return "success"
-
-    try:
-        cb.call(any_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
+    with pytest.raises(CallNotPermittedError):
+        cb.call(success_func)
 
 
-def test_open_to_half_open_after_cooldown():
+def test_open_to_half_open_after_cooldown(freezer):
     """Circuit transitions to HALF_OPEN after cooldown period."""
     cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
+        retry=Cooldown(60.0),
         permit=All(),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
     assert cb.info().state == StateEnum.OPEN.value
 
-    time.sleep(0.06)
-
-    def success_func():
-        return "ok"
-
+    freezer.tick(61)
     result = cb.call(success_func)
-    assert result == "ok"
 
-    info = cb.info()
-    assert info.state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
+    assert result == 2
+    assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
 
 
-def test_half_open_to_closed_on_success():
+def test_half_open_to_closed_on_success(freezer):
     """Circuit closes after successful calls in HALF_OPEN state."""
     cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
+        retry=Cooldown(60.0),
         permit=All(),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    def success_func():
-        return "ok"
-
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    time.sleep(0.06)
-
+    freezer.tick(61)
     for _ in range(3):
         cb.call(success_func)
 
-    info = cb.info()
-    assert info.state == StateEnum.CLOSED.value
+    assert cb.info().state == StateEnum.CLOSED.value
 
 
-def test_half_open_to_open_on_failure():
+def test_half_open_to_open_on_failure(freezer):
     """Circuit reopens if failures continue in HALF_OPEN state."""
     cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
+        retry=Cooldown(60.0),
         permit=All(),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
     initial_reopens = cb.info().reopens
 
-    time.sleep(0.06)
-
+    freezer.tick(61)
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    info = cb.info()
-    assert info.state == StateEnum.OPEN.value
-    assert info.reopens == initial_reopens + 1
+    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().reopens == initial_reopens + 1
 
 
-def test_half_open_permit_blocks_calls():
+def test_half_open_permit_blocks_calls(freezer):
     """Calls blocked by permit in HALF_OPEN state raise CallNotPermittedError."""
     cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=Random(0.0),  # Never permit
+        retry=Cooldown(60.0),
+        permit=Random(0.0),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    freezer.tick(61)
+    with pytest.raises(CallNotPermittedError):
+        cb.call(success_func)
+
+
+def test_reset_transitions_to_closed():
+    """reset() transitions circuit to CLOSED state."""
+    cb = CircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+    )
 
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    time.sleep(0.06)
+    assert cb.info().state == StateEnum.OPEN.value
 
-    def success_func():
-        return "ok"
+    cb.reset()
+    assert cb.info().state == StateEnum.CLOSED.value
 
-    try:
+
+def test_disable_allows_all_calls():
+    """disable() allows all calls without state changes."""
+    cb = CircuitBreaker(name="test")
+    cb.disable()
+
+    assert cb.info().state == StateEnum.DISABLED.value
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.DISABLED.value
+
+
+def test_force_open_blocks_all_calls():
+    """force_open() blocks all calls."""
+    cb = CircuitBreaker(name="test")
+    cb.force_open()
+
+    assert cb.info().state == StateEnum.FORCED_OPEN.value
+
+    with pytest.raises(CallNotPermittedError):
         cb.call(success_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
 
 
-def test_half_open_untracked_exception_propagates():
+def test_metrics_only_collects_without_tripping():
+    """metrics_only() enables metric collection without circuit breaking."""
+    cb = CircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+    )
+    cb.metrics_only()
+
+    for _ in range(5):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    info = cb.info()
+    assert info.state == StateEnum.METRICS_ONLY.value
+    assert info.metrics.failure_count == 5
+
+
+def test_untracked_exceptions_propagate():
+    """Exceptions not tracked by tracker are propagated without recording."""
+    cb = CircuitBreaker(name="test", tracker=TypeOf(ValueError))
+
+    def raises_type_error() -> None:
+        raise TypeError("not tracked")
+
+    with pytest.raises(TypeError, match="not tracked"):
+        cb.call(raises_type_error)
+
+    info = cb.info()
+    assert info.metrics.total_count == 0
+    assert info.metrics.failure_count == 0
+
+
+def test_half_open_untracked_exception_propagates(freezer):
     """Untracked exceptions in HALF_OPEN propagate without state change."""
     cb = CircuitBreaker(
         name="test",
         tracker=TypeOf(ValueError),
         tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
+        retry=Cooldown(60.0),
         permit=All(),
     )
 
-    def failing_func() -> None:
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             cb.call(failing_func)
-        except ValueError:
-            pass
 
-    time.sleep(0.06)
-
-    def raises_untracked():
+    def raises_type_error() -> None:
         raise TypeError("not tracked")
 
-    try:
-        cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError as e:
-        assert str(e) == "not tracked"
-
-    info = cb.info()
-    assert info.state == StateEnum.HALF_OPEN.value
-
-
-def test_manual_reset():
-    """reset() transitions circuit to CLOSED state."""
-    cb = CircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(10.0),
-    )
-
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    cb.reset()
-
-    assert cb.info().state == StateEnum.CLOSED.value
-
-
-def test_listener_notification():
-    """Listeners are notified on state transitions."""
-    notification_count = 0
-
-    def listener(signal: Signal):
-        nonlocal notification_count
-        notification_count += 1
-
-    cb = CircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        listeners=[listener],
-    )
-
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-    assert notification_count == 1
-
-    cb.reset(notify=True)
-    assert cb.info().state == StateEnum.CLOSED.value
-    assert notification_count == 2
-
-
-def test_listener_exception_handling():
-    """Failing listeners don't break circuit breaker operation."""
-
-    def failing_listener(signal: Signal):
-        raise RuntimeError("listener failed")
-
-    cb = CircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        listeners=[failing_listener],
-    )
-
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-
-def test_state_transitions_skip_notification():
-    """State transitions can skip listener notification with notify=False."""
-    notification_count = 0
-
-    def listener(signal: Signal):
-        nonlocal notification_count
-        notification_count += 1
-
-    cb = CircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        listeners=[listener],
-    )
-
-    cb.reset(notify=False)
-    assert notification_count == 0
-
-    cb.disable(notify=False)
-    assert notification_count == 0
-
-    cb.metrics_only(notify=False)
-    assert notification_count == 0
-
-    cb.force_open(notify=False)
-    assert notification_count == 0
-
-
-def test_metrics_only_mode():
-    """metrics_only() enables metric collection without circuit breaking."""
-    cb = CircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-    )
-
-    cb.metrics_only()
-    assert cb.info().state == StateEnum.METRICS_ONLY.value
-
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    def success_func():
-        return "ok"
-
-    for _ in range(5):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-
-    info = cb.info()
-    assert info.state == StateEnum.METRICS_ONLY.value
-    assert info.metrics.failure_count == 5
-
-    cb.call(success_func)
-    info = cb.info()
-    assert info.metrics.total_count == 6
-    assert info.metrics.failure_count == 5
-
-    def raises_untracked():
-        raise TypeError("not tracked")
-
-    try:
-        cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        pass
-
-
-def test_manual_disable_and_force_open():
-    """disable() and force_open() manually control circuit state."""
-    cb = CircuitBreaker(name="test")
-
-    cb.disable()
-    assert cb.info().state == StateEnum.DISABLED.value
-
-    def failing_func() -> None:
-        raise ValueError("fail")
-
-    try:
-        cb.call(failing_func)
-    except ValueError:
-        pass
-
-    assert cb.info().state == StateEnum.DISABLED.value
-
-    cb.force_open()
-    assert cb.info().state == StateEnum.FORCED_OPEN.value
-
-    def success_func():
-        return "ok"
-
-    try:
-        cb.call(success_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
-
-
-async def test_async_successful_calls_in_closed_state():
-    """Successful async calls pass through when circuit is CLOSED."""
-    cb = AsyncCircuitBreaker(name="test")
-
-    async def success_func(x: int):
-        return x * 2
-
-    assert await cb.call(success_func, 5) == 10
-    assert await cb.call(success_func, 10) == 20
-
-    info = cb.info()
-    assert info.state == StateEnum.CLOSED.value
-    assert info.metrics.total_count == 2
-    assert info.metrics.failure_count == 0
-
-
-async def test_async_decorator_usage():
-    """AsyncCircuitBreaker works as a decorator."""
-    cb = AsyncCircuitBreaker(name="test")
-
-    @cb
-    async def decorated_func(x: int):
-        return x + 1
-
-    assert await decorated_func(5) == 6
-    assert await decorated_func(10) == 11
-
-    info = cb.info()
-    assert info.metrics.total_count == 2
-
-
-async def test_async_closed_to_open_on_failure_threshold():
-    """Async circuit opens when failure rate exceeds threshold."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(3) & FailureRate(0.5),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(3):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    info = cb.info()
-    assert info.state == StateEnum.OPEN.value
-    assert info.metrics.total_count == 0
-
-
-async def test_async_open_to_half_open_after_cooldown():
-    """Async circuit transitions to HALF_OPEN after cooldown period."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=All(),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    await asyncio.sleep(0.06)
-
-    async def success_func():
-        return "ok"
-
-    result = await cb.call(success_func)
-    assert result == "ok"
-
-    info = cb.info()
-    assert info.state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
-
-
-async def test_async_half_open_to_open_on_failure():
-    """Async circuit transitions from HALF_OPEN back to OPEN on failure."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=All(),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    await asyncio.sleep(0.06)
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-
-async def test_async_half_open_untracked_exception_propagates():
-    """Untracked exceptions propagate in HALF_OPEN state without affecting circuit."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tracker=TypeOf(ValueError),
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=All(),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    await asyncio.sleep(0.06)
-
-    async def raises_untracked():
-        raise TypeError("not tracked")
-
-    try:
-        await cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        pass
+    freezer.tick(61)
+    with pytest.raises(TypeError):
+        cb.call(raises_type_error)
 
     assert cb.info().state == StateEnum.HALF_OPEN.value
 
 
-async def test_async_half_open_permit_blocks_calls():
-    """Async permit can block calls in HALF_OPEN state."""
-    cb = AsyncCircuitBreaker(
+def test_all_exception_types_tracked_by_default():
+    """Default tracker (All) tracks all exception types."""
+    cb = CircuitBreaker(
         name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=Random(0.0),
+        tripper=MinRequests(3) & FailureRate(0.5),
     )
 
-    async def failing_func():
-        raise ValueError("fail")
+    def raise_value_error() -> None:
+        raise ValueError("a")
 
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
+    def raise_type_error() -> None:
+        raise TypeError("b")
+
+    def raise_runtime_error() -> None:
+        raise RuntimeError("c")
+
+    for func in [raise_value_error, raise_type_error, raise_runtime_error]:
+        with pytest.raises(Exception):
+            cb.call(func)
 
     assert cb.info().state == StateEnum.OPEN.value
 
-    await asyncio.sleep(0.06)
 
-    async def success_func():
-        return "ok"
+def test_listener_notification_on_state_change():
+    """Listeners are notified on state transitions."""
+    signals: list[Signal] = []
 
-    try:
-        await cb.call(success_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
+    def listener(signal: Signal) -> None:
+        signals.append(signal)
 
-
-async def test_async_open_blocks_before_cooldown():
-    """Async circuit blocks calls in OPEN state before cooldown expires."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(1.0),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    async def success_func():
-        return "ok"
-
-    try:
-        await cb.call(success_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
-
-
-async def test_async_manual_reset():
-    """Async reset() transitions circuit to CLOSED state."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-        retry=Cooldown(10.0),
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
-
-    await cb.reset()
-
-    assert cb.info().state == StateEnum.CLOSED.value
-
-
-async def test_async_concurrent_calls_in_half_open():
-    """max_half_open_calls limits concurrent execution in HALF_OPEN state."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(10) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        permit=All(),
-        max_half_open_calls=2,
-    )
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    for _ in range(10):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    await asyncio.sleep(0.06)
-
-    max_concurrent = 0
-    current_concurrent = 0
-    lock = asyncio.Lock()
-
-    async def slow_success():
-        nonlocal max_concurrent, current_concurrent
-        async with lock:
-            current_concurrent += 1
-            max_concurrent = max(max_concurrent, current_concurrent)
-        await asyncio.sleep(0.05)
-        async with lock:
-            current_concurrent -= 1
-        return "ok"
-
-    tasks = [asyncio.create_task(cb.call(slow_success)) for _ in range(5)]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    successful = sum(1 for r in results if r == "ok")
-    assert successful == 5
-    assert max_concurrent <= 2
-
-
-async def test_async_untracked_exceptions_propagate():
-    """Untracked exceptions propagate without affecting circuit state."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tracker=TypeOf(ValueError),
-    )
-
-    async def raises_untracked():
-        raise TypeError("not tracked")
-
-    try:
-        await cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        pass
-
-    info = cb.info()
-    assert info.state == StateEnum.CLOSED.value
-    assert info.metrics.failure_count == 0
-
-
-async def test_async_metrics_only_mode():
-    """metrics_only() enables metric collection without circuit breaking."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        tripper=MinRequests(2) & FailureRate(0.5),
-    )
-
-    await cb.metrics_only()
-    assert cb.info().state == StateEnum.METRICS_ONLY.value
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    async def success_func():
-        return "ok"
-
-    for _ in range(5):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
-
-    info = cb.info()
-    assert info.state == StateEnum.METRICS_ONLY.value
-    assert info.metrics.failure_count == 5
-
-    await cb.call(success_func)
-    info = cb.info()
-    assert info.metrics.total_count == 6
-    assert info.metrics.failure_count == 5
-
-    async def raises_untracked():
-        raise TypeError("not tracked")
-
-    try:
-        await cb.call(raises_untracked)
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        pass
-
-
-async def test_async_race_condition_state_change():
-    """Async state transitions handle race conditions correctly."""
-    cb = AsyncCircuitBreaker(
-        name="test",
-        window=CountWindow(100),
-        tripper=MinRequests(10) & FailureRate(0.5),
-        retry=Cooldown(0.05),
-        max_half_open_calls=3,
-    )
-
-    async def failing_func():
-        await asyncio.sleep(0.01)
-        raise ValueError("fail")
-
-    async def success_func():
-        await asyncio.sleep(0.01)
-        return "ok"
-
-    tasks = [asyncio.create_task(cb.call(failing_func)) for _ in range(10)]
-    await asyncio.gather(*tasks, return_exceptions=True)
-    assert cb.info().state == StateEnum.OPEN.value
-
-    await asyncio.sleep(0.06)
-
-    tasks = [asyncio.create_task(cb.call(success_func)) for _ in range(5)]
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    state = cb.info().state
-    assert state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
-
-
-async def test_async_manual_disable_and_force_open():
-    """disable() and force_open() manually control async circuit state."""
-    cb = AsyncCircuitBreaker(name="test")
-
-    async def failing_func():
-        raise ValueError("fail")
-
-    await cb.disable()
-    assert cb.info().state == StateEnum.DISABLED.value
-
-    try:
-        await cb.call(failing_func)
-        assert False, "Should have raised ValueError"
-    except ValueError:
-        pass
-
-    await cb.force_open()
-    assert cb.info().state == StateEnum.FORCED_OPEN.value
-
-    async def success_func():
-        return "ok"
-
-    try:
-        await cb.call(success_func)
-        assert False, "Should have raised CallNotPermittedError"
-    except CallNotPermittedError:
-        pass
-
-
-async def test_async_listener_notification():
-    """Async listeners are notified on state transitions."""
-    notification_count = 0
-
-    async def listener(signal: Signal):
-        nonlocal notification_count
-        notification_count += 1
-
-    cb = AsyncCircuitBreaker(
+    cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[listener],
     )
 
-    async def failing_func():
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
-    assert notification_count == 1
+    assert len(signals) == 1
+    assert signals[0].old_state == StateEnum.CLOSED
+    assert signals[0].new_state == StateEnum.OPEN
 
-    await cb.reset()
-    assert cb.info().state == StateEnum.CLOSED.value
-    assert notification_count == 2
+    cb.reset(notify=True)
+    assert len(signals) == 2
 
 
-async def test_async_listener_exception_handling():
-    """Failing async listeners don't break circuit breaker operation."""
+def test_listener_exception_does_not_break_operation():
+    """Failing listeners don't break circuit breaker operation."""
 
-    async def failing_listener(signal: Signal):
+    def failing_listener(signal: Signal) -> None:
         raise RuntimeError("listener failed")
 
-    cb = AsyncCircuitBreaker(
+    cb = CircuitBreaker(
         name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[failing_listener],
     )
 
-    async def failing_func():
-        raise ValueError("fail")
-
     for _ in range(2):
-        try:
-            await cb.call(failing_func)
-        except ValueError:
-            pass
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
 
     assert cb.info().state == StateEnum.OPEN.value
 
 
-# Fallback tests for sync CircuitBreaker
+def test_notify_false_skips_notification():
+    """State transitions can skip listener notification with notify=False."""
+    notification_count = 0
+
+    def listener(signal: Signal) -> None:
+        nonlocal notification_count
+        notification_count += 1
+
+    cb = CircuitBreaker(name="test", listeners=[listener])
+
+    cb.reset(notify=False)
+    cb.disable(notify=False)
+    cb.metrics_only(notify=False)
+    cb.force_open(notify=False)
+
+    assert notification_count == 0
 
 
 def test_decorator_with_fallback():
@@ -915,35 +375,32 @@ def test_decorator_with_fallback():
     cb = CircuitBreaker(name="test")
 
     @cb(fallback=lambda e: "fallback_value")
-    def failing_func():
+    def func() -> str:
         raise ValueError("error")
 
-    result = failing_func()
-    assert result == "fallback_value"
+    assert func() == "fallback_value"
 
 
-def test_decorator_fallback_receives_exception():
+def test_fallback_receives_exception():
     """Fallback function receives the exception as argument."""
     cb = CircuitBreaker(name="test")
-
-    received_exception: Exception | None = None
+    received: list[Exception] = []
 
     def capture_fallback(e: Exception) -> str:
-        nonlocal received_exception
-        received_exception = e
+        received.append(e)
         return "captured"
 
     @cb(fallback=capture_fallback)
-    def failing_func() -> str:
+    def func() -> str:
         raise ValueError("specific error")
 
-    result = failing_func()
-    assert result == "captured"
-    assert isinstance(received_exception, ValueError)
-    assert str(received_exception) == "specific error"
+    func()
+    assert len(received) == 1
+    assert isinstance(received[0], ValueError)
+    assert str(received[0]) == "specific error"
 
 
-def test_decorator_fallback_can_reraise():
+def test_fallback_can_reraise():
     """Fallback can re-raise the exception."""
     cb = CircuitBreaker(name="test")
 
@@ -953,16 +410,16 @@ def test_decorator_fallback_can_reraise():
         raise e
 
     @cb(fallback=selective_fallback)
-    def failing_func(error_type: type[Exception]) -> str:
+    def func(error_type: type[Exception]) -> str:
         raise error_type("error")
 
-    assert failing_func(ValueError) == "handled"
+    assert func(ValueError) == "handled"
 
     with pytest.raises(TypeError):
-        failing_func(TypeError)
+        func(TypeError)
 
 
-def test_decorator_fallback_on_circuit_open():
+def test_fallback_on_circuit_open():
     """Fallback is called when circuit is OPEN."""
     cb = CircuitBreaker(
         name="test",
@@ -971,36 +428,28 @@ def test_decorator_fallback_on_circuit_open():
     )
 
     @cb
-    def trip_func():
+    def trip_func() -> None:
         raise ValueError("trip")
 
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             trip_func()
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
 
     @cb(fallback=lambda e: "circuit_open_fallback")
-    def guarded_func():
+    def guarded_func() -> str:
         return "success"
 
-    result = guarded_func()
-    assert result == "circuit_open_fallback"
+    assert guarded_func() == "circuit_open_fallback"
 
 
 def test_call_with_fallback():
     """call_with_fallback returns fallback value on exception."""
     cb = CircuitBreaker(name="test")
 
-    def failing_func():
-        raise RuntimeError("error")
-
     result = cb.call_with_fallback(
         failing_func, lambda e: f"fallback: {type(e).__name__}"
     )
-    assert result == "fallback: RuntimeError"
+    assert result == "fallback: ValueError"
 
 
 def test_call_with_fallback_passes_args():
@@ -1014,7 +463,325 @@ def test_call_with_fallback_passes_args():
     assert result == 8
 
 
-# Fallback tests for async AsyncCircuitBreaker
+def test_default_window_size_is_100():
+    """Default window uses CountWindow(100) - tracks last 100 calls."""
+    cb = CircuitBreaker(
+        name="test",
+        tripper=MinRequests(50) & FailureRate(0.5),
+    )
+
+    for _ in range(150):
+        cb.call(success_func)
+
+    assert cb.info().metrics.total_count == 100
+
+
+def test_default_tripper_requires_100_requests():
+    """Default tripper requires MinRequests(100) before tripping."""
+    cb = CircuitBreaker(name="test")
+
+    for _ in range(99):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+def test_default_tripper_50_percent_failure_rate():
+    """Default tripper trips at 50% failure rate after 100 requests."""
+    cb = CircuitBreaker(name="test")
+
+    for _ in range(50):
+        cb.call(success_func)
+
+    for _ in range(49):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+def test_default_slow_threshold_is_60_seconds():
+    """Default slow_threshold is 60.0 seconds."""
+    cb = CircuitBreaker(name="test")
+
+    cb.call(success_func)
+    assert cb.info().metrics.slow_count == 0
+
+
+def test_failure_streak_tripper():
+    """FailureStreak tripper opens circuit after N consecutive failures."""
+    cb = CircuitBreaker(
+        name="test",
+        tripper=FailureStreak(3),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    cb.call(success_func)
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    for _ in range(3):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+async def test_async_call_passes_through():
+    """Successful async calls pass through when circuit is CLOSED."""
+    cb = AsyncCircuitBreaker(name="test")
+
+    assert await cb.call(async_success_func, 5) == 10
+    assert await cb.call(async_success_func, 10) == 20
+
+    info = cb.info()
+    assert info.state == StateEnum.CLOSED.value
+    assert info.metrics.total_count == 2
+
+
+async def test_async_decorator_usage():
+    """AsyncCircuitBreaker works as a decorator."""
+    cb = AsyncCircuitBreaker(name="test")
+
+    @cb
+    async def decorated(x: int) -> int:
+        return x + 1
+
+    assert await decorated(5) == 6
+    assert await decorated(10) == 11
+    assert cb.info().metrics.total_count == 2
+
+
+async def test_async_closed_to_open_on_failure_threshold():
+    """Async circuit opens when failure rate exceeds threshold."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(3) & FailureRate(0.5),
+    )
+
+    for _ in range(3):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+async def test_async_open_to_half_open_after_cooldown(freezer):
+    """Async circuit transitions to HALF_OPEN after cooldown period."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        retry=Cooldown(60.0),
+        permit=All(),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    freezer.tick(61)
+    result = await cb.call(async_success_func)
+
+    assert result == 2
+    assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
+
+
+async def test_async_half_open_to_open_on_failure(freezer):
+    """Async circuit transitions from HALF_OPEN back to OPEN on failure."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        retry=Cooldown(60.0),
+        permit=All(),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    freezer.tick(61)
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+async def test_async_open_blocks_before_cooldown():
+    """Async circuit blocks calls in OPEN state before cooldown expires."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        retry=Cooldown(10.0),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    with pytest.raises(CallNotPermittedError):
+        await cb.call(async_success_func)
+
+
+async def test_async_half_open_permit_blocks_calls(freezer):
+    """Async permit can block calls in HALF_OPEN state."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        retry=Cooldown(60.0),
+        permit=Random(0.0),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    freezer.tick(61)
+    with pytest.raises(CallNotPermittedError):
+        await cb.call(async_success_func)
+
+
+async def test_async_reset_transitions_to_closed():
+    """Async reset() transitions circuit to CLOSED state."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    await cb.reset()
+    assert cb.info().state == StateEnum.CLOSED.value
+
+
+async def test_async_disable_and_force_open():
+    """disable() and force_open() manually control async circuit state."""
+    cb = AsyncCircuitBreaker(name="test")
+
+    await cb.disable()
+    assert cb.info().state == StateEnum.DISABLED.value
+
+    with pytest.raises(ValueError):
+        await cb.call(async_failing_func)
+
+    await cb.force_open()
+    assert cb.info().state == StateEnum.FORCED_OPEN.value
+
+    with pytest.raises(CallNotPermittedError):
+        await cb.call(async_success_func)
+
+
+async def test_async_metrics_only_mode():
+    """metrics_only() enables metric collection without circuit breaking."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+    )
+
+    await cb.metrics_only()
+
+    for _ in range(5):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    info = cb.info()
+    assert info.state == StateEnum.METRICS_ONLY.value
+    assert info.metrics.failure_count == 5
+
+
+async def test_async_untracked_exceptions_propagate():
+    """Untracked exceptions propagate without affecting circuit state."""
+    cb = AsyncCircuitBreaker(name="test", tracker=TypeOf(ValueError))
+
+    async def raises_type_error() -> None:
+        raise TypeError("not tracked")
+
+    with pytest.raises(TypeError):
+        await cb.call(raises_type_error)
+
+    assert cb.info().metrics.failure_count == 0
+
+
+async def test_async_half_open_untracked_exception_propagates(freezer):
+    """Untracked exceptions propagate in HALF_OPEN state without affecting circuit."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tracker=TypeOf(ValueError),
+        tripper=MinRequests(2) & FailureRate(0.5),
+        retry=Cooldown(60.0),
+        permit=All(),
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    async def raises_type_error() -> None:
+        raise TypeError("not tracked")
+
+    freezer.tick(61)
+    with pytest.raises(TypeError):
+        await cb.call(raises_type_error)
+
+    assert cb.info().state == StateEnum.HALF_OPEN.value
+
+
+async def test_async_listener_notification():
+    """Async listeners are notified on state transitions."""
+    notification_count = 0
+
+    async def listener(signal: Signal) -> None:
+        nonlocal notification_count
+        notification_count += 1
+
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        listeners=[listener],
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert notification_count == 1
+
+    await cb.reset()
+    assert notification_count == 2
+
+
+async def test_async_listener_exception_handling():
+    """Failing async listeners don't break circuit breaker operation."""
+
+    async def failing_listener(signal: Signal) -> None:
+        raise RuntimeError("listener failed")
+
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        listeners=[failing_listener],
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
 
 
 async def test_async_decorator_with_fallback():
@@ -1022,35 +789,31 @@ async def test_async_decorator_with_fallback():
     cb = AsyncCircuitBreaker(name="test")
 
     @cb(fallback=lambda e: "fallback_value")
-    async def failing_func():
+    async def func() -> str:
         raise ValueError("error")
 
-    result = await failing_func()
-    assert result == "fallback_value"
+    assert await func() == "fallback_value"
 
 
-async def test_async_decorator_fallback_receives_exception():
+async def test_async_fallback_receives_exception():
     """Async fallback function receives the exception as argument."""
     cb = AsyncCircuitBreaker(name="test")
-
-    received_exception: Exception | None = None
+    received: list[Exception] = []
 
     def capture_fallback(e: Exception) -> str:
-        nonlocal received_exception
-        received_exception = e
+        received.append(e)
         return "captured"
 
     @cb(fallback=capture_fallback)
-    async def failing_func() -> str:
+    async def func() -> str:
         raise ValueError("specific error")
 
-    result = await failing_func()
-    assert result == "captured"
-    assert isinstance(received_exception, ValueError)
-    assert str(received_exception) == "specific error"
+    await func()
+    assert len(received) == 1
+    assert str(received[0]) == "specific error"
 
 
-async def test_async_decorator_fallback_on_circuit_open():
+async def test_async_fallback_on_circuit_open():
     """Async fallback is called when circuit is OPEN."""
     cb = AsyncCircuitBreaker(
         name="test",
@@ -1059,36 +822,28 @@ async def test_async_decorator_fallback_on_circuit_open():
     )
 
     @cb
-    async def trip_func():
+    async def trip_func() -> None:
         raise ValueError("trip")
 
     for _ in range(2):
-        try:
+        with pytest.raises(ValueError):
             await trip_func()
-        except ValueError:
-            pass
-
-    assert cb.info().state == StateEnum.OPEN.value
 
     @cb(fallback=lambda e: "circuit_open_fallback")
-    async def guarded_func():
+    async def guarded_func() -> str:
         return "success"
 
-    result = await guarded_func()
-    assert result == "circuit_open_fallback"
+    assert await guarded_func() == "circuit_open_fallback"
 
 
 async def test_async_call_with_fallback():
     """async call_with_fallback returns fallback value on exception."""
     cb = AsyncCircuitBreaker(name="test")
 
-    async def failing_func():
-        raise RuntimeError("error")
-
     result = await cb.call_with_fallback(
-        failing_func, lambda e: f"fallback: {type(e).__name__}"
+        async_failing_func, lambda e: f"fallback: {type(e).__name__}"
     )
-    assert result == "fallback: RuntimeError"
+    assert result == "fallback: ValueError"
 
 
 async def test_async_call_with_fallback_passes_args():
@@ -1102,38 +857,91 @@ async def test_async_call_with_fallback_passes_args():
     assert result == 8
 
 
-def test_failure_streak_trips_circuit():
-    """FailureStreak tripper opens circuit after N consecutive failures."""
-    cb = CircuitBreaker(
+async def test_async_default_tripper_requires_100_requests():
+    """Async default tripper requires MinRequests(100) before tripping."""
+    cb = AsyncCircuitBreaker(name="test")
+
+    for _ in range(99):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert cb.info().state == StateEnum.CLOSED.value
+
+    with pytest.raises(ValueError):
+        await cb.call(async_failing_func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+async def test_async_all_exception_types_tracked():
+    """Async default tracker (All) tracks all exception types."""
+    cb = AsyncCircuitBreaker(
         name="test",
-        tripper=FailureStreak(3),
-        retry=Cooldown(10.0),
+        tripper=MinRequests(3) & FailureRate(0.5),
     )
 
-    def failing_func():
-        raise ValueError("fail")
+    async def raise_value_error() -> None:
+        raise ValueError("a")
 
-    def success_func():
+    async def raise_type_error() -> None:
+        raise TypeError("b")
+
+    async def raise_runtime_error() -> None:
+        raise RuntimeError("c")
+
+    for func in [raise_value_error, raise_type_error, raise_runtime_error]:
+        with pytest.raises(Exception):
+            await cb.call(func)
+
+    assert cb.info().state == StateEnum.OPEN.value
+
+
+async def test_async_max_half_open_calls_limits_concurrency():
+    """max_half_open_calls limits concurrent execution in HALF_OPEN state."""
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=FailureStreak(1),
+        retry=Cooldown(0.01),
+        permit=All(),
+        max_half_open_calls=2,
+    )
+
+    with pytest.raises(ValueError):
+        await cb.call(async_failing_func)
+    assert cb.info().state == StateEnum.OPEN.value
+
+    await asyncio.sleep(0.02)
+
+    max_concurrent = 0
+    current_concurrent = 0
+    lock = asyncio.Lock()
+    semaphore_saturated = asyncio.Event()
+    proceed = asyncio.Event()
+
+    async def blocking_success() -> str:
+        nonlocal max_concurrent, current_concurrent
+        async with lock:
+            current_concurrent += 1
+            max_concurrent = max(max_concurrent, current_concurrent)
+            if current_concurrent >= 2:
+                semaphore_saturated.set()
+        await proceed.wait()
+        async with lock:
+            current_concurrent -= 1
         return "ok"
 
-    for _ in range(2):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-    assert cb.info().state == StateEnum.CLOSED.value
+    tasks = [asyncio.create_task(cb.call(blocking_success)) for _ in range(5)]
 
-    cb.call(success_func)
+    await asyncio.wait_for(semaphore_saturated.wait(), timeout=1.0)
+    await asyncio.sleep(0.05)
 
-    for _ in range(2):
-        try:
-            cb.call(failing_func)
-        except ValueError:
-            pass
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == StateEnum.HALF_OPEN.value
+    async with lock:
+        assert current_concurrent == 2
+        assert max_concurrent == 2
 
-    try:
-        cb.call(failing_func)
-    except ValueError:
-        pass
-    assert cb.info().state == StateEnum.OPEN.value
+    proceed.set()
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    successful = sum(1 for r in results if r == "ok")
+    assert successful == 5

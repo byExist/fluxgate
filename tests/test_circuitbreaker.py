@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 
 from fluxgate import (
     AsyncCircuitBreaker,
@@ -104,7 +105,7 @@ def test_open_state_blocks_calls():
         cb.call(success_func)
 
 
-def test_open_to_half_open_after_cooldown(freezer):
+def test_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
     """Circuit transitions to HALF_OPEN after cooldown period."""
     cb = CircuitBreaker(
         name="test",
@@ -126,7 +127,7 @@ def test_open_to_half_open_after_cooldown(freezer):
     assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
 
 
-def test_half_open_to_closed_on_success(freezer):
+def test_half_open_to_closed_on_success(freezer: FrozenDateTimeFactory):
     """Circuit closes after successful calls in HALF_OPEN state."""
     cb = CircuitBreaker(
         name="test",
@@ -146,7 +147,7 @@ def test_half_open_to_closed_on_success(freezer):
     assert cb.info().state == StateEnum.CLOSED.value
 
 
-def test_half_open_to_open_on_failure(freezer):
+def test_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
     """Circuit reopens if failures continue in HALF_OPEN state."""
     cb = CircuitBreaker(
         name="test",
@@ -170,7 +171,7 @@ def test_half_open_to_open_on_failure(freezer):
     assert cb.info().reopens == initial_reopens + 1
 
 
-def test_half_open_permit_blocks_calls(freezer):
+def test_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactory):
     """Calls blocked by permit in HALF_OPEN state raise CallNotPermittedError."""
     cb = CircuitBreaker(
         name="test",
@@ -261,7 +262,7 @@ def test_untracked_exceptions_propagate():
     assert info.metrics.failure_count == 0
 
 
-def test_half_open_untracked_exception_propagates(freezer):
+def test_half_open_untracked_exception_propagates(freezer: FrozenDateTimeFactory):
     """Untracked exceptions in HALF_OPEN propagate without state change."""
     cb = CircuitBreaker(
         name="test",
@@ -579,7 +580,7 @@ async def test_async_closed_to_open_on_failure_threshold():
     assert cb.info().state == StateEnum.OPEN.value
 
 
-async def test_async_open_to_half_open_after_cooldown(freezer):
+async def test_async_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
     """Async circuit transitions to HALF_OPEN after cooldown period."""
     cb = AsyncCircuitBreaker(
         name="test",
@@ -599,7 +600,7 @@ async def test_async_open_to_half_open_after_cooldown(freezer):
     assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
 
 
-async def test_async_half_open_to_open_on_failure(freezer):
+async def test_async_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
     """Async circuit transitions from HALF_OPEN back to OPEN on failure."""
     cb = AsyncCircuitBreaker(
         name="test",
@@ -636,7 +637,7 @@ async def test_async_open_blocks_before_cooldown():
         await cb.call(async_success_func)
 
 
-async def test_async_half_open_permit_blocks_calls(freezer):
+async def test_async_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactory):
     """Async permit can block calls in HALF_OPEN state."""
     cb = AsyncCircuitBreaker(
         name="test",
@@ -717,7 +718,9 @@ async def test_async_untracked_exceptions_propagate():
     assert cb.info().metrics.failure_count == 0
 
 
-async def test_async_half_open_untracked_exception_propagates(freezer):
+async def test_async_half_open_untracked_exception_propagates(
+    freezer: FrozenDateTimeFactory,
+):
     """Untracked exceptions propagate in HALF_OPEN state without affecting circuit."""
     cb = AsyncCircuitBreaker(
         name="test",

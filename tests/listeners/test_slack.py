@@ -302,3 +302,294 @@ async def test_async_listener_threading(mock_async_client: AsyncMock):
 
     payload = get_posted_json(mock_async_client, 1)
     assert payload["thread_ts"] == "1234.5678"
+
+
+def test_reset_from_open_clears_thread(mock_sync_client: Mock):
+    """Direct reset (OPEN -> CLOSED) clears thread."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Direct reset (skipping HALF_OPEN)
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.CLOSED,
+            timestamp=2.0,
+        )
+    )
+
+    # New incident should start fresh thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=3.0,
+        )
+    )
+
+    payload = get_posted_json(mock_sync_client, 2)
+    assert "thread_ts" not in payload
+
+
+def test_disable_clears_thread(mock_sync_client: Mock):
+    """Transition to DISABLED clears thread."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Disable circuit
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.DISABLED,
+            timestamp=2.0,
+        )
+    )
+
+    # Re-enable and new incident
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.DISABLED,
+            new_state=StateEnum.CLOSED,
+            timestamp=3.0,
+        )
+    )
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=4.0,
+        )
+    )
+
+    payload = get_posted_json(mock_sync_client, 3)
+    assert "thread_ts" not in payload
+
+
+def test_metrics_only_clears_thread(mock_sync_client: Mock):
+    """Transition to METRICS_ONLY clears thread."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Switch to metrics only
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.METRICS_ONLY,
+            timestamp=2.0,
+        )
+    )
+
+    # Re-enable and new incident
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.METRICS_ONLY,
+            new_state=StateEnum.CLOSED,
+            timestamp=3.0,
+        )
+    )
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=4.0,
+        )
+    )
+
+    payload = get_posted_json(mock_sync_client, 3)
+    assert "thread_ts" not in payload
+
+
+def test_forced_open_keeps_thread(mock_sync_client: Mock):
+    """Transition to FORCED_OPEN keeps thread (failure cycle continues)."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Force open (manual intervention)
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.FORCED_OPEN,
+            timestamp=2.0,
+        )
+    )
+
+    # Message should still be in thread
+    payload = get_posted_json(mock_sync_client, 1)
+    assert payload["thread_ts"] == "1234.5678"
+
+
+def test_reset_from_forced_open_clears_thread(mock_sync_client: Mock):
+    """Reset from FORCED_OPEN clears thread."""
+    listener = SlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Force open
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.FORCED_OPEN,
+            timestamp=2.0,
+        )
+    )
+
+    # Reset
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.FORCED_OPEN,
+            new_state=StateEnum.CLOSED,
+            timestamp=3.0,
+        )
+    )
+
+    # New incident should start fresh
+    listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=4.0,
+        )
+    )
+
+    payload = get_posted_json(mock_sync_client, 3)
+    assert "thread_ts" not in payload
+
+
+async def test_async_reset_from_open_clears_thread(mock_async_client: AsyncMock):
+    """Direct reset (OPEN -> CLOSED) clears thread."""
+    listener = AsyncSlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Direct reset
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.CLOSED,
+            timestamp=2.0,
+        )
+    )
+
+    # New incident
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=3.0,
+        )
+    )
+
+    payload = get_posted_json(mock_async_client, 2)
+    assert "thread_ts" not in payload
+
+
+async def test_async_disable_clears_thread(mock_async_client: AsyncMock):
+    """Transition to DISABLED clears thread."""
+    listener = AsyncSlackListener(channel="#alerts", token="xoxb-test")
+
+    # Start thread
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=1.0,
+        )
+    )
+
+    # Disable
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.OPEN,
+            new_state=StateEnum.DISABLED,
+            timestamp=2.0,
+        )
+    )
+
+    # Re-enable and new incident
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.DISABLED,
+            new_state=StateEnum.CLOSED,
+            timestamp=3.0,
+        )
+    )
+    await listener(
+        Signal(
+            circuit_name="api",
+            old_state=StateEnum.CLOSED,
+            new_state=StateEnum.OPEN,
+            timestamp=4.0,
+        )
+    )
+
+    payload = get_posted_json(mock_async_client, 3)
+    assert "thread_ts" not in payload

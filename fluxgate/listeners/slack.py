@@ -99,7 +99,10 @@ class SlackListener(IListener):
     """Listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.
-    Groups related transitions into threads (OPEN → HALF_OPEN → CLOSED).
+    Groups related transitions into threads based on failure cycles:
+
+    - Thread starts on → OPEN (new or continued failure cycle)
+    - Thread ends on → CLOSED, DISABLED, or METRICS_ONLY
 
     Args:
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
@@ -174,10 +177,13 @@ class SlackListener(IListener):
         ts = data.get("ts")
         if not data.get("ok") or not ts:
             raise RuntimeError(f"Failed to send message: {data.get('error')}")
-        transition = (signal.old_state, signal.new_state)
-        if transition == (StateEnum.CLOSED, StateEnum.OPEN):
-            self._open_threads[signal.circuit_name] = ts
-        elif transition == (StateEnum.HALF_OPEN, StateEnum.CLOSED):
+        if signal.new_state == StateEnum.OPEN:
+            self._open_threads.setdefault(signal.circuit_name, ts)
+        elif signal.new_state in (
+            StateEnum.CLOSED,
+            StateEnum.DISABLED,
+            StateEnum.METRICS_ONLY,
+        ):
             self._open_threads.pop(signal.circuit_name, None)
 
 
@@ -185,7 +191,10 @@ class AsyncSlackListener(IAsyncListener):
     """Async listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.
-    Groups related transitions into threads (OPEN → HALF_OPEN → CLOSED).
+    Groups related transitions into threads based on failure cycles:
+
+    - Thread starts on → OPEN (new or continued failure cycle)
+    - Thread ends on → CLOSED, DISABLED, or METRICS_ONLY
 
     Args:
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
@@ -246,8 +255,11 @@ class AsyncSlackListener(IAsyncListener):
         ts = data.get("ts")
         if not data.get("ok") or not ts:
             raise RuntimeError(f"Failed to send message: {data.get('error')}")
-        transition = (signal.old_state, signal.new_state)
-        if transition == (StateEnum.CLOSED, StateEnum.OPEN):
-            self._open_threads[signal.circuit_name] = ts
-        elif transition == (StateEnum.HALF_OPEN, StateEnum.CLOSED):
+        if signal.new_state == StateEnum.OPEN:
+            self._open_threads.setdefault(signal.circuit_name, ts)
+        elif signal.new_state in (
+            StateEnum.CLOSED,
+            StateEnum.DISABLED,
+            StateEnum.METRICS_ONLY,
+        ):
             self._open_threads.pop(signal.circuit_name, None)

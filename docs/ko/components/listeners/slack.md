@@ -92,42 +92,24 @@ cb = AsyncCircuitBreaker(
 
 ## 메시지 형식 {#message-format}
 
-Listener는 대화를 체계적으로 유지하기 위해 스레드 메시지를 보냅니다.
+Listener는 장애 사이클을 기반으로 대화를 체계적으로 유지하기 위해 스레드 메시지를 보냅니다:
+
+- **스레드 시작**: **→ OPEN** 전환 시 (새로운 또는 지속되는 장애 사이클)
+- **스레드 종료**: **→ CLOSED**, **→ DISABLED**, 또는 **→ METRICS_ONLY** 전환 시
 
 | 전환 | 제목 | 색상 | 설명 |
 |---|---|---|---|
-| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | 빨간색 | 채널에 새 스레드 시작 |
-| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | 주황색 | 원래 스레드에 회신 |
-| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | 빨간색 | 복구 실패를 나타내는 회신 |
-| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | 녹색 | 회신 + 메인 채널에 브로드캐스트 |
-| 기타 모든 전환 | ℹ️ Circuit Breaker State Changed | 회색 | 수동 또는 비일반적 전환용 fallback |
+| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | 빨간색 | 새 스레드 시작 |
+| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | 주황색 | 스레드에 회신 |
+| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | 빨간색 | 스레드에 회신 (스레드 유지) |
+| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | 녹색 | 회신 + 브로드캐스트 후 스레드 정리 |
+| 기타 모든 전환 | ℹ️ Circuit Breaker State Changed | 회색 | 수동 전환용 fallback |
+
+`CLOSED`, `DISABLED`, `METRICS_ONLY`로 전환 시 현재 스레드가 종료되어, 다음 장애 사이클은 새 스레드로 시작됩니다. `FORCED_OPEN`으로 전환 시에는 장애 사이클이 계속되므로 스레드가 유지됩니다.
 
 ---
 
 ## 고급 사용법
-
-### 조건부 알림 {#conditional-notifications}
-
-모든 상태 변경에 대해 알림을 받고 싶지 않을 수 있습니다. 알림을 필터링하려면 Listener 주위에 간단한 래퍼를 작성할 수 있습니다.
-
-```python
-from fluxgate.interfaces import IListener
-from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
-from fluxgate.listeners.slack import SlackListener
-
-class CriticalAlertListener(IListener):
-    """회로가 열릴 때만 알림을 보내는 래퍼 Listener."""
-
-    def __init__(self, channel: str, token: str):
-        # 실제 작업을 수행하는 SlackListener
-        self._slack = SlackListener(channel, token)
-
-    def __call__(self, signal: Signal) -> None:
-        # 새로운 상태가 OPEN일 때만 기본 Listener를 호출합니다.
-        if signal.new_state == StateEnum.OPEN:
-            self._slack(signal)
-```
 
 ### 사용자 정의 메시지 {#custom-messages}
 

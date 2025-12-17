@@ -92,44 +92,24 @@ cb = AsyncCircuitBreaker(
 
 ## Message Format {#message-format}
 
-The listener sends threaded messages to keep conversations organized.
+The listener sends threaded messages to keep conversations organized based on failure cycles:
+
+- **Thread starts** on any transition **→ OPEN** (new or continued failure cycle)
+- **Thread ends** on transition to **→ CLOSED**, **→ DISABLED**, or **→ METRICS_ONLY**
 
 | Transition | Title | Color | Description |
 |---|---|---|---|
-| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | Red | Starts a new thread in the channel |
-| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | Orange | Reply in the original thread |
-| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | Red | Reply indicating recovery failed |
-| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | Green | Reply + broadcast to main channel |
-| Any other | ℹ️ Circuit Breaker State Changed | Gray | Fallback for manual or uncommon transitions |
+| CLOSED → OPEN | 🚨 Circuit Breaker Triggered | Red | Starts a new thread |
+| OPEN → HALF_OPEN | 🔄 Attempting Circuit Breaker Recovery | Orange | Reply in thread |
+| HALF_OPEN → OPEN | ⚠️ Circuit Breaker Re-triggered | Red | Reply in thread (thread continues) |
+| HALF_OPEN → CLOSED | ✅ Circuit Breaker Recovered | Green | Reply + broadcast, then clears thread |
+| Any other | ℹ️ Circuit Breaker State Changed | Gray | Fallback for manual transitions |
+
+Transitions to `CLOSED`, `DISABLED`, or `METRICS_ONLY` end the current thread, so the next failure cycle starts a fresh thread. Transitions to `FORCED_OPEN` keep the thread open since the failure cycle continues.
 
 ---
 
 ## Advanced Usage
-
-### Conditional Notifications {#conditional-notifications}
-
-You may not want to be notified of every state change. To filter notifications, you can write a simple wrapper around the listener.
-
-<!--pytest.mark.skip-->
-
-```python
-from fluxgate.interfaces import IListener
-from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
-from fluxgate.listeners.slack import SlackListener
-
-class CriticalAlertListener(IListener):
-    """A wrapper listener that only sends a notification when a circuit opens."""
-
-    def __init__(self, channel: str, token: str):
-        # The actual SlackListener that does the work
-        self._slack = SlackListener(channel, token)
-
-    def __call__(self, signal: Signal) -> None:
-        # Only call the underlying listener if the new state is OPEN
-        if signal.new_state == StateEnum.OPEN:
-            self._slack(signal)
-```
 
 ### Custom Messages {#custom-messages}
 

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025.12.17
+
+### Fixed
+
+- **SlackListener thread management**: Improved thread lifecycle for manual state transitions.
+    - Thread now ends on transitions to `CLOSED`, `DISABLED`, or `METRICS_ONLY` (previously only `HALF_OPEN → CLOSED`)
+    - Thread continues on transitions to `FORCED_OPEN` since the failure cycle persists
+    - Direct `reset()` from `OPEN` now properly clears the thread for the next failure cycle
+
 ## [0.5.0] - 2025.12.16
 
 ### Added

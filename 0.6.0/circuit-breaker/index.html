@@ -2103,9 +2103,6 @@
 
 <span class="c1"># Transition to FORCED_OPEN to manually block calls.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">force_open</span><span class="p">()</span>
-
-<span class="c1"># You can also change state without notifying listeners.</span>
-<span class="n">cb</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">notify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="error-handling">Error Handling and Fallbacks<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <p>When a circuit is open, it raises a <code>CallNotPermittedError</code>. You can handle this by defining a fallback mechanism to provide an alternative response, such as returning cached data or a default value.</p>

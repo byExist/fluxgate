@@ -2105,9 +2105,6 @@
 
 <span class="c1"># 호출을 수동으로 차단하기 위해 FORCED_OPEN으로 전환합니다.</span>
 <span class="n">cb</span><span class="o">.</span><span class="n">force_open</span><span class="p">()</span>
-
-<span class="c1"># Listener에게 알림 없이 상태를 변경할 수도 있습니다.</span>
-<span class="n">cb</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">notify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="error-handling">오류 처리 및 Fallback<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <p>회로가 열리면 <code>CallNotPermittedError</code>가 발생합니다. 캐시된 데이터 또는 기본값을 반환하는 것과 같은 대체 응답을 제공하기 위해 Fallback 메커니즘을 정의하여 이를 처리할 수 있습니다.</p>

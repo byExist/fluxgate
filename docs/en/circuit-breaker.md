@@ -246,9 +246,6 @@ cb.disable()
 
 # Transition to FORCED_OPEN to manually block calls.
 cb.force_open()
-
-# You can also change state without notifying listeners.
-cb.reset(notify=False)
 ```
 
 ## Error Handling and Fallbacks {#error-handling}

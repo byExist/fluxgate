@@ -250,9 +250,6 @@ cb.disable()
 
 # 호출을 수동으로 차단하기 위해 FORCED_OPEN으로 전환합니다.
 cb.force_open()
-
-# Listener에게 알림 없이 상태를 변경할 수도 있습니다.
-cb.reset(notify=False)
 ```
 
 ## 오류 처리 및 Fallback {#error-handling}

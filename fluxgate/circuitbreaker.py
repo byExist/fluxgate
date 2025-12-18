@@ -381,12 +381,8 @@ class CircuitBreaker:
             metrics=self._window.get_metric(),
         )
 
-    def reset(self, notify: bool = True) -> None:
-        """Reset circuit breaker to CLOSED state and clear metrics.
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
+    def reset(self) -> None:
+        """Reset circuit breaker to CLOSED state and clear metrics."""
         current_state = self._state.get_state_enum()
         self._state = self._Closed(self)
         self._changed_at = time.time()
@@ -394,40 +390,27 @@ class CircuitBreaker:
         self._consecutive_failures = 0
         self._window.reset()
 
-        if notify:
-            signal = Signal(
-                circuit_name=self._name,
-                old_state=current_state,
-                new_state=StateEnum.CLOSED,
-                timestamp=self._changed_at,
-            )
-            self._notify(signal)
+        signal = Signal(
+            circuit_name=self._name,
+            old_state=current_state,
+            new_state=StateEnum.CLOSED,
+            timestamp=self._changed_at,
+        )
+        self._notify(signal)
 
-    def disable(self, notify: bool = True) -> None:
-        """Disable circuit breaker (all calls pass through without tracking).
+    def disable(self) -> None:
+        """Disable circuit breaker (all calls pass through without tracking)."""
+        self._transition_to(StateEnum.DISABLED)
 
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
-        self._transition_to(StateEnum.DISABLED, notify)
+    def metrics_only(self) -> None:
+        """Enable metrics-only mode (track metrics but never open circuit)."""
+        self._transition_to(StateEnum.METRICS_ONLY)
 
-    def metrics_only(self, notify: bool = True) -> None:
-        """Enable metrics-only mode (track metrics but never open circuit).
+    def force_open(self) -> None:
+        """Force circuit breaker to OPEN state (all calls blocked)."""
+        self._transition_to(StateEnum.FORCED_OPEN)
 
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
-        self._transition_to(StateEnum.METRICS_ONLY, notify)
-
-    def force_open(self, notify: bool = True) -> None:
-        """Force circuit breaker to OPEN state (all calls blocked).
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
-        self._transition_to(StateEnum.FORCED_OPEN, notify)
-
-    def _transition_to(self, state: StateEnum, notify: bool = True) -> None:
+    def _transition_to(self, state: StateEnum) -> None:
         current_state = self._state.get_state_enum()
 
         if state == StateEnum.OPEN and current_state == StateEnum.HALF_OPEN:
@@ -452,14 +435,13 @@ class CircuitBreaker:
         self._changed_at = time.time()
         self._window.reset()
 
-        if notify:
-            signal = Signal(
-                circuit_name=self._name,
-                old_state=current_state,
-                new_state=state,
-                timestamp=self._changed_at,
-            )
-            self._notify(signal)
+        signal = Signal(
+            circuit_name=self._name,
+            old_state=current_state,
+            new_state=state,
+            timestamp=self._changed_at,
+        )
+        self._notify(signal)
 
     def _notify(self, signal: Signal) -> None:
         for listener in self._listeners:
@@ -827,41 +809,25 @@ class AsyncCircuitBreaker:
             metrics=self._window.get_metric(),
         )
 
-    async def reset(self, notify: bool = True) -> None:
-        """Reset circuit breaker to CLOSED state and clear metrics.
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
+    async def reset(self) -> None:
+        """Reset circuit breaker to CLOSED state and clear metrics."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.CLOSED, notify)
+            await self._transition_to(StateEnum.CLOSED)
 
-    async def disable(self, notify: bool = True) -> None:
-        """Disable circuit breaker (all calls pass through without tracking).
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
+    async def disable(self) -> None:
+        """Disable circuit breaker (all calls pass through without tracking)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.DISABLED, notify)
+            await self._transition_to(StateEnum.DISABLED)
 
-    async def metrics_only(self, notify: bool = True) -> None:
-        """Enable metrics-only mode (track metrics but never open circuit).
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
+    async def metrics_only(self) -> None:
+        """Enable metrics-only mode (track metrics but never open circuit)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.METRICS_ONLY, notify)
+            await self._transition_to(StateEnum.METRICS_ONLY)
 
-    async def force_open(self, notify: bool = True) -> None:
-        """Force circuit breaker to OPEN state (all calls blocked).
-
-        Args:
-            notify: Whether to notify listeners of the state change
-        """
+    async def force_open(self) -> None:
+        """Force circuit breaker to OPEN state (all calls blocked)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.FORCED_OPEN, notify)
+            await self._transition_to(StateEnum.FORCED_OPEN)
 
     async def _try_transition_to_open(
         self, metric: Metric, from_state: StateEnum
@@ -872,7 +838,7 @@ class AsyncCircuitBreaker:
                 return False
             if not self._tripper(metric, current_state, self._consecutive_failures):
                 return False
-            await self._transition_to(StateEnum.OPEN, notify=True)
+            await self._transition_to(StateEnum.OPEN)
             return True
 
     async def _try_transition_to_half_open(self) -> bool:
@@ -880,7 +846,7 @@ class AsyncCircuitBreaker:
             current_state = self._state.get_state_enum()
             if current_state != StateEnum.OPEN:
                 return False
-            await self._transition_to(StateEnum.HALF_OPEN, notify=True)
+            await self._transition_to(StateEnum.HALF_OPEN)
             return True
 
     async def _try_transition_to_closed(self, metric: Metric) -> bool:
@@ -890,10 +856,10 @@ class AsyncCircuitBreaker:
                 return False
             if self._tripper(metric, current_state, self._consecutive_failures):
                 return False
-            await self._transition_to(StateEnum.CLOSED, notify=True)
+            await self._transition_to(StateEnum.CLOSED)
             return True
 
-    async def _transition_to(self, state: StateEnum, notify: bool = True) -> None:
+    async def _transition_to(self, state: StateEnum) -> None:
         current_state = self._state.get_state_enum()
 
         if state == StateEnum.OPEN and current_state == StateEnum.HALF_OPEN:
@@ -919,14 +885,13 @@ class AsyncCircuitBreaker:
         async with self._window_lock:
             self._window.reset()
 
-        if notify:
-            signal = Signal(
-                circuit_name=self._name,
-                old_state=current_state,
-                new_state=state,
-                timestamp=self._changed_at,
-            )
-            await self._notify(signal)
+        signal = Signal(
+            circuit_name=self._name,
+            old_state=current_state,
+            new_state=state,
+            timestamp=self._changed_at,
+        )
+        await self._notify(signal)
 
     async def _notify(self, signal: Signal) -> None:
         async def _safe_call(listener: IListener | IAsyncListener) -> None:

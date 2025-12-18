@@ -330,7 +330,7 @@ def test_listener_notification_on_state_change():
     assert signals[0].old_state == StateEnum.CLOSED
     assert signals[0].new_state == StateEnum.OPEN
 
-    cb.reset(notify=True)
+    cb.reset()
     assert len(signals) == 2
 
 
@@ -351,24 +351,6 @@ def test_listener_exception_does_not_break_operation():
             cb.call(failing_func)
 
     assert cb.info().state == StateEnum.OPEN.value
-
-
-def test_notify_false_skips_notification():
-    """State transitions can skip listener notification with notify=False."""
-    notification_count = 0
-
-    def listener(signal: Signal) -> None:
-        nonlocal notification_count
-        notification_count += 1
-
-    cb = CircuitBreaker(name="test", listeners=[listener])
-
-    cb.reset(notify=False)
-    cb.disable(notify=False)
-    cb.metrics_only(notify=False)
-    cb.force_open(notify=False)
-
-    assert notification_count == 0
 
 
 def test_decorator_with_fallback():

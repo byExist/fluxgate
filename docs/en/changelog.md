@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2025.12.18
+
+### Breaking Changes
+
+- **Removed `notify` parameter from manual control methods**: The `notify` parameter has been removed from `reset()`, `disable()`, `metrics_only()`, and `force_open()` methods. Listeners are now always notified on state transitions.
+
 ## [0.5.1] - 2025.12.17
 
 ### Fixed

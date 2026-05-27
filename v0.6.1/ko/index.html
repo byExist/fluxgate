@@ -367,10 +367,29 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="api/core/" class="md-tabs__link">
+        <a href="api/" class="md-tabs__link">
           
   
   
@@ -1167,8 +1186,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -1193,14 +1219,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
     
       
       
@@ -1222,10 +1240,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1243,8 +1261,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1253,6 +1271,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1648,6 +1694,11 @@
 <li><strong>완전한 타입 힌팅</strong>: IDE 지원을 위한 완벽한 타입 힌트</li>
 <li><strong>모니터링 지원</strong>: Prometheus, Slack 및 로깅을 통한 내장 모니터링</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">Fluxgate가 맞지 않는 경우</p>
+<p>Fluxgate는 Circuit breaker 상태를 <strong>각 프로세스 내부에만</strong> 유지합니다. Redis 같은 분산 백엔드 지원이 없어, 각 인스턴스가 자기 호출에서 독립적으로 실패를 평가합니다. 워커 간 상태 공유가 필요한 환경에는 맞지 않습니다.</p>
+<p>동기 <code>CircuitBreaker</code>는 <strong>스레드 안전하지 않습니다</strong>. 멀티스레드 환경에서는 <code>asyncio</code>와 <code>AsyncCircuitBreaker</code>를 권장합니다. 자세한 근거는 <a href="about/design/">설계 및 영감</a> 문서를 참고하세요.</p>
+</div>
 <h2 id="_1">빠른 시작<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <h3 id="_2">설치<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate
@@ -1667,9 +1718,44 @@
 <li>복구 시도 전 60초 대기</li>
 <li>복구 중 60초에 걸쳐 0%에서 100%까지 점진적으로 호출 허용</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>기본값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>window</code></td>
+<td><code>CountWindow(100)</code></td>
+</tr>
+<tr>
+<td><code>tracker</code></td>
+<td><code>All()</code></td>
+</tr>
+<tr>
+<td><code>tripper</code></td>
+<td><code>MinRequests(100) &amp; (FailureRate(0.5) \| SlowRate(1.0))</code></td>
+</tr>
+<tr>
+<td><code>retry</code></td>
+<td><code>Cooldown(60.0)</code></td>
+</tr>
+<tr>
+<td><code>permit</code></td>
+<td><code>RampUp(0.0, 1.0, 60.0)</code></td>
+</tr>
+<tr>
+<td><code>slow_threshold</code></td>
+<td><code>60.0</code></td>
+</tr>
+</tbody>
+</table>
 <h3 id="_4">작동 방식<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <p>Circuit breaker는 서비스에 대한 호출을 허용할지 또는 차단할지 결정하는 상태 머신입니다. 다음 세 가지 주요 상태로 작동합니다.</p>
 <pre class="mermaid"><code>stateDiagram-v2
+    direction LR
     [*] --&gt; CLOSED
     CLOSED --&gt; OPEN: tripper
     OPEN --&gt; HALF_OPEN: retry
@@ -1746,7 +1832,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
 
-<span class="c1"># 5xx 에러와 네트워크 실패만 추적</span>
+<span class="c1"># 5xx 오류와 네트워크 실패만 추적</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_retriable_error</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;=</span> <span class="mi">500</span>

@@ -369,10 +369,29 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="../../api/core/" class="md-tabs__link">
+        <a href="../../api/" class="md-tabs__link">
           
   
   
@@ -1228,8 +1247,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -1254,14 +1280,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
     
       
       
@@ -1283,10 +1301,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1304,8 +1322,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1314,6 +1332,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1749,7 +1795,7 @@
 
 
 <h1 id="permits">Permits<a class="headerlink" href="#permits" title="Permanent link">&para;</a></h1>
-<p>Permit은 <code>HALF_OPEN</code> 상태에서 호출의 허용 여부를 결정합니다. Half Open으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.</p>
+<p>Permit은 <code>HALF_OPEN</code> 상태에서 호출의 허용 여부를 결정합니다. <code>HALF_OPEN</code>으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.</p>
 <table>
 <thead>
 <tr>
@@ -1832,6 +1878,7 @@
 <li><strong>30초 시점</strong>: 호출의 45%가 허용됩니다.</li>
 <li><strong>60초 시점(이후)</strong>: 비율은 <code>final</code> 값인 80%로 제한됩니다.</li>
 </ul>
+<p>이 전략은 데이터베이스나 외부 API처럼 부하에 민감한 서비스를 보호하는 데 탁월합니다.</p>
 <hr />
 <h2 id="permit">올바른 Permit 선택<a class="headerlink" href="#permit" title="Permanent link">&para;</a></h2>
 <h3 id="comparison">비교<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h3>
@@ -1885,6 +1932,9 @@
 <span class="c1"># 보수적 (안정성 우선)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
+<span class="c1"># 균형</span>
+<span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
 <span class="c1"># 공격적 (빠른 복구 우선)</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">Random</span><span class="p">(</span><span class="n">ratio</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 </code></pre></div>
@@ -1896,6 +1946,9 @@
 <span class="c1"># 보수적 복구</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">120.0</span><span class="p">)</span>
 
+<span class="c1"># 균형 잡힌 복구</span>
+<span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">60.0</span><span class="p">)</span>
+
 <span class="c1"># 공격적 복구</span>
 <span class="n">permit</span> <span class="o">=</span> <span class="n">RampUp</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
 </code></pre></div>
@@ -1903,8 +1956,8 @@
 <h2 id="relationship-with-retry">Retry와의 관계<a class="headerlink" href="#relationship-with-retry" title="Permanent link">&para;</a></h2>
 <p><code>retry</code> 및 <code>permit</code>은 함께 작동하여 완전한 복구 프로세스를 정의합니다.</p>
 <ul>
-<li><strong>Retry</strong>: Half Open 상태로의 전환 시점을 결정합니다.</li>
-<li><strong>Permit</strong>: Half Open 상태에서 요청의 허용 여부를 결정합니다.</li>
+<li><strong>Retry</strong>: <code>HALF_OPEN</code> 상태로의 전환 시점을 결정합니다.</li>
+<li><strong>Permit</strong>: <code>HALF_OPEN</code> 상태에서 요청의 허용 여부를 결정합니다.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>
@@ -1923,7 +1976,7 @@
 <li><code>retry</code>가 일정 시간 대기합니다. <code>Backoff(initial=10.0)</code>을 사용하면 10초 동안 기다립니다.</li>
 <li>10초 후 회로가 <code>HALF_OPEN</code>으로 전환됩니다.</li>
 <li>이제 <code>permit</code>이 동작합니다. 다음 60초 동안 허용되는 호출의 비율을 10%에서 80%까지 점진적으로 증가시킵니다.</li>
-<li>이 시간 동안 <code>tripper</code>의해 실패로 판단되면 <code>OPEN</code>으로 다시 trip되고 <code>retry</code> 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).</li>
+<li>이 시간 동안 <code>tripper</code>에 의해 실패로 판단되면 <code>OPEN</code>으로 다시 trip되고 <code>retry</code> 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).</li>
 <li>성공하면 회로는 <code>CLOSED</code>로 다시 전환되고 정상 작동이 재개됩니다.</li>
 </ol>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

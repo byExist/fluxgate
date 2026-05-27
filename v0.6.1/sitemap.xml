@@ -43,6 +43,13 @@
         <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/v0.6.1ko/about/design/"/>
     </url>
     <url>
+        <loc>https://byExist.github.io/fluxgate/v0.6.1/api/</loc>
+        <lastmod>2026-05-27</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/v0.6.1/api/"/>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/v0.6.1ko/api/"/>
+    </url>
+    <url>
         <loc>https://byExist.github.io/fluxgate/v0.6.1/api/core/</loc>
         <lastmod>2026-05-27</lastmod>
         <changefreq>daily</changefreq>
@@ -209,6 +216,13 @@
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/v0.6.1/ko/about/design/"/>
         <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/v0.6.1about/design/"/>
+    </url>
+    <url>
+        <loc>https://byExist.github.io/fluxgate/v0.6.1/ko/api/</loc>
+        <lastmod>2026-05-27</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ko" href="https://byExist.github.io/fluxgate/v0.6.1/ko/api/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://byExist.github.io/fluxgate/v0.6.1api/"/>
     </url>
     <url>
         <loc>https://byExist.github.io/fluxgate/v0.6.1/ko/api/core/</loc>

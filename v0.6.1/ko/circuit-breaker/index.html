@@ -369,10 +369,29 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="../api/core/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -1302,8 +1321,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -1328,14 +1354,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
     
       
       
@@ -1357,10 +1375,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1378,8 +1396,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1388,6 +1406,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1907,7 +1953,7 @@
 <h1 id="circuit-breaker">Circuit Breaker<a class="headerlink" href="#circuit-breaker" title="Permanent link">&para;</a></h1>
 <p>Circuit Breaker는 실패할 가능성이 있는 작업을 시스템이 반복적으로 실행하는 것을 방지하는 메커니즘으로, 회복력 있는 분산 시스템을 구축하는 데 필수적입니다.</p>
 <h2 id="core-concepts">핵심 개념<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
-<p>회로 차단기와 유사한 방식으로 동작합니다.</p>
+<p>가정용 전기 회로 차단기와 유사한 방식으로 동작합니다.</p>
 <ul>
 <li>모든 것이 정상일 때는 회로가 <strong>Closed</strong> 상태이며, 호출이 통과됩니다.</li>
 <li>실패가 임계값을 초과하면 회로가 <strong>Open</strong>으로 전환되며, 호출이 차단됩니다.</li>
@@ -1937,7 +1983,7 @@
 <p>실패 임계값이 초과되면 회로가 열립니다. 이 상태에서는 서비스에 연락을 시도하지 않고 모든 호출을 즉시 거부합니다.</p>
 <ul>
 <li><strong>작동</strong>: 모든 호출을 차단하고 <code>CallNotPermittedError</code>를 발생시킵니다.</li>
-<li><strong>Half Open으로 전환</strong>: <code>retry</code>로 인해 <code>HALF_OPEN</code>으로 전환됩니다.</li>
+<li><strong><code>HALF_OPEN</code>으로 전환</strong>: <code>retry</code>로 인해 <code>HALF_OPEN</code>으로 전환됩니다.</li>
 </ul>
 <p>애플리케이션이 실패하는 서비스에 리소스를 낭비하는 것을 방지하고 서비스가 복구될 시간을 제공합니다.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallNotPermittedError</span>
@@ -2020,7 +2066,7 @@
 
 <span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;payment_api&quot;</span><span class="p">,</span>
-    <span class="n">tracker</span><span class="o">=</span><span class="n">TypeOf</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">),</span>  <span class="c1"># 이 에러만 추적</span>
+    <span class="n">tracker</span><span class="o">=</span><span class="n">TypeOf</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">),</span>  <span class="c1"># 이 오류만 추적</span>
 <span class="p">)</span>
 
 <span class="nd">@cb</span>
@@ -2115,7 +2161,7 @@
 <p>단일 호출에 대해 Fallback을 명시적으로 지정할 수도 있습니다.</p>
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">cb</span><span class="o">.</span><span class="n">call_with_fallback</span><span class="p">(</span>
     <span class="n">fetch_from_api</span><span class="p">,</span>
-    <span class="n">fallback_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">get_cached_data</span><span class="p">(),</span>
+    <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">get_cached_data</span><span class="p">(),</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="manual-try-except">수동 <code>try...except</code> 처리<a class="headerlink" href="#manual-try-except" title="Permanent link">&para;</a></h3>

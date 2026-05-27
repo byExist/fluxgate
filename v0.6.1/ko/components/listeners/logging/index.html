@@ -369,10 +369,29 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="../../../api/core/" class="md-tabs__link">
+        <a href="../../../api/" class="md-tabs__link">
           
   
   
@@ -1140,8 +1159,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -1166,14 +1192,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
     
       
       
@@ -1195,10 +1213,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1216,8 +1234,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1226,6 +1244,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1571,7 +1617,7 @@
 
 
 <h1 id="loglistener">LogListener<a class="headerlink" href="#loglistener" title="Permanent link">&para;</a></h1>
-<p><code>LogListener</code>는 Circuit Breaker의 동작을 관찰하는 가장 간단한 방법을 제공합니다. Python의 표준 <code>logging</code> 모듈에 연결하여 상태 전환을 기록하며, 서킷 브레이커가 어떻게 작동하는지에 대한 명확하고 시간순으로 된 보기를 제공합니다.</p>
+<p><code>LogListener</code>는 Circuit Breaker의 동작을 관찰하는 가장 간단한 방법을 제공합니다. Python의 표준 <code>logging</code> 모듈에 연결하여 상태 전환을 기록하며, Circuit Breaker가 어떻게 작동하는지에 대한 명확하고 시간순으로 된 보기를 제공합니다.</p>
 <p><code>CircuitBreaker</code> 및 <code>AsyncCircuitBreaker</code> 에서 활용할 수 있습니다.</p>
 <h2 id="usage">기본 사용법<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p><code>LogListener</code>를 Circuit Breaker의 <code>listeners</code> 목록에 추가합니다.</p>

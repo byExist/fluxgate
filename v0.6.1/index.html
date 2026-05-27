@@ -365,10 +365,29 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="api/core/" class="md-tabs__link">
+        <a href="api/" class="md-tabs__link">
           
   
   
@@ -1165,8 +1184,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -1191,14 +1217,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
     
       
       
@@ -1220,10 +1238,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1241,8 +1259,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1251,6 +1269,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1646,6 +1692,11 @@
 <li><strong>Fully Typed</strong>: Complete type hints for better IDE support</li>
 <li><strong>Monitoring Ready</strong>: Built-in monitoring with Prometheus, Slack, and logging</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">When NOT to use Fluxgate</p>
+<p>Fluxgate keeps circuit state <strong>local to each process</strong>. There is no built-in Redis or distributed backend, so each instance evaluates failures independently from its own calls. If you need a shared circuit across workers, Fluxgate is not the right fit.</p>
+<p>The sync <code>CircuitBreaker</code> is also <strong>not thread-safe</strong>. Multi-threaded apps should use <code>AsyncCircuitBreaker</code> with <code>asyncio</code>. See <a href="about/design/">Design &amp; Inspiration</a> for the rationale.</p>
+</div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fluxgate
@@ -1665,9 +1716,44 @@
 <li>Waits 60 seconds before attempting recovery</li>
 <li>Gradually increases allowed calls from 0% to 100% over 60 seconds during recovery</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>window</code></td>
+<td><code>CountWindow(100)</code></td>
+</tr>
+<tr>
+<td><code>tracker</code></td>
+<td><code>All()</code></td>
+</tr>
+<tr>
+<td><code>tripper</code></td>
+<td><code>MinRequests(100) &amp; (FailureRate(0.5) \| SlowRate(1.0))</code></td>
+</tr>
+<tr>
+<td><code>retry</code></td>
+<td><code>Cooldown(60.0)</code></td>
+</tr>
+<tr>
+<td><code>permit</code></td>
+<td><code>RampUp(0.0, 1.0, 60.0)</code></td>
+</tr>
+<tr>
+<td><code>slow_threshold</code></td>
+<td><code>60.0</code></td>
+</tr>
+</tbody>
+</table>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
 <p>A circuit breaker is a state machine that determines whether to allow or block calls to a service. It operates in three main states:</p>
 <pre class="mermaid"><code>stateDiagram-v2
+    direction LR
     [*] --&gt; CLOSED
     CLOSED --&gt; OPEN: tripper
     OPEN --&gt; HALF_OPEN: retry

@@ -163,7 +163,7 @@ def fetch_from_api():
 # fetch_from_api가 예외를 발생시키는 경우에만 폴백이 호출됩니다.
 result = cb.call_with_fallback(
     fetch_from_api,
-    fallback_func=get_cached_data,
+    get_cached_data,
 )
 ```
 

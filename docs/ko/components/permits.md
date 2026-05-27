@@ -1,6 +1,6 @@
 # Permits
 
-Permit은 `HALF_OPEN` 상태에서 호출의 허용 여부를 결정합니다. Half Open으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.
+Permit은 `HALF_OPEN` 상태에서 호출의 허용 여부를 결정합니다. `HALF_OPEN`으로 전환된 이후, 서비스로 통과될 수 있는 호출 수를 제어하여 갑작스러운 트래픽 폭주로 서비스가 과부하되는 것을 방지합니다.
 
 | Permit 유형 | 동작 | 적합한 경우 |
 |---|---|---|
@@ -84,6 +84,8 @@ cb = CircuitBreaker(
 - **30초 시점**: 호출의 45%가 허용됩니다.
 - **60초 시점(이후)**: 비율은 `final` 값인 80%로 제한됩니다.
 
+이 전략은 데이터베이스나 외부 API처럼 부하에 민감한 서비스를 보호하는 데 탁월합니다.
+
 ---
 
 ## 올바른 Permit 선택
@@ -110,6 +112,9 @@ from fluxgate.permits import Random
 # 보수적 (안정성 우선)
 permit = Random(ratio=0.3)
 
+# 균형
+permit = Random(ratio=0.5)
+
 # 공격적 (빠른 복구 우선)
 permit = Random(ratio=0.8)
 ```
@@ -126,6 +131,9 @@ from fluxgate.permits import RampUp
 # 보수적 복구
 permit = RampUp(initial=0.1, final=0.5, duration=120.0)
 
+# 균형 잡힌 복구
+permit = RampUp(initial=0.2, final=0.8, duration=60.0)
+
 # 공격적 복구
 permit = RampUp(initial=0.5, final=1.0, duration=30.0)
 ```
@@ -136,8 +144,8 @@ permit = RampUp(initial=0.5, final=1.0, duration=30.0)
 
 `retry` 및 `permit`은 함께 작동하여 완전한 복구 프로세스를 정의합니다.
 
-- **Retry**: Half Open 상태로의 전환 시점을 결정합니다.
-- **Permit**: Half Open 상태에서 요청의 허용 여부를 결정합니다.
+- **Retry**: `HALF_OPEN` 상태로의 전환 시점을 결정합니다.
+- **Permit**: `HALF_OPEN` 상태에서 요청의 허용 여부를 결정합니다.
 
 ```python
 from fluxgate import CircuitBreaker
@@ -158,7 +166,7 @@ cb = CircuitBreaker(
 2. `retry`가 일정 시간 대기합니다. `Backoff(initial=10.0)`을 사용하면 10초 동안 기다립니다.
 3. 10초 후 회로가 `HALF_OPEN`으로 전환됩니다.
 4. 이제 `permit`이 동작합니다. 다음 60초 동안 허용되는 호출의 비율을 10%에서 80%까지 점진적으로 증가시킵니다.
-5. 이 시간 동안 `tripper`의해 실패로 판단되면 `OPEN`으로 다시 trip되고 `retry` 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).
+5. 이 시간 동안 `tripper`에 의해 실패로 판단되면 `OPEN`으로 다시 trip되고 `retry` 카운터가 증가합니다(다음 대기 시간은 20초가 됩니다).
 6. 성공하면 회로는 `CLOSED`로 다시 전환되고 정상 작동이 재개됩니다.
 
 ## 다음 단계 {#next-steps}

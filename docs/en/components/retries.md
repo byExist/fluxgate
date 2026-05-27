@@ -66,9 +66,9 @@ cb = CircuitBreaker(
 
 ## Backoff
 
-This is the most robust and recommended strategy. It increases the wait time exponentially after each consecutive failure, giving a struggling service more and more time to recover.
+This is the most robust and recommended strategy. It increases the wait time exponentially each time the circuit reopens, giving a struggling service more and more time to recover.
 
-The wait time is calculated as `initial * (multiplier ** consecutive_failures)`.
+The wait time is calculated as `initial * (multiplier ** reopens)`, where `reopens` is the number of times the circuit has tripped.
 
 ```python
 from fluxgate import CircuitBreaker

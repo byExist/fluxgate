@@ -158,6 +158,7 @@ tripper = (
 |---|---|---|---|---|---|---|
 | **목적** | 특정 상태에 규칙 적용 | 의미 있는 샘플 크기 보장 | 실패한 호출의 비율 확인 | 평균 성능 확인 | 느린 호출의 비율 확인 | 연속 실패 시 빠른 트립 |
 | **단독 사용** | X | X | O | O | O | O |
+| **보통 함께 쓰는 것** | metric 기반 tripper와 `&` | 다른 metric 기반 tripper와 `&` | `MinRequests`와 `&` | `MinRequests`와 `&` | `MinRequests`와 `&` | `MinRequests & FailureRate`와 `\|` |
 
 ### 항상 `MinRequests` 사용하기 {#use-minrequests}
 

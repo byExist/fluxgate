@@ -46,12 +46,22 @@ def call_payment_api(amount: float):
 - 복구 시도 전 60초 대기
 - 복구 중 60초에 걸쳐 0%에서 100%까지 점진적으로 호출 허용
 
+| 파라미터 | 기본값 |
+|---|---|
+| `window` | `CountWindow(100)` |
+| `tracker` | `All()` |
+| `tripper` | `MinRequests(100) & (FailureRate(0.5) \| SlowRate(1.0))` |
+| `retry` | `Cooldown(60.0)` |
+| `permit` | `RampUp(0.0, 1.0, 60.0)` |
+| `slow_threshold` | `60.0` |
+
 ### 작동 방식
 
 Circuit breaker는 서비스에 대한 호출을 허용할지 또는 차단할지 결정하는 상태 머신입니다. 다음 세 가지 주요 상태로 작동합니다.
 
 ```mermaid
 stateDiagram-v2
+    direction LR
     [*] --> CLOSED
     CLOSED --> OPEN: tripper
     OPEN --> HALF_OPEN: retry

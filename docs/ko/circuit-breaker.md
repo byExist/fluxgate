@@ -43,7 +43,7 @@ cb = CircuitBreaker("api")
 실패 임계값이 초과되면 회로가 열립니다. 이 상태에서는 서비스에 연락을 시도하지 않고 모든 호출을 즉시 거부합니다.
 
 - **작동**: 모든 호출을 차단하고 `CallNotPermittedError`를 발생시킵니다.
-- **Half Open으로 전환**: `retry`로 인해 `HALF_OPEN`으로 전환됩니다.
+- **`HALF_OPEN`으로 전환**: `retry`로 인해 `HALF_OPEN`으로 전환됩니다.
 
 애플리케이션이 실패하는 서비스에 리소스를 낭비하는 것을 방지하고 서비스가 복구될 시간을 제공합니다.
 
@@ -270,7 +270,7 @@ result = api_call()
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
-    fallback_func=lambda e: get_cached_data(),
+    lambda e: get_cached_data(),
 )
 ```
 

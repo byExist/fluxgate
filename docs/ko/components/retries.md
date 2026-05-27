@@ -66,9 +66,9 @@ cb = CircuitBreaker(
 
 ## Backoff
 
-각 연속적인 실패 후에 대기 시간을 지수적으로 증가시켜, 서비스가 복구할 시간을 더 많이 제공합니다.
+회로가 다시 열릴 때마다 대기 시간을 지수적으로 증가시켜, 서비스가 복구할 시간을 더 많이 제공합니다.
 
-대기 시간은 `initial * (multiplier ** consecutive_failures)`로 계산됩니다.
+대기 시간은 `initial * (multiplier ** reopens)`로 계산됩니다. `reopens`는 회로가 트립된 횟수입니다.
 
 ```python
 from fluxgate import CircuitBreaker

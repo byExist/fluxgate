@@ -163,7 +163,7 @@ def fetch_from_api():
 # The fallback is only called if fetch_from_api raises an exception.
 result = cb.call_with_fallback(
     fetch_from_api,
-    fallback_func=get_cached_data,
+    get_cached_data,
 )
 ```
 

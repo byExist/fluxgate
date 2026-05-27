@@ -266,7 +266,7 @@ You can also specify a fallback explicitly for a single call.
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
-    fallback_func=lambda e: get_cached_data(),
+    lambda e: get_cached_data(),
 )
 ```
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026.05.27
+
+### Fixed
+
+- **`AsyncCircuitBreaker._notify`**: Async listeners implemented as callable classes (with `async def __call__`) are now properly awaited. Previously, `inspect.iscoroutinefunction` returned `False` for class instances, causing the returned coroutine to be silently dropped. ([#1](https://github.com/byExist/fluxgate/issues/1))
+
 ## [0.6.0] - 2025.12.18
 
 ### Breaking Changes

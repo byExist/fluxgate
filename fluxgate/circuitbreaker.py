@@ -896,10 +896,9 @@ class AsyncCircuitBreaker:
     async def _notify(self, signal: Signal) -> None:
         async def _safe_call(listener: IListener | IAsyncListener) -> None:
             try:
-                if inspect.iscoroutinefunction(listener):
-                    await listener(signal)
-                else:
-                    listener(signal)
+                result = listener(signal)
+                if inspect.isawaitable(result):
+                    await result
             except Exception:
                 logging.exception(f"Listener {listener.__class__.__name__} failed")
 

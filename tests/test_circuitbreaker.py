@@ -750,6 +750,34 @@ async def test_async_listener_notification():
     assert notification_count == 2
 
 
+async def test_async_listener_callable_class_notification():
+    """Callable class instances with async __call__ are awaited as IAsyncListener."""
+
+    class AsyncListener:
+        def __init__(self) -> None:
+            self.count = 0
+
+        async def __call__(self, signal: Signal) -> None:
+            self.count += 1
+
+    listener = AsyncListener()
+
+    cb = AsyncCircuitBreaker(
+        name="test",
+        tripper=MinRequests(2) & FailureRate(0.5),
+        listeners=[listener],
+    )
+
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+
+    assert listener.count == 1
+
+    await cb.reset()
+    assert listener.count == 2
+
+
 async def test_async_listener_exception_handling():
     """Failing async listeners don't break circuit breaker operation."""
 

@@ -28,8 +28,6 @@ Fluxgate uses a **failure rate over a sliding window**, which provides a much mo
 
 - **Other Libraries:**
 
-    <!--pytest.mark.skip-->
-
     ```python
     # Opens after 5 failures in a row.
     @circuit(failure_threshold=5)
@@ -97,8 +95,6 @@ When a service is recovering, you want to re-introduce traffic gradually to avoi
 
 - **Other Libraries:** Allow one call, then close the circuit if it succeeds.
 - **Fluxgate:**
-
-    <!--pytest.mark.skip-->
 
     ```python
     from fluxgate.permits import RampUp

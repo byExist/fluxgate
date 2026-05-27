@@ -46,8 +46,6 @@ Slack 토큰과 채널 ID를 소스 코드에 하드 코딩하는 대신 환경 
 
 표준 `CircuitBreaker`와 함께 `SlackListener`를 사용합니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 import os
 from fluxgate import CircuitBreaker
@@ -68,8 +66,6 @@ cb = CircuitBreaker(
 ### 비동기 (`AsyncSlackListener`)
 
 `AsyncCircuitBreaker`와 함께 `AsyncSlackListener`를 사용합니다. 기본 HTTP 호출은 비동기적으로 이루어집니다.
-
-<!--pytest.mark.skip-->
 
 ```python
 import os
@@ -120,8 +116,6 @@ Listener는 장애 사이클을 기반으로 대화를 체계적으로 유지하
 - `title`: 메시지 제목 (이모지 지원)
 - `color`: 첨부 파일 사이드바의 Hex 색상 코드
 - `description`: 상태 변경에 대한 상세 설명
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.listeners.slack import SlackListener, Template

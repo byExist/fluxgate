@@ -47,8 +47,6 @@ cb = CircuitBreaker("api")
 
 애플리케이션이 실패하는 서비스에 리소스를 낭비하는 것을 방지하고 서비스가 복구될 시간을 제공합니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.errors import CallNotPermittedError
 
@@ -96,8 +94,6 @@ cb = CircuitBreaker(
 
 활성 보호를 활성화하기 전에 새 서비스에서 또는 로드 테스트 중에 안전하게 Metric을 수집합니다.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # 브레이커를 활성화하기 전에 Metric을 수집합니다.
 cb.metrics_only()
@@ -115,8 +111,6 @@ cb.reset()
 
 디버깅, 특정 테스트 실행 또는 브레이커를 완전히 우회해야 하는 긴급 상황에 유용합니다.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # 긴급 상황 시 circuit breaker를 비활성화합니다.
 cb.disable()
@@ -133,8 +127,6 @@ cb.reset()
 - **복구**: 자동으로 복구되지 않습니다. 수동 `reset()` 호출이 필요합니다.
 
 계획된 유지보수 또는 서비스를 수동으로 오프라인으로 전환하는 데 사용합니다.
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 # 계획된 배포 중에 회로를 강제로 엽니다.
@@ -169,8 +161,6 @@ def charge_payment(amount: float):
 ### 직접 호출 방식 {#call-usage}
 
 `call` 메서드는 데코레이터로 수정할 수 없는 함수(예: 서드파티 라이브러리의 함수)를 보호해야 할 때 유용합니다.
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 def process_payment(amount: float):
@@ -214,8 +204,6 @@ asyncio.run(main())
 
 `.info()` 메서드를 사용하여 circuit breaker의 현재 상태와 Metric을 언제든지 확인할 수 있습니다.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 info = cb.info()
 print(f"Circuit: {info.name}")
@@ -235,8 +223,6 @@ print(f"Current metrics: {info.metrics}")
 ## 수동 제어 {#manual-control}
 
 circuit breaker의 상태를 수동으로 제어해야 하는 경우가 있을 수 있습니다.
-
-<!--pytest-codeblocks:skip-->
 
 ```python
 # CLOSED 상태로 재설정하고 모든 Metric을 지웁니다.
@@ -260,8 +246,6 @@ cb.force_open()
 
 가장 쉬운 방법은 데코레이터에 직접 Fallback 함수를 제공하는 것입니다. 이 함수는 보호된 함수에서 **모든** 예외가 발생할 때마다 자동으로 호출됩니다. Fallback 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 # Fallback 함수는 예외를 인수로 받습니다.
 def handle_error(e: Exception) -> dict:
@@ -283,8 +267,6 @@ result = api_call()
 
 단일 호출에 대해 Fallback을 명시적으로 지정할 수도 있습니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
@@ -295,8 +277,6 @@ result = cb.call_with_fallback(
 ### 수동 `try...except` 처리 {#manual-try-except}
 
 최대한의 제어를 위해 표준 `try...except` 블록을 사용할 수 있습니다.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -317,8 +297,6 @@ except Exception as e:
 ```
 
 ## 전체 예제 {#complete-example}
-
-<!--pytest.mark.skip-->
 
 ```python
 import httpx

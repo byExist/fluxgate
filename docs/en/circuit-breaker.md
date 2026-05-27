@@ -46,8 +46,6 @@ When the failure threshold is exceeded, the circuit opens. In this state, it imm
 - **Benefit**: Prevents an application from wasting resources on a failing service and gives the service time to recover.
 - **Transition**: Moves to `HALF_OPEN` after the timeout defined by the `retry` strategy.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.errors import CallNotPermittedError
 
@@ -94,8 +92,6 @@ In this state, the circuit breaker tracks metrics but never trips open.
 - **Operation**: Allows all calls to pass through, just like in the `CLOSED` state.
 - **Use Case**: Safely gather metrics from a new service or during a load test before enabling active protection.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # Collect metrics before enabling the breaker.
 cb.metrics_only()
@@ -112,8 +108,6 @@ This state completely disables the circuit breaker.
 - **Monitoring**: Does not track any metrics.
 - **Use Case**: Useful for debugging, running specific tests, or in emergency situations where you need to bypass the breaker entirely.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # Disable the circuit breaker during an emergency.
 cb.disable()
@@ -129,8 +123,6 @@ This state forces the circuit to be open and block all calls.
 - **Operation**: Rejects all calls with `CallNotPermittedError`.
 - **Recovery**: Does not automatically recover. It requires a manual `reset()` call.
 - **Use Case**: Ideal for planned maintenance or for manually taking a service offline.
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 # Force the circuit open during a planned deployment.
@@ -165,8 +157,6 @@ def charge_payment(amount: float):
 ### Direct Call Style {#call-usage}
 
 The `call` method is useful for protecting functions that you can't modify with a decorator, such as functions from a third-party library.
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 def process_payment(amount: float):
@@ -210,8 +200,6 @@ asyncio.run(main())
 
 You can inspect the current state and metrics of a circuit breaker at any time using the `.info()` method.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 info = cb.info()
 print(f"Circuit: {info.name}")
@@ -231,8 +219,6 @@ print(f"Current metrics: {info.metrics}")
 ## Manual Control {#manual-control}
 
 There may be times when you need to control the circuit breaker's state manually.
-
-<!--pytest-codeblocks:skip-->
 
 ```python
 # Reset to CLOSED state and clear all metrics.
@@ -256,8 +242,6 @@ When a circuit is open, it raises a `CallNotPermittedError`. You can handle this
 
 The easiest method is to provide a fallback function directly to the decorator. This function will be called automatically whenever an exception occurs.
 
-<!--pytest.mark.skip-->
-
 ```python
 # The fallback function receives the exception as an argument.
 def handle_error(e: Exception) -> dict:
@@ -279,8 +263,6 @@ result = api_call()
 
 You can also specify a fallback explicitly for a single call.
 
-<!--pytest.mark.skip-->
-
 ```python
 result = cb.call_with_fallback(
     fetch_from_api,
@@ -291,8 +273,6 @@ result = cb.call_with_fallback(
 ### Manual `try...except` Handling {#manual-try-except}
 
 For the most control, you can use a standard `try...except` block.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.errors import CallNotPermittedError
@@ -315,8 +295,6 @@ except Exception as e:
 ## Complete Example {#complete-example}
 
 Here is a complete example of a fully configured circuit breaker to protect a critical payment API.
-
-<!--pytest.mark.skip-->
 
 ```python
 import httpx

@@ -2,8 +2,6 @@
 
 Listener는 Circuit Breaker 상태 전환을 감지하고 외부 시스템에 알림을 보냅니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.listeners.log import LogListener
@@ -57,8 +55,6 @@ class CustomListener(IListener):
 
 `AsyncCircuitBreaker`에서만 사용할 수 있습니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.interfaces import IAsyncListener
 from fluxgate.signal import Signal
@@ -74,8 +70,6 @@ class CustomAsyncListener(IAsyncListener):
 
 Python의 표준 `logging` 모듈을 사용하여 Circuit Breaker 상태 전환을 로깅합니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.listeners.log import LogListener
 
@@ -90,8 +84,6 @@ cb = CircuitBreaker(..., listeners=[LogListener()])
 pip install fluxgate[prometheus]
 ```
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.listeners.prometheus import PrometheusListener
 
@@ -105,8 +97,6 @@ Circuit Breaker 상태 전환 알림을 Slack 채널로 보냅니다.
 ```bash
 pip install fluxgate[slack]
 ```
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.listeners.slack import SlackListener, AsyncSlackListener
@@ -125,8 +115,6 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ## 커스텀 Listener {#custom-listeners}
 
 ### 동기 Listener
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.interfaces import IListener
@@ -171,8 +159,6 @@ class WebhookListener(IAsyncListener):
 Listener에서 발생하는 예외는 Circuit Breaker 동작에 영향을 미치지 않습니다. 예외는 로깅되며 Circuit Breaker는 정상적으로 계속 작동합니다.
 
 ## 여러 Listener 조합 {#combining-listeners}
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

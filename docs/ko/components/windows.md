@@ -21,8 +21,6 @@ Fluxgate는 두 가지 유형의 Window를 제공합니다.
 
 ### 기본 사용법 {#countwindow-basic}
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.windows import CountWindow
@@ -46,8 +44,6 @@ cb = CircuitBreaker(
 시간을 1초 단위의 버킷으로 나눕니다. 호출이 기록될 때 해당 결과는 현재 타임스탬프에 해당하는 버킷에 집계됩니다. 시간 Window를 벗어나는 오래된 버킷은 자동으로 만료되고 재사용됩니다.
 
 ### 기본 사용법 {#timewindow-basic}
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

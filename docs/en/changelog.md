@@ -100,8 +100,6 @@ Default values:
 
 - **`ITripper` interface signature changed**: The `__call__` method now accepts a `consecutive_failures` parameter. Custom tripper implementations must update their signature:
 
-<!--pytest.mark.skip-->
-
 ```python
 # Before (v0.2.x)
 def __call__(self, metric: Metric, state: StateEnum) -> bool: ...
@@ -130,8 +128,6 @@ tripper = FailureStreak(5) | (MinRequests(20) & FailureRate(0.5))
     - This follows Python's principle: "Explicit is better than implicit."
 
 **Migration:**
-
-<!--pytest.mark.skip-->
 
 ```python
 # Before (v0.1.x)

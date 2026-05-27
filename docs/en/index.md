@@ -93,8 +93,6 @@ asyncio.run(main())
 
 A fully configured circuit breaker for an external payment API:
 
-<!--pytest.mark.skip-->
-
 ```python
 import httpx
 from fluxgate import CircuitBreaker

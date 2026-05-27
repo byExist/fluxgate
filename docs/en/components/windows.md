@@ -21,8 +21,6 @@ It maintains a fixed-size circular buffer in memory. When a new call is recorded
 
 ### Basic Usage {#countwindow-basic}
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.windows import CountWindow
@@ -48,8 +46,6 @@ It uses a series of time-based buckets (one for each second in the window). When
 This approach ensures that a sudden burst of failures doesn't dominate the metrics for too long.
 
 ### Basic Usage {#timewindow-basic}
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

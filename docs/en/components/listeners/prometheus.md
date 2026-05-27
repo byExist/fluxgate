@@ -76,8 +76,6 @@ This metric **counts** the total number of times a circuit breaker has transitio
 
 For simple scripts or background workers, you can start the Prometheus client's HTTP server in a separate thread.
 
-<!--pytest.mark.skip-->
-
 ```python
 from prometheus_client import start_http_server
 from fluxgate import CircuitBreaker
@@ -101,8 +99,6 @@ cb = CircuitBreaker(
 ### Integration with Web Frameworks (FastAPI)
 
 When using a web framework like FastAPI or Flask, you should integrate the Prometheus metrics endpoint directly into your application instead of starting a separate server.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fastapi import FastAPI
@@ -137,8 +133,6 @@ async def root():
 ## Monitoring Multiple Circuit Breakers {#multiple-circuits}
 
 To monitor multiple circuit breakers in the same application, simply reuse the same `PrometheusListener` instance. The metrics will be correctly labeled with the `circuit_name` for each breaker.
-
-<!--pytest.mark.skip-->
 
 ```python
 from prometheus_client import start_http_server
@@ -190,8 +184,6 @@ Here are some examples of how you could visualize these metrics in a Grafana das
 ## Custom Metrics {#custom-metrics}
 
 If you need to export additional custom metrics, you can create your own listener by implementing the `IListener` interface.
-
-<!--pytest.mark.skip-->
 
 ```python
 from prometheus_client import Counter

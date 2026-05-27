@@ -76,8 +76,6 @@ tripper = AvgLatency(2.0)
 
 `SlowRate(rate)` returns `True` if the ratio of "slow" calls exceeds the `rate`. A call is considered "slow" if its duration exceeds the `slow_threshold` parameter (in seconds) on the `CircuitBreaker`.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate

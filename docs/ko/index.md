@@ -93,8 +93,6 @@ asyncio.run(main())
 
 외부 결제 API를 위한 전체 구성 예제입니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 import httpx
 from fluxgate import CircuitBreaker

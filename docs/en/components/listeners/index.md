@@ -2,8 +2,6 @@
 
 Listeners detect circuit breaker state transitions and send notifications to external systems.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.listeners.log import LogListener
@@ -56,8 +54,6 @@ class CustomListener(IListener):
 
 Only available for `AsyncCircuitBreaker`:
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.interfaces import IAsyncListener
 from fluxgate.signal import Signal
@@ -73,8 +69,6 @@ class CustomAsyncListener(IAsyncListener):
 
 Logs state transitions using Python's standard `logging` module.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.listeners.log import LogListener
 
@@ -89,8 +83,6 @@ Collects Prometheus metrics for integration with monitoring systems.
 pip install fluxgate[prometheus]
 ```
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.listeners.prometheus import PrometheusListener
 
@@ -104,8 +96,6 @@ Sends state transition notifications to Slack channels.
 ```bash
 pip install fluxgate[slack]
 ```
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.listeners.slack import SlackListener, AsyncSlackListener
@@ -124,8 +114,6 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ## Custom Listeners {#custom-listeners}
 
 ### Synchronous Listener
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.interfaces import IListener
@@ -170,8 +158,6 @@ class WebhookListener(IAsyncListener):
 Listener exceptions don't affect circuit breaker operation. Exceptions are automatically logged, and the circuit breaker continues normally.
 
 ## Combining Multiple Listeners {#combining-listeners}
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CircuitBreaker

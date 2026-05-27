@@ -76,8 +76,6 @@ tripper = AvgLatency(2.0)
 
 `SlowRate(rate)`는 느린 호출의 비율이 `rate`를 초과하면 `True`를 반환합니다. 호출 시간이 `CircuitBreaker`의 `slow_threshold` 매개변수(초 단위)를 초과하면 "느린" 호출로 간주됩니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate

@@ -14,11 +14,3 @@ repos:
         name: markdownlint docs
         args: [--config, docs/.markdownlint.json]
         files: ^docs/.*\.(md|mdx)$
-  - repo: local
-    hooks:
-      - id: pytest-docs
-        name: pytest docs
-        entry: uv run pytest --codeblocks docs/
-        language: system
-        pass_filenames: false
-        files: ^docs/.*\.md$

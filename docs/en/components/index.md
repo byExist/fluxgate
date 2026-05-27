@@ -104,8 +104,6 @@ Detect state transitions and notify external systems.
 - **PrometheusListener** - Prometheus metrics (opt)
 - **SlackListener** - Slack notifications (opt)
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate.listeners.log import LogListener
 

@@ -8,8 +8,6 @@ It works identically for both `CircuitBreaker` and `AsyncCircuitBreaker`.
 
 Simply add `LogListener` to the `listeners` list of your circuit breaker.
 
-<!--pytest.mark.skip-->
-
 ```python
 import logging
 from fluxgate import CircuitBreaker
@@ -42,8 +40,6 @@ When the circuit breaker changes state, it will produce a log record like this:
 
 By default, `LogListener` uses the root logger. You can inject your own logger for better control over log routing and formatting.
 
-<!--pytest.mark.skip-->
-
 ```python
 import logging
 from fluxgate import CircuitBreaker
@@ -66,8 +62,6 @@ cb = CircuitBreaker(
 
 Use `level_map` to customize the log level for each state transition. By default, transitions to `OPEN` and `FORCED_OPEN` are logged at `WARNING` level, while others are logged at `INFO`.
 
-<!--pytest.mark.skip-->
-
 ```python
 import logging
 from fluxgate import CircuitBreaker
@@ -89,8 +83,6 @@ cb = CircuitBreaker(
 ```
 
 You can also combine both options:
-
-<!--pytest.mark.skip-->
 
 ```python
 cb_logger = logging.getLogger("myapp.circuit_breaker")
@@ -131,8 +123,6 @@ cb_listener = JsonLogListener(json_logger)
 ## Configuring File Logging {#file-logging}
 
 To send circuit breaker logs to a file, configure a suitable handler in your application's logging setup. `LogListener` will automatically use this configuration.
-
-<!--pytest.mark.skip-->
 
 ```python
 import logging

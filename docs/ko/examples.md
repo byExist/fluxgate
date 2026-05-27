@@ -41,8 +41,6 @@ def charge_payment(amount: float):
 
 웹 프레임워크와 통합할 때, 일반적으로 `CallNotPermittedError`를 잡아서 `503 Service Unavailable`과 같은 사용자 친화적인 오류 응답을 반환하고 싶을 것입니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fastapi import FastAPI, HTTPException
 import httpx
@@ -135,8 +133,6 @@ async def check_inventory(product_id: str):
 
 이것이 가장 깔끔한 접근 방식입니다. 보호된 함수가 **어떤** 예외를 발생시키든 제공된 함수가 자동으로 호출됩니다. 폴백 함수는 예외 인스턴스를 받으므로 어떻게 처리할지 결정할 수 있습니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker, CallNotPermittedError
 
@@ -159,8 +155,6 @@ result = fetch_data_with_fallback() # {"source": "cache"} 반환
 
 데코레이터를 사용할 수 없을 때 유용합니다. `fallback` 인자와 동일하게 작동합니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 def fetch_from_api():
     # ...
@@ -176,8 +170,6 @@ result = cb.call_with_fallback(
 ### 수동 `try...except`
 
 최대한의 제어를 위해 표준 `try...except` 블록을 사용할 수 있습니다. 이는 최대한의 유연성을 제공하지만 더 장황합니다.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CallNotPermittedError
@@ -207,8 +199,6 @@ except httpx.HTTPError as e:
 
 `tracker`를 사용하면 실패로 간주되는 요소를 정확하게 정의할 수 있습니다. 예를 들어, 5xx 서버 오류를 추적하면서 4xx 클라이언트 오류는 무시할 수 있습니다.
 
-<!--pytest.mark.skip-->
-
 ```python
 import httpx
 from fluxgate.trackers import Custom
@@ -231,8 +221,6 @@ cb = CircuitBreaker(
 ### 상태별 다른 임계값
 
 `Closed()` 및 `HalfOpened()` Tripper를 사용하여 복구 시도에 대한 더 엄격한 규칙을 만들 수 있습니다.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate

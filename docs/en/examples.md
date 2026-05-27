@@ -41,8 +41,6 @@ def charge_payment(amount: float):
 
 When integrating with a web framework, you typically want to catch a `CallNotPermittedError` and return a user-friendly error response, like a `503 Service Unavailable`.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fastapi import FastAPI, HTTPException
 import httpx
@@ -135,8 +133,6 @@ When a call is blocked or fails, you often want to execute alternative logic, su
 
 This is the cleanest approach. The provided function is called automatically whenever the protected function raises **any** exception. Your fallback function receives the exception instance, so you can decide how to handle it.
 
-<!--pytest.mark.skip-->
-
 ```python
 from fluxgate import CircuitBreaker, CallNotPermittedError
 
@@ -159,8 +155,6 @@ result = fetch_data_with_fallback() # Returns {"source": "cache"}
 
 This is useful when you can't use a decorator. It works just like the `fallback` argument.
 
-<!--pytest.mark.skip-->
-
 ```python
 def fetch_from_api():
     # ...
@@ -176,8 +170,6 @@ result = cb.call_with_fallback(
 ### Manual `try...except`
 
 For maximum control, you can use a standard `try...except` block. This gives you the most flexibility but is also more verbose.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate import CallNotPermittedError
@@ -207,8 +199,6 @@ except httpx.HTTPError as e:
 
 A `tracker` lets you define precisely what counts as a failure. For example, you can ignore 4xx client errors while tracking 5xx server errors.
 
-<!--pytest.mark.skip-->
-
 ```python
 import httpx
 from fluxgate.trackers import Custom
@@ -231,8 +221,6 @@ cb = CircuitBreaker(
 ### Different Thresholds per State
 
 You can use `Closed()` and `HalfOpened()` trippers to create stricter rules for recovery attempts.
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate

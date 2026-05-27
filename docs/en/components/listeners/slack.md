@@ -46,8 +46,6 @@ It is highly recommended to store your Slack token and channel ID as environment
 
 Use `SlackListener` with a standard `CircuitBreaker`.
 
-<!--pytest.mark.skip-->
-
 ```python
 import os
 from fluxgate import CircuitBreaker
@@ -68,8 +66,6 @@ cb = CircuitBreaker(
 ### Asynchronous (`AsyncSlackListener`)
 
 Use `AsyncSlackListener` with an `AsyncCircuitBreaker`. The underlying HTTP calls will be made asynchronously.
-
-<!--pytest.mark.skip-->
 
 ```python
 import os
@@ -120,8 +116,6 @@ Each template is a `Template` TypedDict with three required keys:
 - `title`: The message title (supports emoji)
 - `color`: Hex color code for the attachment sidebar
 - `description`: Detailed description of the state change
-
-<!--pytest.mark.skip-->
 
 ```python
 from fluxgate.listeners.slack import SlackListener, Template

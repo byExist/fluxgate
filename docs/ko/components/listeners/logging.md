@@ -1,6 +1,6 @@
 # LogListener
 
-`LogListener`는 Circuit Breaker의 동작을 관찰하는 가장 간단한 방법을 제공합니다. Python의 표준 `logging` 모듈에 연결하여 상태 전환을 기록하며, 서킷 브레이커가 어떻게 작동하는지에 대한 명확하고 시간순으로 된 보기를 제공합니다.
+`LogListener`는 Circuit Breaker의 동작을 관찰하는 가장 간단한 방법을 제공합니다. Python의 표준 `logging` 모듈에 연결하여 상태 전환을 기록하며, Circuit Breaker가 어떻게 작동하는지에 대한 명확하고 시간순으로 된 보기를 제공합니다.
 
 `CircuitBreaker` 및 `AsyncCircuitBreaker` 에서 활용할 수 있습니다.
 

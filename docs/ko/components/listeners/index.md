@@ -154,7 +154,7 @@ class WebhookListener(IAsyncListener):
         await self.client.post(self.url, json=payload)
 ```
 
-## 에러 처리 {#error-handling}
+## 오류 처리 {#error-handling}
 
 Listener에서 발생하는 예외는 Circuit Breaker 동작에 영향을 미치지 않습니다. 예외는 로깅되며 Circuit Breaker는 정상적으로 계속 작동합니다.
 

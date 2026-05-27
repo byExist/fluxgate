@@ -22,7 +22,7 @@ from fluxgate.trackers import TypeOf
 
 cb = CircuitBreaker(
     name="payment_api",
-    tracker=TypeOf(httpx.HTTPError),  # HTTP 에러만 추적
+    tracker=TypeOf(httpx.HTTPError),  # HTTP 오류만 추적
 )
 
 @cb

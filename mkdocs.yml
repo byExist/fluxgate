@@ -71,8 +71,9 @@ nav:
   - About:
       - Design & Inspiration: about/design.md
       - Comparison: about/comparison.md
-      - Changelog: changelog.md
+  - Changelog: changelog.md
   - API Reference:
+      - Overview: api/index.md
       - Core: api/core.md
       - Windows: api/windows.md
       - Trackers: api/trackers.md

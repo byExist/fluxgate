@@ -14,6 +14,12 @@ Circuit breaker는 분산 시스템에서 서비스 상태를 모니터링하고
 - **완전한 타입 힌팅**: IDE 지원을 위한 완벽한 타입 힌트
 - **모니터링 지원**: Prometheus, Slack 및 로깅을 통한 내장 모니터링
 
+!!! warning "Fluxgate가 맞지 않는 경우"
+
+    Fluxgate는 Circuit breaker 상태를 **각 프로세스 내부에만** 유지합니다. Redis 같은 분산 백엔드 지원이 없어, 각 인스턴스가 자기 호출에서 독립적으로 실패를 평가합니다. 워커 간 상태 공유가 필요한 환경에는 맞지 않습니다.
+
+    동기 `CircuitBreaker`는 **스레드 안전하지 않습니다**. 멀티스레드 환경에서는 `asyncio`와 `AsyncCircuitBreaker`를 권장합니다. 자세한 근거는 [설계 및 영감](about/design.md) 문서를 참고하세요.
+
 ## 빠른 시작
 
 ### 설치
@@ -104,7 +110,7 @@ from fluxgate.permits import RampUp
 from fluxgate.listeners.log import LogListener
 from fluxgate.listeners.prometheus import PrometheusListener
 
-# 5xx 에러와 네트워크 실패만 추적
+# 5xx 오류와 네트워크 실패만 추적
 def is_retriable_error(e: Exception) -> bool:
     if isinstance(e, httpx.HTTPStatusError):
         return e.response.status_code >= 500

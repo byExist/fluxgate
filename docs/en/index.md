@@ -14,6 +14,12 @@ Circuit breakers prevent cascading failures in distributed systems by monitoring
 - **Fully Typed**: Complete type hints for better IDE support
 - **Monitoring Ready**: Built-in monitoring with Prometheus, Slack, and logging
 
+!!! warning "When NOT to use Fluxgate"
+
+    Fluxgate keeps circuit state **local to each process**. There is no built-in Redis or distributed backend, so each instance evaluates failures independently from its own calls. If you need a shared circuit across workers, Fluxgate is not the right fit.
+
+    The sync `CircuitBreaker` is also **not thread-safe**. Multi-threaded apps should use `AsyncCircuitBreaker` with `asyncio`. See [Design & Inspiration](about/design.md) for the rationale.
+
 ## Quick Start
 
 ### Installation

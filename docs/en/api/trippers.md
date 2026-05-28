@@ -17,3 +17,5 @@ For a high-level guide on choosing and combining trippers, see the [Trippers Com
 ::: fluxgate.trippers.AvgLatency
 
 ::: fluxgate.trippers.SlowRate
+
+::: fluxgate.trippers.FailureStreak

@@ -98,10 +98,10 @@ For better observability in modern platforms, you can create a custom listener t
 ```python
 import json
 import logging
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 
-class JsonLogListener(IListener):
+class JsonLogListener(Listener):
     def __init__(self, logger):
         self.logger = logger
 

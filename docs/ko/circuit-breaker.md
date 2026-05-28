@@ -217,7 +217,7 @@ print(f"Current metrics: {info.metrics}")
 # State: closed
 # Last state change: 1234567890.123
 # Reopens at: 0
-# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
+# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_counts={1.0: 3})
 ```
 
 ## 수동 제어 {#manual-control}
@@ -323,8 +323,8 @@ payment_cb = CircuitBreaker(
         FailureStreak(5) |
         # 충분한 데이터가 수집되면 실패율/느린 호출율 기반 통계적 트립.
         (MinRequests(20) & (
-            (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
-            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+            (Closed() & (FailureRate(0.6) | SlowRate(0.3, threshold=3.0))) |
+            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2, threshold=3.0)))
         ))
     ),
     retry=Backoff(
@@ -338,7 +338,6 @@ payment_cb = CircuitBreaker(
         final=0.5,        # 50%까지 점진적으로 증가시킵니다.
         duration=60.0     # 60초에 걸쳐 증가시킵니다.
     ),
-    slow_threshold=3.0,  # 3초 이상의 모든 호출을 느린 호출로 표시합니다.
     listeners=[LogListener(), PrometheusListener()],
 )
 

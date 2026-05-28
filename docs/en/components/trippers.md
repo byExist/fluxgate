@@ -74,17 +74,16 @@ tripper = AvgLatency(2.0)
 
 ### SlowRate
 
-`SlowRate(rate)` returns `True` if the ratio of "slow" calls exceeds the `rate`. A call is considered "slow" if its duration exceeds the `slow_threshold` parameter (in seconds) on the `CircuitBreaker`.
+`SlowRate(ratio, threshold)` returns `True` if the ratio of "slow" calls reaches `ratio`. A call is considered "slow" when its duration is at least `threshold` seconds. Each `SlowRate` instance carries its own threshold, so several can coexist in the same tripper tree.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate
 
-# Trip if more than 30% of calls are "slow".
+# Trip if more than 30% of calls take 1 second or longer.
 cb = CircuitBreaker(
     name="api",
-    tripper=SlowRate(0.3),
-    slow_threshold=1.0,  # A call is slow if it takes longer than 1 second.
+    tripper=SlowRate(0.3, threshold=1.0),
     ...
 )
 ```
@@ -130,7 +129,7 @@ The `|` operator requires **any** condition to be true.
 from fluxgate.trippers import FailureRate, SlowRate
 
 # Trip if the failure rate is over 50% OR the slow call rate is over 30%.
-tripper = FailureRate(0.5) | SlowRate(0.3)
+tripper = FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
 ```
 
 ### Complex Example
@@ -189,7 +188,7 @@ A robust configuration often combines multiple conditions.
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate
 
 # Trip if, after at least 10 calls, the failure rate exceeds 50% OR the slow rate exceeds 30%.
-tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
+tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))
 ```
 
 ## Next Steps {#next-steps}

@@ -35,30 +35,30 @@ class Signal:
 
 ## Sync vs Async {#sync-vs-async}
 
-### Synchronous Listeners (IListener)
+### Synchronous Listeners (Listener)
 
 Can be used with both `CircuitBreaker` and `AsyncCircuitBreaker`:
 
 ```python
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 
-class CustomListener(IListener):
+class CustomListener(Listener):
     def __call__(self, signal: Signal) -> None:
         print(f"{signal.circuit_name}: {signal.old_state} → {signal.new_state}")
 ```
 
-> **Warning**: When using synchronous listeners with `AsyncCircuitBreaker`, avoid blocking I/O operations (network calls, file writes, etc.) as they will block the event loop. Use `IAsyncListener` for operations requiring I/O.
+> **Warning**: When using synchronous listeners with `AsyncCircuitBreaker`, avoid blocking I/O operations (network calls, file writes, etc.) as they will block the event loop. Use `AsyncListener` for operations requiring I/O.
 
-### Asynchronous Listeners (IAsyncListener)
+### Asynchronous Listeners (AsyncListener)
 
 Only available for `AsyncCircuitBreaker`:
 
 ```python
-from fluxgate.interfaces import IAsyncListener
+from fluxgate.listeners import AsyncListener
 from fluxgate.signal import Signal
 
-class CustomAsyncListener(IAsyncListener):
+class CustomAsyncListener(AsyncListener):
     async def __call__(self, signal: Signal) -> None:
         await send_notification(signal)
 ```
@@ -116,11 +116,11 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ### Synchronous Listener
 
 ```python
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
-class DatabaseListener(IListener):
+class DatabaseListener(Listener):
     def __init__(self, db_connection):
         self.db = db_connection
 
@@ -136,10 +136,10 @@ class DatabaseListener(IListener):
 
 ```python
 import httpx
-from fluxgate.interfaces import IAsyncListener
+from fluxgate.listeners import AsyncListener
 from fluxgate.signal import Signal
 
-class WebhookListener(IAsyncListener):
+class WebhookListener(AsyncListener):
     def __init__(self, webhook_url: str):
         self.url = webhook_url
         self.client = httpx.AsyncClient()

@@ -74,17 +74,16 @@ tripper = AvgLatency(2.0)
 
 ### SlowRate
 
-`SlowRate(rate)`는 느린 호출의 비율이 `rate`를 초과하면 `True`를 반환합니다. 호출 시간이 `CircuitBreaker`의 `slow_threshold` 매개변수(초 단위)를 초과하면 "느린" 호출로 간주됩니다.
+`SlowRate(ratio, threshold)`는 느린 호출의 비율이 `ratio`에 도달하면 `True`를 반환합니다. 호출 시간이 `threshold` 초 이상이면 "느린" 호출로 간주됩니다. 각 `SlowRate` 인스턴스는 자기 threshold를 갖고 있어, 같은 tripper 트리 안에서 여러 개를 자유롭게 조합할 수 있습니다.
 
 ```python
 from fluxgate import CircuitBreaker
 from fluxgate.trippers import SlowRate
 
-# 호출의 30% 이상이 "느린" 경우 트립됩니다.
+# 호출의 30% 이상이 1초 이상 걸리면 트립됩니다.
 cb = CircuitBreaker(
     name="api",
-    tripper=SlowRate(0.3),
-    slow_threshold=1.0,  # 1초 이상 걸리는 호출은 느린 것으로 간주됩니다.
+    tripper=SlowRate(0.3, threshold=1.0),
     ...
 )
 ```
@@ -130,7 +129,7 @@ tripper = MinRequests(10) & FailureRate(0.5)
 from fluxgate.trippers import FailureRate, SlowRate
 
 # 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.
-tripper = FailureRate(0.5) | SlowRate(0.3)
+tripper = FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
 ```
 
 ### 복합 예제
@@ -188,7 +187,7 @@ tripper = MinRequests(10) & FailureRate(0.5)
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate
 
 # 최소 10개의 호출 이후, 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.
-tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
+tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))
 ```
 
 ## 다음 단계 {#next-steps}

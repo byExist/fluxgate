@@ -182,11 +182,11 @@ inventory_cb = CircuitBreaker(name="inventory_api", ..., listeners=[listener])
 
 ## 커스텀 메트릭 {#custom-metrics}
 
-추가적인 커스텀 메트릭을 내보내야 하는 경우, `IListener` 인터페이스를 구현하여 자체 Listener를 만들 수 있습니다.
+추가적인 커스텀 메트릭을 내보내야 하는 경우, `Listener` 인터페이스를 구현하여 자체 Listener를 만들 수 있습니다.
 
 ```python
 from prometheus_client import Counter
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
@@ -197,7 +197,7 @@ OPEN_TRANSITIONS = Counter(
     ['circuit_name']
 )
 
-class CustomPrometheusListener(IListener):
+class CustomPrometheusListener(Listener):
     def __call__(self, signal: Signal) -> None:
         if signal.new_state == StateEnum.OPEN:
             OPEN_TRANSITIONS.labels(circuit_name=signal.circuit_name).inc()

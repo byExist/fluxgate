@@ -64,7 +64,7 @@ Fluxgate allows you to build sophisticated, fine-grained rules by combining simp
     )
 
     # Trip on high failure rate OR high slow-call rate.
-    tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3))
+    tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))
     ```
 
 ### 3. Latency-Based Triggers
@@ -84,8 +84,7 @@ Fluxgate can trip based on response time, not just exceptions. This is critical 
     # Trip when more than 30% of calls are slower than 1 second.
     cb = CircuitBreaker(
         name="api",
-        tripper=MinRequests(10) & SlowRate(0.3),
-        slow_threshold=1.0,  # Defines what "slow" means
+        tripper=MinRequests(10) & SlowRate(0.3, threshold=1.0),
     )
     ```
 

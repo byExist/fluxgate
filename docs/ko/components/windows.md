@@ -117,12 +117,12 @@ print(f"Average duration: {metric.avg_duration}")
 - `total_count`: Window에 기록된 총 호출 수.
 - `failure_count`: 실패로 추적된 호출 수.
 - `total_duration`: 모든 호출의 지속 시간 합계.
-- `slow_count`: `slow_threshold`를 초과한 호출 수.
+- `slow_counts`: 등록된 각 `SlowRate` threshold별 느린 호출 수를 담은 매핑(`dict[float, int]`).
 - `avg_duration`: 평균 응답 시간 (`total_duration / total_count`).
 - `failure_rate`: 실패 호출 비율 (`failure_count / total_count`).
-- `slow_rate`: 느린 호출 비율 (`slow_count / total_count`).
+- `slow_rate(threshold)`: 주어진 threshold에 대한 느린 호출 비율.
 
-`avg_duration`, `failure_rate`, `slow_rate`는 total_count가 0일 경우 None입니다.
+`avg_duration`, `failure_rate`, `slow_rate(threshold)`는 total_count가 0일 경우 None입니다.
 
 ---
 

@@ -35,31 +35,31 @@ class Signal:
 
 ## 동기 vs 비동기 {#sync-vs-async}
 
-### 동기 Listener (IListener)
+### 동기 Listener (Listener)
 
 `CircuitBreaker` 및 `AsyncCircuitBreaker` 모두에서 사용할 수 있습니다.
 
 ```python
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 
-class CustomListener(IListener):
+class CustomListener(Listener):
     def __call__(self, signal: Signal) -> None:
         print(f"{signal.circuit_name}: {signal.old_state} → {signal.new_state}")
 ```
 
 !!! warning "주의"
-    `AsyncCircuitBreaker`와 함께 동기 Listener를 사용할 때, 이벤트 루프를 차단하는 블로킹 I/O 작업(네트워크 호출 등)을 피하십시오. I/O가 필요한 작업에는 `IAsyncListener`를 사용하십시오.
+    `AsyncCircuitBreaker`와 함께 동기 Listener를 사용할 때, 이벤트 루프를 차단하는 블로킹 I/O 작업(네트워크 호출 등)을 피하십시오. I/O가 필요한 작업에는 `AsyncListener`를 사용하십시오.
 
-### 비동기 Listener (IAsyncListener)
+### 비동기 Listener (AsyncListener)
 
 `AsyncCircuitBreaker`에서만 사용할 수 있습니다.
 
 ```python
-from fluxgate.interfaces import IAsyncListener
+from fluxgate.listeners import AsyncListener
 from fluxgate.signal import Signal
 
-class CustomAsyncListener(IAsyncListener):
+class CustomAsyncListener(AsyncListener):
     async def __call__(self, signal: Signal) -> None:
         await send_notification(signal)
 ```
@@ -117,11 +117,11 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ### 동기 Listener
 
 ```python
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
-class DatabaseListener(IListener):
+class DatabaseListener(Listener):
     def __init__(self, db_connection):
         self.db = db_connection
 
@@ -137,10 +137,10 @@ class DatabaseListener(IListener):
 
 ```python
 import httpx
-from fluxgate.interfaces import IAsyncListener
+from fluxgate.listeners import AsyncListener
 from fluxgate.signal import Signal
 
-class WebhookListener(IAsyncListener):
+class WebhookListener(AsyncListener):
     def __init__(self, webhook_url: str):
         self.url = webhook_url
         self.client = httpx.AsyncClient()

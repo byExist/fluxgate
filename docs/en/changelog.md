@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026.05.28
+
+### Breaking Changes
+
+- **`SlowRate` now owns its threshold**: `SlowRate(ratio)` is replaced by `SlowRate(ratio, threshold)`. The "slow" duration is no longer a global property of the breaker; each `SlowRate` instance declares the threshold it cares about, so several can coexist with different thresholds.
+- **`slow_threshold` parameter removed** from `CircuitBreaker` and `AsyncCircuitBreaker`. Move the value into each `SlowRate` instance.
+- **Default tripper no longer includes `SlowRate`**: The default became `MinRequests(100) & FailureRate(0.5)`. Previously the default tripper included `SlowRate(1.0)` paired with `slow_threshold=60.0`, which was effectively disabled (it required 100% of calls to exceed 60s). If you want slow-call detection, add `SlowRate(ratio, threshold=...)` explicitly.
+- **`Metric.slow_count: int` replaced by `slow_counts: Mapping[float, int]`** (per-threshold counters). The previous `Metric.slow_rate` property is now the method `Metric.slow_rate(threshold)`.
+- **`Record.is_slow` removed; `Record.slow_at: tuple[float, ...]` added**: each record carries the set of thresholds it exceeded (computed by the producer, typically the circuit breaker on the call hot path). Windows simply aggregate counters keyed by these values.
+- Slow-call classification now uses `>=` (a duration equal to the threshold counts as slow). The previous `slow_threshold` parameter used `>`.
+- **Component interfaces are now abstract base classes (`abc.ABC`)**: `fluxgate.interfaces` is removed. `IWindow`, `ITracker`, `ITripper`, `IRetry`, `IPermit`, `IListener`, `IAsyncListener` Protocols are replaced by ABCs `Window`, `Tracker`, `Tripper`, `Retry`, `Permit`, `Listener`, `AsyncListener` defined in their respective modules (`fluxgate.windows`, `fluxgate.trackers`, ..., `fluxgate.listeners`). The `TripperBase`/`TrackerBase`/`RetryBase` helpers are gone; their names became the base classes themselves. Instantiating an ABC directly raises `TypeError` immediately, so misuse (`CircuitBreaker(retry=Retry())`) fails fast at construction time instead of on the first call.
+- **`Tripper` is iterable**: composite trippers (`_And`/`_Or`) yield from their children, leaves yield themselves. The circuit breaker uses this to discover `SlowRate` thresholds inside the tripper tree.
+
+**Migration:**
+
+```python
+# Before (v0.6.x)
+from fluxgate.interfaces import IListener
+class MyListener(IListener):
+    def __call__(self, signal): ...
+
+cb = CircuitBreaker(
+    name="api",
+    tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3)),
+    slow_threshold=1.0,
+)
+
+# After (v0.7.0)
+from fluxgate.listeners import Listener
+class MyListener(Listener):
+    def __call__(self, signal): ...
+
+cb = CircuitBreaker(
+    name="api",
+    tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
+)
+```
+
+Custom `Window` implementations need no new methods. To support `SlowRate`, aggregate `record.slow_at` into per-threshold counters in your `record()` and surface them on `Metric.slow_counts`.
+
 ## [0.6.1] - 2026.05.27
 
 ### Fixed

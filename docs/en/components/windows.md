@@ -119,10 +119,10 @@ print(f"Average duration: {metric.avg_duration}")
 - `total_count`: Total number of calls recorded in the window.
 - `failure_count`: Number of calls tracked as failures.
 - `total_duration`: Sum of the durations of all calls.
-- `slow_count`: Number of calls that exceeded the `slow_threshold`.
+- `slow_counts`: A mapping (`dict[float, int]`) of slow-call counters keyed by each registered `SlowRate` threshold.
 - `avg_duration`: The average response time (`total_duration / total_count`).
 - `failure_rate`: The ratio of failed calls (`failure_count / total_count`).
-- `slow_rate`: The ratio of slow calls (`slow_count / total_count`).
+- `slow_rate(threshold)`: The ratio of slow calls for the given threshold.
 
 ---
 

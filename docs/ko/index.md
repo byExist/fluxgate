@@ -50,10 +50,9 @@ def call_payment_api(amount: float):
 |---|---|
 | `window` | `CountWindow(100)` |
 | `tracker` | `All()` |
-| `tripper` | `MinRequests(100) & (FailureRate(0.5) \| SlowRate(1.0))` |
+| `tripper` | `MinRequests(100) & FailureRate(0.5)` |
 | `retry` | `Cooldown(60.0)` |
 | `permit` | `RampUp(0.0, 1.0, 60.0)` |
-| `slow_threshold` | `60.0` |
 
 ### 작동 방식
 

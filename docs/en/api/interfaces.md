@@ -4,16 +4,16 @@ This page documents the core interfaces that define the behavior of Fluxgate's c
 
 ---
 
-::: fluxgate.interfaces.IWindow
+::: fluxgate.windows.Window
 
-::: fluxgate.interfaces.ITracker
+::: fluxgate.trackers.Tracker
 
-::: fluxgate.interfaces.ITripper
+::: fluxgate.trippers.Tripper
 
-::: fluxgate.interfaces.IRetry
+::: fluxgate.retries.Retry
 
-::: fluxgate.interfaces.IPermit
+::: fluxgate.permits.Permit
 
-::: fluxgate.interfaces.IListener
+::: fluxgate.listeners.Listener
 
-::: fluxgate.interfaces.IAsyncListener
+::: fluxgate.listeners.AsyncListener

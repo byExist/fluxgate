@@ -128,10 +128,9 @@ cb = CircuitBreaker(
     name="api",
     window=TimeWindow(size=60),  # 최근 60초 동안의 호출 추적
     tracker=TypeOf(ConnectionError, TimeoutError),
-    tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.8)),
+    tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.8, threshold=2.0)),
     retry=Backoff(initial=10.0, multiplier=2.0, max_duration=300.0),
     permit=RampUp(initial=0.1, final=0.5, duration=60.0),
-    slow_threshold=2.0,  # 2초 이상 걸리면 느린 호출로 간주
 )
 ```
 

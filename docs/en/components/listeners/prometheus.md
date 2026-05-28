@@ -183,11 +183,11 @@ Here are some examples of how you could visualize these metrics in a Grafana das
 
 ## Custom Metrics {#custom-metrics}
 
-If you need to export additional custom metrics, you can create your own listener by implementing the `IListener` interface.
+If you need to export additional custom metrics, you can create your own listener by implementing the `Listener` interface.
 
 ```python
 from prometheus_client import Counter
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
@@ -198,7 +198,7 @@ OPEN_TRANSITIONS = Counter(
     ['circuit_name']
 )
 
-class CustomPrometheusListener(IListener):
+class CustomPrometheusListener(Listener):
     def __call__(self, signal: Signal) -> None:
         if signal.new_state == StateEnum.OPEN:
             OPEN_TRANSITIONS.labels(circuit_name=signal.circuit_name).inc()

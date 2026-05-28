@@ -213,7 +213,7 @@ print(f"Current metrics: {info.metrics}")
 # State: closed
 # Last state change: 1234567890.123
 # Reopens at: 0
-# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_count=3)
+# Current metrics: Metric(total_count=100, failure_count=5, total_duration=45.2, slow_counts={1.0: 3})
 ```
 
 ## Manual Control {#manual-control}
@@ -320,8 +320,8 @@ payment_cb = CircuitBreaker(
         FailureStreak(5) |
         # Statistical trip based on failure/slow rates once enough data is collected.
         (MinRequests(20) & (
-            (Closed() & (FailureRate(0.6) | SlowRate(0.3))) |
-            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2)))
+            (Closed() & (FailureRate(0.6) | SlowRate(0.3, threshold=3.0))) |
+            (HalfOpened() & (FailureRate(0.5) | SlowRate(0.2, threshold=3.0)))
         ))
     ),
     retry=Backoff(
@@ -335,7 +335,6 @@ payment_cb = CircuitBreaker(
         final=0.5,        # Gradually increase to 50%.
         duration=60.0     # Ramp up over 60 seconds.
     ),
-    slow_threshold=3.0,  # Mark any call over 3 seconds as slow.
     listeners=[LogListener(), PrometheusListener()],
 )
 

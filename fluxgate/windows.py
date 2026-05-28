@@ -1,28 +1,49 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
 
-from fluxgate.interfaces import IWindow
 from fluxgate.metric import Record, Metric
 
-__all__ = ["CountWindow", "TimeWindow"]
+__all__ = ["Window", "CountWindow", "TimeWindow"]
 
 
-class CountWindow(IWindow):
+def _empty_slow_counts() -> dict[float, int]:
+    return {}
+
+
+class Window(ABC):
+    """Base class for sliding windows over recent call records.
+
+    Subclasses must override ``record``, ``get_metric``, and ``reset``.
+    """
+
+    @abstractmethod
+    def record(self, record: Record) -> None: ...
+
+    @abstractmethod
+    def get_metric(self) -> Metric: ...
+
+    @abstractmethod
+    def reset(self) -> None: ...
+
+
+class CountWindow(Window):
     """Count-based sliding window for tracking recent call metrics.
 
     Maintains a fixed-size sliding window that keeps the most recent N calls.
     When the window is full, the oldest record is evicted when a new one arrives.
 
+    Per-threshold slow-call counters are populated from `record.slow_at` — the
+    set of thresholds the call exceeded, decided by the producer (typically
+    the circuit breaker). The window itself does not need to know which
+    thresholds are active.
+
     Examples:
-        >>> window = CountWindow(size=100)  # Track last 100 calls
-        >>>
-        >>> window.record(Record(success=True, duration=0.5))
-        >>>
+        >>> window = CountWindow(size=100)
+        >>> window.record(Record(success=True, duration=0.5, slow_at=()))
         >>> metric = window.get_metric()
-        >>> print(metric.total_count)
-        1
 
     Args:
         size: Maximum number of calls to track in the window
@@ -34,16 +55,9 @@ class CountWindow(IWindow):
         self._total_count = 0
         self._total_failure_count = 0
         self._total_duration = 0.0
-        self._slow_call_count = 0
+        self._slow_counts: dict[float, int] = {}
 
     def record(self, record: Record) -> None:
-        """Add a call record to the window.
-
-        If window is full, evicts the oldest record before adding the new one.
-
-        Args:
-            record: Call result to record
-        """
         if len(self._records) == self._max_size:
             evicted = self._records.popleft()
             self._evict(evicted)
@@ -54,48 +68,40 @@ class CountWindow(IWindow):
         self._total_count += 1
         self._total_duration += record.duration
         self._total_failure_count += 1 if not record.success else 0
-        self._slow_call_count += 1 if record.is_slow else 0
+        for t in record.slow_at:
+            self._slow_counts[t] = self._slow_counts.get(t, 0) + 1
 
     def _evict(self, evicted: Record) -> None:
         self._total_count -= 1
         self._total_failure_count -= 1 if not evicted.success else 0
         self._total_duration -= evicted.duration
-        self._slow_call_count -= 1 if evicted.is_slow else 0
+        for t in evicted.slow_at:
+            self._slow_counts[t] -= 1
 
     def get_metric(self) -> Metric:
-        """Get aggregated metrics for all records in the window.
-
-        Returns:
-            Aggregated metrics (counts, durations)
-        """
         return Metric(
             total_count=self._total_count,
             failure_count=self._total_failure_count,
             total_duration=self._total_duration,
-            slow_count=self._slow_call_count,
+            slow_counts=dict(self._slow_counts),
         )
 
     def reset(self) -> None:
-        """Clear all records and reset metrics to zero."""
         self._records.clear()
         self._total_count = 0
         self._total_failure_count = 0
         self._total_duration = 0.0
-        self._slow_call_count = 0
+        self._slow_counts.clear()
 
 
-class TimeWindow(IWindow):
+class TimeWindow(Window):
     """Time-based sliding window for tracking metrics over a time period.
 
     Divides time into fixed buckets (1 second each) and tracks metrics per bucket.
     When a bucket's time period expires, it is reset and reused for the new time.
 
-    Examples:
-        >>> window = TimeWindow(size=60)  # Track last 60 seconds
-        >>>
-        >>> window.record(Record(success=True, duration=0.5))
-        >>>
-        >>> metric = window.get_metric()
+    Per-threshold slow-call counters are populated from `record.slow_at`, just
+    like `CountWindow`.
 
     Args:
         size: Number of seconds to track (window size in seconds)
@@ -110,19 +116,20 @@ class TimeWindow(IWindow):
         sec_count: int = field(default=0)
         sec_failure_count: int = field(default=0)
         sec_total_duration: float = field(default=0.0)
-        sec_slow_call_count: int = field(default=0)
+        sec_slow_counts: dict[float, int] = field(default_factory=_empty_slow_counts)
 
         def admit(self, record: Record) -> None:
             self.sec_count += 1
             self.sec_failure_count += 1 if not record.success else 0
             self.sec_total_duration += record.duration
-            self.sec_slow_call_count += 1 if record.is_slow else 0
+            for t in record.slow_at:
+                self.sec_slow_counts[t] = self.sec_slow_counts.get(t, 0) + 1
 
         def reset(self) -> None:
             self.sec_count = 0
             self.sec_failure_count = 0
             self.sec_total_duration = 0.0
-            self.sec_slow_call_count = 0
+            self.sec_slow_counts.clear()
 
     def __init__(self, size: int) -> None:
         self._size = size
@@ -131,20 +138,22 @@ class TimeWindow(IWindow):
         self._total_count = 0
         self._total_failure_count = 0
         self._total_duration = 0.0
-        self._slow_call_count = 0
+        self._slow_counts: dict[float, int] = {}
 
     def _admit(self, record: Record, bucket: Bucket) -> None:
         self._total_count += 1
         self._total_failure_count += 1 if not record.success else 0
         self._total_duration += record.duration
-        self._slow_call_count += 1 if record.is_slow else 0
+        for t in record.slow_at:
+            self._slow_counts[t] = self._slow_counts.get(t, 0) + 1
         bucket.admit(record)
 
     def _evict(self, evicted: Bucket) -> None:
         self._total_count -= evicted.sec_count
         self._total_failure_count -= evicted.sec_failure_count
         self._total_duration -= evicted.sec_total_duration
-        self._slow_call_count -= evicted.sec_slow_call_count
+        for t, count in evicted.sec_slow_counts.items():
+            self._slow_counts[t] -= count
         evicted.reset()
 
     def record(self, record: Record) -> None:
@@ -164,7 +173,7 @@ class TimeWindow(IWindow):
             total_count=self._total_count,
             failure_count=self._total_failure_count,
             total_duration=self._total_duration,
-            slow_count=self._slow_call_count,
+            slow_counts=dict(self._slow_counts),
         )
 
     def reset(self) -> None:
@@ -174,4 +183,4 @@ class TimeWindow(IWindow):
         self._total_count = 0
         self._total_failure_count = 0
         self._total_duration = 0.0
-        self._slow_call_count = 0
+        self._slow_counts.clear()

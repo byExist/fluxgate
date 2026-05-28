@@ -1,79 +1,63 @@
 """Exception trackers for determining which exceptions to count as failures."""
 
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
 from typing import Callable
 
-from fluxgate.interfaces import ITracker
-
-__all__ = ["All", "TypeOf", "Custom"]
+__all__ = ["Tracker", "All", "TypeOf", "Custom"]
 
 
-class _And(ITracker):
-    def __init__(self, left: ITracker, right: ITracker) -> None:
+class Tracker(ABC):
+    """Base class for exception trackers.
+
+    Subclasses override ``__call__``. The ``&``/``|``/``~`` operators build
+    composite trackers automatically.
+    """
+
+    @abstractmethod
+    def __call__(self, exception: Exception) -> bool: ...
+
+    def __and__(self, other: Tracker) -> Tracker:
+        return _And(self, other)
+
+    def __or__(self, other: Tracker) -> Tracker:
+        return _Or(self, other)
+
+    def __invert__(self) -> Tracker:
+        return _Not(self)
+
+
+class _And(Tracker):
+    def __init__(self, left: Tracker, right: Tracker) -> None:
         self._lhs = left
         self._rhs = right
 
     def __call__(self, exception: Exception) -> bool:
         return self._lhs(exception) and self._rhs(exception)
 
-    def __and__(self, other: ITracker) -> ITracker:
-        return _And(self, other)
 
-    def __or__(self, other: ITracker) -> ITracker:
-        return _Or(self, other)
-
-    def __invert__(self) -> ITracker:
-        return _Not(self)
-
-
-class _Or(ITracker):
-    def __init__(self, left: ITracker, right: ITracker) -> None:
+class _Or(Tracker):
+    def __init__(self, left: Tracker, right: Tracker) -> None:
         self._lhs = left
         self._rhs = right
 
     def __call__(self, exception: Exception) -> bool:
         return self._lhs(exception) or self._rhs(exception)
 
-    def __and__(self, other: ITracker) -> ITracker:
-        return _And(self, other)
 
-    def __or__(self, other: ITracker) -> ITracker:
-        return _Or(self, other)
-
-    def __invert__(self) -> ITracker:
-        return _Not(self)
-
-
-class _Not(ITracker):
-    def __init__(self, predicate: ITracker) -> None:
+class _Not(Tracker):
+    def __init__(self, predicate: Tracker) -> None:
         self._predicate = predicate
 
     def __call__(self, exception: Exception) -> bool:
         return not self._predicate(exception)
 
-    def __and__(self, other: ITracker) -> ITracker:
-        return _And(self, other)
-
-    def __or__(self, other: ITracker) -> ITracker:
-        return _Or(self, other)
-
-    def __invert__(self) -> ITracker:
+    def __invert__(self) -> Tracker:
         return self._predicate
 
 
-class TrackerBase(ITracker):
-    """Base class for exception trackers."""
-
-    def __and__(self, other: ITracker) -> ITracker:
-        return _And(self, other)
-
-    def __or__(self, other: ITracker) -> ITracker:
-        return _Or(self, other)
-
-    def __invert__(self) -> ITracker:
-        return _Not(self)
-
-
-class All(TrackerBase):
+class All(Tracker):
     """Tracker that matches all exceptions.
 
     Always returns true for any exception, tracking all failures.
@@ -93,7 +77,7 @@ class All(TrackerBase):
         return True
 
 
-class TypeOf(TrackerBase):
+class TypeOf(Tracker):
     """Tracker that matches exceptions by type.
 
     Returns true if the exception is an instance of any of the specified types.
@@ -121,7 +105,7 @@ class TypeOf(TrackerBase):
         return isinstance(exception, self._types)
 
 
-class Custom(TrackerBase):
+class Custom(Tracker):
     """Tracker with custom exception matching logic.
 
     Allows arbitrary logic to determine if an exception should be tracked.

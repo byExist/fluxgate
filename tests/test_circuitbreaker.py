@@ -494,14 +494,6 @@ def test_default_tripper_50_percent_failure_rate():
     assert cb.info().state == StateEnum.OPEN.value
 
 
-def test_default_slow_threshold_is_60_seconds():
-    """Default slow_threshold is 60.0 seconds."""
-    cb = CircuitBreaker(name="test")
-
-    cb.call(success_func)
-    assert cb.info().metrics.slow_count == 0
-
-
 def test_failure_streak_tripper():
     """FailureStreak tripper opens circuit after N consecutive failures."""
     cb = CircuitBreaker(
@@ -751,7 +743,7 @@ async def test_async_listener_notification():
 
 
 async def test_async_listener_callable_class_notification():
-    """Callable class instances with async __call__ are awaited as IAsyncListener."""
+    """Callable class instances with async __call__ are awaited as AsyncListener."""
 
     class AsyncListener:
         def __init__(self) -> None:

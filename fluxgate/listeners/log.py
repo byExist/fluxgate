@@ -1,14 +1,14 @@
 import logging
 import time
 
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
 __all__ = ["LogListener"]
 
 
-class LogListener(IListener):
+class LogListener(Listener):
     """Listener that logs circuit breaker state transitions.
 
     Logs state changes using Python's standard logging module.

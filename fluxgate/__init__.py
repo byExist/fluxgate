@@ -2,22 +2,11 @@
 
 Examples:
     >>> from fluxgate import CircuitBreaker
-    >>> from fluxgate.windows import CountWindow
-    >>> from fluxgate.trackers import TypeOf
-    >>> from fluxgate.trippers import Closed, MinRequests, FailureRate
-    >>> from fluxgate.retries import Cooldown
-    >>> from fluxgate.permits import Random
-    >>> from fluxgate.listeners.log import LogListener
+    >>> from fluxgate.trippers import MinRequests, FailureRate, SlowRate
     >>>
     >>> cb = CircuitBreaker(
     ...     name="api",
-    ...     window=CountWindow(100),
-    ...     tracker=TypeOf(ConnectionError),
-    ...     tripper=Closed() & MinRequests(10) & FailureRate(0.5),
-    ...     retry=Cooldown(60.0),
-    ...     permit=Random(0.5),
-    ...     listeners=[LogListener()],
-    ...     slow_threshold=1.0,
+    ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
     ... )
 """
 

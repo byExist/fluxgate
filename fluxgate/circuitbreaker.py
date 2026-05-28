@@ -9,23 +9,15 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, Iterable, ParamSpec, TypeVar, overload
 
 from fluxgate.errors import CallNotPermittedError
-from fluxgate.interfaces import (
-    IListener,
-    IAsyncListener,
-    IPermit,
-    ITripper,
-    IRetry,
-    IWindow,
-    ITracker,
-)
+from fluxgate.listeners import AsyncListener, Listener
 from fluxgate.metric import Record, Metric
-from fluxgate.permits import RampUp
-from fluxgate.retries import Cooldown
+from fluxgate.permits import Permit, RampUp
+from fluxgate.retries import Cooldown, Retry
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
-from fluxgate.trackers import All
-from fluxgate.trippers import FailureRate, MinRequests, SlowRate
-from fluxgate.windows import CountWindow
+from fluxgate.trackers import All, Tracker
+from fluxgate.trippers import FailureRate, MinRequests, SlowRate, Tripper
+from fluxgate.windows import CountWindow, Window
 
 __all__ = [
     "CircuitBreaker",
@@ -53,6 +45,29 @@ class CircuitBreakerInfo:
     changed_at: float
     reopens: int
     metrics: Metric
+
+
+def _collect_slow_thresholds(tripper: Tripper) -> tuple[float, ...]:
+    """Walk a tripper tree and collect all SlowRate thresholds, deduplicated.
+
+    Any tripper subclassing ``Tripper`` is iterable (leaves yield themselves;
+    composites yield from children). Trippers that aren't iterable contribute
+    nothing.
+    """
+    try:
+        nodes = iter(tripper)
+    except TypeError:
+        return ()
+    seen: set[float] = set()
+    for node in nodes:
+        if isinstance(node, SlowRate):
+            seen.add(node.threshold)
+    return tuple(sorted(seen))
+
+
+def _classify_slow(duration: float, thresholds: tuple[float, ...]) -> tuple[float, ...]:
+    """Return the thresholds the call exceeded, preserving registration order."""
+    return tuple(t for t in thresholds if duration >= t)
 
 
 def _measure_duration(
@@ -90,10 +105,9 @@ class CircuitBreaker:
         window: Sliding window for metrics collection (default: CountWindow(100))
         tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
-            (default: MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0)))
+            (default: MinRequests(100) & FailureRate(0.5))
         retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
         permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
-        slow_threshold: Duration threshold in seconds to mark calls as slow (default: 60.0)
         listeners: Event listeners for state transitions (default: empty)
 
     Examples:
@@ -104,13 +118,12 @@ class CircuitBreaker:
         ... def call_api():
         ...     return requests.get("https://api.example.com")
 
-        Custom configuration:
+        Custom configuration with slow-call detection:
 
         >>> cb = CircuitBreaker(
         ...     name="payment_api",
         ...     tracker=TypeOf(ConnectionError),
-        ...     tripper=MinRequests(10) & FailureRate(0.5),
-        ...     slow_threshold=1.0,
+        ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
         ... )
 
     Note:
@@ -122,22 +135,21 @@ class CircuitBreaker:
     def __init__(
         self,
         name: str,
-        window: IWindow | None = None,
-        tracker: ITracker | None = None,
-        tripper: ITripper | None = None,
-        retry: IRetry | None = None,
-        permit: IPermit | None = None,
-        slow_threshold: float = 60.0,
-        listeners: Iterable[IListener] = (),
+        window: Window | None = None,
+        tracker: Tracker | None = None,
+        tripper: Tripper | None = None,
+        retry: Retry | None = None,
+        permit: Permit | None = None,
+        listeners: Iterable[Listener] = (),
     ) -> None:
         self._name = name
         self._window = window or CountWindow(100)
         self._tracker = tracker or All()
-        self._tripper = tripper or MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0))
+        self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
         self._retry = retry or Cooldown(60.0)
         self._permit = permit or RampUp(0.0, 1.0, 60.0)
         self._listeners = tuple(listeners)
-        self._slow_threshold = slow_threshold
+        self._slow_thresholds = _collect_slow_thresholds(self._tripper)
         self._changed_at = time.time()
         self._reopens = 0
         self._consecutive_failures = 0
@@ -162,9 +174,12 @@ class CircuitBreaker:
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                is_slow = duration > self.cb._slow_threshold
                 self.cb._window.record(
-                    Record(success=True, duration=duration, is_slow=is_slow)
+                    Record(
+                        success=True,
+                        duration=duration,
+                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
+                    )
                 )
                 self.cb._consecutive_failures = 0
                 return result
@@ -201,9 +216,12 @@ class CircuitBreaker:
                 )
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                is_slow = duration > self.cb._slow_threshold
                 self.cb._window.record(
-                    Record(success=True, duration=duration, is_slow=is_slow)
+                    Record(
+                        success=True,
+                        duration=duration,
+                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
+                    )
                 )
                 self.cb._consecutive_failures = 0
                 metric = self.cb._window.get_metric()
@@ -231,9 +249,12 @@ class CircuitBreaker:
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                is_slow = duration > self.cb._slow_threshold
                 self.cb._window.record(
-                    Record(success=True, duration=duration, is_slow=is_slow)
+                    Record(
+                        success=True,
+                        duration=duration,
+                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
+                    )
                 )
                 self.cb._consecutive_failures = 0
                 return result
@@ -468,10 +489,9 @@ class AsyncCircuitBreaker:
         window: Sliding window for metrics collection (default: CountWindow(100))
         tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
-            (default: MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0)))
+            (default: MinRequests(100) & FailureRate(0.5))
         retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
         permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
-        slow_threshold: Duration threshold in seconds to mark calls as slow (default: 60.0)
         max_half_open_calls: Maximum concurrent calls allowed in HALF_OPEN state (default: 10)
         listeners: Event listeners for state transitions (default: empty)
 
@@ -484,13 +504,12 @@ class AsyncCircuitBreaker:
         ...     async with httpx.AsyncClient() as client:
         ...         return await client.get("https://api.example.com")
 
-        Custom configuration:
+        Custom configuration with slow-call detection:
 
         >>> cb = AsyncCircuitBreaker(
         ...     name="payment_api",
         ...     tracker=TypeOf(httpx.ConnectError),
-        ...     tripper=MinRequests(10) & FailureRate(0.5),
-        ...     slow_threshold=1.0,
+        ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
         ... )
 
     Note:
@@ -501,23 +520,22 @@ class AsyncCircuitBreaker:
     def __init__(
         self,
         name: str,
-        window: IWindow | None = None,
-        tracker: ITracker | None = None,
-        tripper: ITripper | None = None,
-        retry: IRetry | None = None,
-        permit: IPermit | None = None,
-        slow_threshold: float = 60.0,
+        window: Window | None = None,
+        tracker: Tracker | None = None,
+        tripper: Tripper | None = None,
+        retry: Retry | None = None,
+        permit: Permit | None = None,
         max_half_open_calls: int = 10,
-        listeners: Iterable[IListener | IAsyncListener] = (),
+        listeners: Iterable[Listener | AsyncListener] = (),
     ) -> None:
         self._name = name
         self._window = window or CountWindow(100)
         self._tracker = tracker or All()
-        self._tripper = tripper or MinRequests(100) & (FailureRate(0.5) | SlowRate(1.0))
+        self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
         self._retry = retry or Cooldown(60.0)
         self._permit = permit or RampUp(0.0, 1.0, 60.0)
         self._listeners = tuple(listeners)
-        self._slow_threshold = slow_threshold
+        self._slow_thresholds = _collect_slow_thresholds(self._tripper)
         self._changed_at = time.time()
         self._reopens = 0
         self._consecutive_failures = 0
@@ -555,10 +573,13 @@ class AsyncCircuitBreaker:
         ) -> R:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
-                is_slow = duration > self.cb._slow_threshold
                 async with self.cb._window_lock:
                     self.cb._window.record(
-                        Record(success=True, duration=duration, is_slow=is_slow)
+                        Record(
+                            success=True,
+                            duration=duration,
+                            slow_at=_classify_slow(duration, self.cb._slow_thresholds),
+                        )
                     )
                     self.cb._consecutive_failures = 0
                 return result
@@ -608,10 +629,15 @@ class AsyncCircuitBreaker:
                     result, duration = await _async_measure_duration(
                         func, *args, **kwargs
                     )
-                    is_slow = duration > self.cb._slow_threshold
                     async with self.cb._window_lock:
                         self.cb._window.record(
-                            Record(success=True, duration=duration, is_slow=is_slow)
+                            Record(
+                                success=True,
+                                duration=duration,
+                                slow_at=_classify_slow(
+                                    duration, self.cb._slow_thresholds
+                                ),
+                            )
                         )
                         self.cb._consecutive_failures = 0
                         metric = self.cb._window.get_metric()
@@ -639,10 +665,13 @@ class AsyncCircuitBreaker:
         ) -> R:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
-                is_slow = duration > self.cb._slow_threshold
                 async with self.cb._window_lock:
                     self.cb._window.record(
-                        Record(success=True, duration=duration, is_slow=is_slow)
+                        Record(
+                            success=True,
+                            duration=duration,
+                            slow_at=_classify_slow(duration, self.cb._slow_thresholds),
+                        )
                     )
                     self.cb._consecutive_failures = 0
                 return result
@@ -894,7 +923,7 @@ class AsyncCircuitBreaker:
         await self._notify(signal)
 
     async def _notify(self, signal: Signal) -> None:
-        async def _safe_call(listener: IListener | IAsyncListener) -> None:
+        async def _safe_call(listener: Listener | AsyncListener) -> None:
             try:
                 result = listener(signal)
                 if inspect.isawaitable(result):

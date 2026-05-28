@@ -1,4 +1,4 @@
-from fluxgate.interfaces import IListener
+from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 from prometheus_client import Counter, Gauge
@@ -19,7 +19,7 @@ _STATE_GAUGE.clear()
 _STATE_TRANSITION.clear()
 
 
-class PrometheusListener(IListener):
+class PrometheusListener(Listener):
     """Listener that exports circuit breaker metrics to Prometheus.
 
     Exports two metrics:

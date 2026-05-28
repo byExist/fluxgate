@@ -1,20 +1,24 @@
 """Retry strategies for transitioning from OPEN to HALF_OPEN state."""
 
 import time
+from abc import ABC, abstractmethod
 from random import uniform
 
-from fluxgate.interfaces import IRetry
-
-__all__ = ["Always", "Never", "Cooldown", "Backoff"]
+__all__ = ["Retry", "Always", "Never", "Cooldown", "Backoff"]
 
 
-class RetryBase(IRetry):
-    """Base class for retry strategies."""
+class Retry(ABC):
+    """Base class for retry strategies.
 
-    pass
+    Subclasses override ``__call__`` to decide whether the breaker should
+    transition from ``OPEN`` to ``HALF_OPEN`` at the current moment.
+    """
+
+    @abstractmethod
+    def __call__(self, changed_at: float, reopens: int) -> bool: ...
 
 
-class Always(RetryBase):
+class Always(Retry):
     """Retry strategy that always allows transition to HALF_OPEN.
 
     Circuit immediately attempts to recover on every call.
@@ -27,7 +31,7 @@ class Always(RetryBase):
         return True
 
 
-class Never(RetryBase):
+class Never(Retry):
     """Retry strategy that never allows transition to HALF_OPEN.
 
     Circuit stays OPEN indefinitely until manually reset.
@@ -40,7 +44,7 @@ class Never(RetryBase):
         return False
 
 
-class Cooldown(RetryBase):
+class Cooldown(Retry):
     """Retry strategy with fixed cooldown period.
 
     Allows transition to HALF_OPEN after a fixed duration has elapsed.
@@ -76,7 +80,7 @@ class Cooldown(RetryBase):
         return elapsed >= actual_duration
 
 
-class Backoff(RetryBase):
+class Backoff(Retry):
     """Retry strategy with exponential backoff.
 
     Wait time increases exponentially with each reopen: initial * (multiplier ^ reopens).
@@ -119,7 +123,6 @@ class Backoff(RetryBase):
         self._jitter_ratio = jitter_ratio
 
     def __call__(self, changed_at: float, reopens: int) -> bool:
-        # Calculate wait duration based on reopens count
         duration = min(self._initial * (self._multiplier**reopens), self._max)
 
         if self._jitter_ratio > 0:

@@ -3,7 +3,7 @@ from typing import Any, ClassVar, Optional, TypedDict
 
 import httpx
 
-from fluxgate.interfaces import IListener, IAsyncListener
+from fluxgate.listeners import AsyncListener, Listener
 from fluxgate.signal import Signal
 from fluxgate.state import StateEnum
 
@@ -95,7 +95,7 @@ def _build_message(
     return payload
 
 
-class SlackListener(IListener):
+class SlackListener(Listener):
     """Listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.
@@ -187,7 +187,7 @@ class SlackListener(IListener):
             self._open_threads.pop(signal.circuit_name, None)
 
 
-class AsyncSlackListener(IAsyncListener):
+class AsyncSlackListener(AsyncListener):
     """Async listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.

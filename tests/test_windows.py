@@ -43,31 +43,46 @@ def test_count_window_fifo_eviction():
 
 
 def test_count_window_slow_call_tracking():
-    """Slow calls are tracked and evicted correctly."""
+    """Per-threshold slow counters are populated from record.slow_at and decay on eviction."""
     window = CountWindow(size=3)
 
-    window.record(Record(success=True, duration=2.0, is_slow=True))  # Will be evicted
-    window.record(Record(success=True, duration=0.5, is_slow=False))
-    window.record(Record(success=True, duration=3.5, is_slow=True))
+    window.record(
+        Record(success=True, duration=2.0, slow_at=(1.0,))
+    )  # slow, will be evicted
+    window.record(Record(success=True, duration=0.5, slow_at=()))  # not slow
+    window.record(Record(success=True, duration=3.5, slow_at=(1.0,)))  # slow
 
     metric = window.get_metric()
     assert metric.total_count == 3
-    assert metric.slow_count == 2
+    assert metric.slow_counts[1.0] == 2
 
     # Evict the first slow call
-    window.record(Record(success=True, duration=0.1, is_slow=False))
+    window.record(Record(success=True, duration=0.1, slow_at=()))
 
     metric = window.get_metric()
-    assert metric.slow_count == 1
+    assert metric.slow_counts[1.0] == 1
+
+
+def test_count_window_multiple_slow_thresholds():
+    """Window keeps independent counters per threshold based on record.slow_at."""
+    window = CountWindow(size=5)
+
+    window.record(Record(success=True, duration=0.5, slow_at=()))
+    window.record(Record(success=True, duration=1.5, slow_at=(1.0,)))
+    window.record(Record(success=True, duration=4.0, slow_at=(1.0, 3.0)))
+
+    metric = window.get_metric()
+    assert metric.slow_counts[1.0] == 2
+    assert metric.slow_counts[3.0] == 1
 
 
 def test_count_window_reset():
-    """Reset clears all records and metrics."""
+    """Reset clears all records and metrics, including slow counters."""
     window = CountWindow(size=10)
 
-    window.record(Record(success=True, duration=0.5))
-    window.record(Record(success=False, duration=1.0))
-    window.record(Record(success=True, duration=0.3, is_slow=True))
+    window.record(Record(success=True, duration=0.5, slow_at=()))
+    window.record(Record(success=False, duration=1.0, slow_at=()))
+    window.record(Record(success=True, duration=3.0, slow_at=(1.0,)))
 
     window.reset()
 
@@ -75,7 +90,7 @@ def test_count_window_reset():
     assert metric.total_count == 0
     assert metric.failure_count == 0
     assert metric.total_duration == 0.0
-    assert metric.slow_count == 0
+    assert metric.slow_counts == {}
 
 
 def test_count_window_size_one():
@@ -145,15 +160,15 @@ def test_time_window_bucket_wraparound_eviction():
     assert metric.failure_count == 1
 
     # Wraparound: timestamp base_time+3 reuses bucket from base_time
-    r4 = Record(success=True, duration=0.2, is_slow=True)
+    r4 = Record(success=True, duration=2.0, slow_at=(1.0,))
     object.__setattr__(r4, "timestamp", base_time + 3)
     window.record(r4)
 
     metric = window.get_metric()
     assert metric.total_count == 3  # r1 evicted, r2, r3, r4 remain
     assert metric.failure_count == 0  # r1's failure evicted
-    assert metric.slow_count == 1  # r4's slow call tracked
-    assert isclose(metric.total_duration, 1.0)
+    assert metric.slow_counts[1.0] == 1  # r4's slow call tracked
+    assert isclose(metric.total_duration, 2.8)
 
 
 def test_time_window_bucket_reuse_across_time():
@@ -201,36 +216,36 @@ def test_time_window_bucket_reuse_across_time():
 
 
 def test_time_window_slow_call_tracking():
-    """Slow calls are tracked correctly in time windows."""
+    """Per-threshold slow counters are populated from record.slow_at."""
     window = TimeWindow(size=60)
     import time
 
     base_time = time.time()
 
-    r1 = Record(success=True, duration=0.5, is_slow=False)
+    r1 = Record(success=True, duration=0.5, slow_at=())
     object.__setattr__(r1, "timestamp", base_time)
     window.record(r1)
 
-    r2 = Record(success=True, duration=2.0, is_slow=True)
+    r2 = Record(success=True, duration=2.0, slow_at=(1.0,))
     object.__setattr__(r2, "timestamp", base_time)
     window.record(r2)
 
-    r3 = Record(success=True, duration=3.5, is_slow=True)
+    r3 = Record(success=True, duration=3.5, slow_at=(1.0,))
     object.__setattr__(r3, "timestamp", base_time)
     window.record(r3)
 
     metric = window.get_metric()
-    assert metric.slow_count == 2
+    assert metric.slow_counts[1.0] == 2
 
 
 def test_time_window_reset():
-    """Reset clears all buckets and metrics."""
+    """Reset clears all buckets and metrics, including slow counters."""
     window = TimeWindow(size=60)
     import time
 
     base_time = time.time()
 
-    r1 = Record(success=True, duration=0.5)
+    r1 = Record(success=True, duration=0.5, slow_at=(1.0,))
     object.__setattr__(r1, "timestamp", base_time)
     window.record(r1)
 
@@ -244,4 +259,4 @@ def test_time_window_reset():
     assert metric.total_count == 0
     assert metric.failure_count == 0
     assert metric.total_duration == 0.0
-    assert metric.slow_count == 0
+    assert metric.slow_counts == {}

@@ -1,14 +1,24 @@
 """Permit strategies for controlling call admission in HALF_OPEN state."""
 
+from abc import ABC, abstractmethod
 from random import random
 from time import time
 
-from fluxgate.interfaces import IPermit
-
-__all__ = ["All", "Random", "RampUp"]
+__all__ = ["Permit", "All", "Random", "RampUp"]
 
 
-class All(IPermit):
+class Permit(ABC):
+    """Base class for permit strategies.
+
+    Subclasses override ``__call__`` to decide whether a probe call should
+    be admitted while the breaker is in ``HALF_OPEN``.
+    """
+
+    @abstractmethod
+    def __call__(self, changed_at: float) -> bool: ...
+
+
+class All(Permit):
     """Permit strategy that always allows calls.
 
     Useful for testing or when you want all calls to pass through
@@ -22,7 +32,7 @@ class All(IPermit):
         return True
 
 
-class Random(IPermit):
+class Random(Permit):
     """Permit strategy with random sampling in HALF_OPEN state.
 
     Allows calls randomly based on a fixed probability ratio.
@@ -45,7 +55,7 @@ class Random(IPermit):
         return random() < self._ratio
 
 
-class RampUp(IPermit):
+class RampUp(Permit):
     """Permit strategy that gradually increases allowed traffic over time.
 
     Starts with a low permit ratio and gradually increases to the final ratio

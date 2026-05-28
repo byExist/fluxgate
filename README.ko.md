@@ -26,7 +26,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate, FailureStreak
 
 cb = CircuitBreaker(
-    name="payment_api",
     tripper=FailureStreak(5) | (MinRequests(20) & (
         FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
     )),
@@ -51,7 +50,6 @@ from fluxgate import AsyncCircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = AsyncCircuitBreaker(
-    name="api",
     tracker=TypeOf(httpx.ConnectError, httpx.TimeoutException),
     max_half_open_calls=10,
 )
@@ -122,7 +120,7 @@ tripper = FailureStreak(5) | (MinRequests(20) & (
 
 ## 모니터링
 
-`listeners=...` 옵션으로 리스너를 전달하세요 — 내장: `LogListener`, `PrometheusListener` (옵션), `SlackListener` (옵션). 각 상태 전환은 `Signal` 이벤트를 발생시키며, `AsyncCircuitBreaker`는 `AsyncListener`도 받습니다.
+`listeners=...` 옵션으로 리스너를 전달하세요 — 내장: `LogListener`, `PrometheusListener` (옵션), `SlackListener` (옵션). 각 리스너는 로그/Prometheus 라벨/Slack 메시지에서 사용되는 `name=` 식별자를 받습니다. 상태 전환은 `Signal` 이벤트를 발생시키며, `AsyncCircuitBreaker`는 `AsyncListener`도 받습니다.
 
 ## 문서
 

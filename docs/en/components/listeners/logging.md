@@ -20,9 +20,8 @@ logging.basicConfig(
 )
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
-    listeners=[LogListener()],
+    listeners=[LogListener(name="payment_api")],
 )
 ```
 
@@ -50,9 +49,8 @@ cb_logger = logging.getLogger("myapp.circuit_breaker")
 cb_logger.setLevel(logging.INFO)
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
-    listeners=[LogListener(logger=cb_logger)],
+    listeners=[LogListener(name="payment_api", logger=cb_logger)],
 )
 ```
 
@@ -76,9 +74,8 @@ level_map = {
 }
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
-    listeners=[LogListener(level_map=level_map)],
+    listeners=[LogListener(name="payment_api", level_map=level_map)],
 )
 ```
 
@@ -86,7 +83,7 @@ You can also combine both options:
 
 ```python
 cb_logger = logging.getLogger("myapp.circuit_breaker")
-listener = LogListener(logger=cb_logger, level_map=level_map)
+listener = LogListener(name="payment_api", logger=cb_logger, level_map=level_map)
 ```
 
 ---
@@ -102,13 +99,14 @@ from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
 
 class JsonLogListener(Listener):
-    def __init__(self, logger):
+    def __init__(self, name, logger):
+        self.name = name
         self.logger = logger
 
     def __call__(self, signal: Signal) -> None:
         log_data = {
             "message": "Circuit breaker transition",
-            "circuit_name": signal.circuit_name,
+            "circuit_name": self.name,
             "previous_state": signal.old_state.value,
             "current_state": signal.new_state.value,
             "timestamp_utc": signal.timestamp,
@@ -117,7 +115,7 @@ class JsonLogListener(Listener):
 
 # Usage
 json_logger = logging.getLogger("json_logger")
-cb_listener = JsonLogListener(json_logger)
+cb_listener = JsonLogListener("payment_api", json_logger)
 ```
 
 ## Configuring File Logging {#file-logging}
@@ -146,7 +144,7 @@ root_logger.addHandler(handler)
 root_logger.setLevel(logging.INFO)
 
 # LogListener will now write to the file via the root logger.
-log_listener = LogListener()
+log_listener = LogListener(name="payment_api")
 ```
 
 ## Next Steps {#next-steps}

@@ -23,7 +23,7 @@ from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
 
 # Not generally recommended.
-cb = CircuitBreaker(name="api", retry=Always(), ...)
+cb = CircuitBreaker(retry=Always(), ...)
 ```
 
 ---
@@ -36,7 +36,7 @@ This strategy keeps the circuit in the `OPEN` state indefinitely until it is man
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Never
 
-cb = CircuitBreaker(name="api", retry=Never(), ...)
+cb = CircuitBreaker(retry=Never(), ...)
 
 # An operator must manually reset the breaker after fixing the service.
 cb.reset()
@@ -56,7 +56,6 @@ from fluxgate.retries import Cooldown
 
 # Wait for 60 seconds before the first recovery attempt.
 cb = CircuitBreaker(
-    name="api",
     retry=Cooldown(duration=60.0),
     ...
 )
@@ -77,7 +76,6 @@ from fluxgate.retries import Backoff
 # The wait time starts at 10s, doubles after each failed recovery attempt,
 # and is capped at a maximum of 300s.
 cb = CircuitBreaker(
-    name="api",
     retry=Backoff(
         initial=10.0,
         multiplier=2.0,

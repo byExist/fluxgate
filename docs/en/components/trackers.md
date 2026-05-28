@@ -20,7 +20,6 @@ from fluxgate.trackers import All
 
 # Any exception raised by the decorated function will be tracked as a failure.
 cb = CircuitBreaker(
-    name="api",
     tracker=All(),
     ...
 )
@@ -39,7 +38,6 @@ from fluxgate.trackers import TypeOf
 # Track only network-related exceptions as failures.
 # Other exceptions (e.g., ValueError) will be ignored by the breaker.
 cb = CircuitBreaker(
-    name="external_api",
     tracker=TypeOf(ConnectionError, TimeoutError),
     ...
 )
@@ -63,7 +61,6 @@ def is_server_error(e: Exception) -> bool:
     return False
 
 cb = CircuitBreaker(
-    name="http_api",
     tracker=Custom(is_server_error),
     ...
 )

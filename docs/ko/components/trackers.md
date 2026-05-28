@@ -20,7 +20,6 @@ from fluxgate.trackers import All
 
 # 데코레이터가 적용된 함수에서 발생하는 모든 예외는 실패로 추적됩니다.
 cb = CircuitBreaker(
-    name="api",
     tracker=All(),
     ...
 )
@@ -39,7 +38,6 @@ from fluxgate.trackers import TypeOf
 # 네트워크 관련 예외만 실패로 추적합니다.
 # 다른 예외(예: ValueError)는 Circuit Breaker 상태 전환 조건에서 활용되지 않습니다.
 cb = CircuitBreaker(
-    name="external_api",
     tracker=TypeOf(ConnectionError, TimeoutError),
     ...
 )
@@ -63,7 +61,6 @@ def is_server_error(e: Exception) -> bool:
     return False
 
 cb = CircuitBreaker(
-    name="http_api",
     tracker=Custom(is_server_error),
     ...
 )

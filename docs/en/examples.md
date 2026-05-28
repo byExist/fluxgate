@@ -21,7 +21,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = CircuitBreaker(
-    name="payment_api",
     tracker=TypeOf(httpx.HTTPError),  # Only track HTTP errors
 )
 
@@ -52,7 +51,6 @@ app = FastAPI()
 
 # A single circuit breaker for a critical external service.
 external_api_cb = AsyncCircuitBreaker(
-    name="external_product_api",
     tracker=TypeOf(httpx.HTTPError),
     retry=Cooldown(duration=30.0),  # Shorter cooldown for faster recovery
 )
@@ -98,7 +96,6 @@ from fluxgate.retries import Backoff
 # More conservative policy for the critical payment service.
 # FailureStreak provides fast protection during cold start before MinRequests is met.
 payment_cb = AsyncCircuitBreaker(
-    name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
     tripper=FailureStreak(5) | (MinRequests(20) & FailureRate(0.4)),
@@ -107,7 +104,6 @@ payment_cb = AsyncCircuitBreaker(
 
 # More aggressive policy for the less critical inventory service.
 inventory_cb = AsyncCircuitBreaker(
-    name="inventory_service",
     window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
     tripper=MinRequests(10) & FailureRate(0.6),
@@ -212,7 +208,6 @@ def is_retriable_server_error(e: Exception) -> bool:
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 cb = CircuitBreaker(
-    name="api_client",
     tracker=Custom(is_retriable_server_error),
     ...
 )
@@ -226,7 +221,6 @@ You can use `Closed()` and `HalfOpened()` trippers to create stricter rules for 
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
 cb = CircuitBreaker(
-    name="api",
     # Use different tripping conditions for the CLOSED and HALF_OPEN states.
     tripper=(
         (Closed() & MinRequests(20) & FailureRate(0.6)) |
@@ -250,12 +244,10 @@ def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
     """Creates a circuit breaker based on a predefined policy name."""
     if policy == "strict":
         return CircuitBreaker(
-            name=name,
             tripper=MinRequests(20) & FailureRate(0.4),
         )
     elif policy == "lenient":
         return CircuitBreaker(
-            name=name,
             window=CountWindow(50),
             tripper=MinRequests(10) & FailureRate(0.7),
             retry=Cooldown(30.0),

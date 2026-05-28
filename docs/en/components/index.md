@@ -107,7 +107,7 @@ Detect state transitions and notify external systems.
 ```python
 from fluxgate.listeners.log import LogListener
 
-listeners = [LogListener()]
+listeners = [LogListener(name="api")]
 cb = CircuitBreaker(..., listeners=listeners)
 ```
 
@@ -124,7 +124,6 @@ from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
-    name="api",
     window=TimeWindow(size=60),  # Track calls from last 60 seconds
     tracker=TypeOf(ConnectionError, TimeoutError),
     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.8, threshold=2.0)),

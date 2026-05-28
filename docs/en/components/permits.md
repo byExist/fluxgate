@@ -24,7 +24,6 @@ from fluxgate.permits import All
 
 # Allow all calls to pass through in the HALF_OPEN state.
 cb = CircuitBreaker(
-    name="api",
     permit=All(),
     ...
 )
@@ -51,7 +50,6 @@ from fluxgate.permits import Random
 
 # Allow approximately 50% of calls to pass through in the HALF_OPEN state.
 cb = CircuitBreaker(
-    name="api",
     permit=Random(ratio=0.5),
     ...
 )
@@ -73,7 +71,6 @@ from fluxgate.permits import RampUp
 
 # Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.
 cb = CircuitBreaker(
-    name="api",
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
     ...
 )
@@ -156,7 +153,6 @@ from fluxgate.permits import RampUp
 
 # A robust setup using Backoff and RampUp.
 cb = CircuitBreaker(
-    name="api",
     retry=Backoff(initial=10.0, multiplier=2.0),
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
     ...

@@ -42,7 +42,6 @@ Fluxgate uses a **failure rate over a sliding window**, which provides a much mo
 
     # Opens if the failure rate exceeds 50%
     cb = CircuitBreaker(
-        name="api",
         tripper=MinRequests(10) & FailureRate(0.5),
     )
     ```
@@ -83,7 +82,6 @@ Fluxgate can trip based on response time, not just exceptions. This is critical 
 
     # Trip when more than 30% of calls are slower than 1 second.
     cb = CircuitBreaker(
-        name="api",
         tripper=MinRequests(10) & SlowRate(0.3, threshold=1.0),
     )
     ```

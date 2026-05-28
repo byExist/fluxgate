@@ -82,7 +82,6 @@ from fluxgate.trippers import SlowRate
 
 # 호출의 30% 이상이 1초 이상 걸리면 트립됩니다.
 cb = CircuitBreaker(
-    name="api",
     tripper=SlowRate(0.3, threshold=1.0),
     ...
 )

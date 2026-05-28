@@ -35,7 +35,7 @@ stateDiagram-v2
 from fluxgate import CircuitBreaker
 
 # 기본값 사용: 100회 호출 후 50% 실패율에서 트립, 60초 쿨다운
-cb = CircuitBreaker("api")
+cb = CircuitBreaker()
 ```
 
 ### OPEN: 실패 상태 {#state-open}
@@ -78,7 +78,6 @@ from fluxgate.trippers import MinRequests, FailureRate
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
-    name="api",
     # 복구 테스트 중에는 더 엄격한 트립 조건을 사용합니다.
     tripper=MinRequests(5) & FailureRate(0.3),
     # 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
@@ -149,7 +148,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = CircuitBreaker(
-    name="payment_api",
     tracker=TypeOf(ConnectionError, TimeoutError),  # 이 오류만 추적
 )
 
@@ -184,7 +182,6 @@ from fluxgate import AsyncCircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = AsyncCircuitBreaker(
-    name="async_api",
     tracker=TypeOf(httpx.ConnectError),
     max_half_open_calls=5,  # HALF_OPEN 상태에서 동시 호출을 5개로 제한합니다.
 )
@@ -316,7 +313,6 @@ def is_retriable_error(e: Exception) -> bool:
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 payment_cb = CircuitBreaker(
-    name="payment_api",
     tracker=Custom(is_retriable_error),
     tripper=(
         # 5회 연속 실패 시 빠른 트립 (콜드 스타트 보호).
@@ -338,7 +334,7 @@ payment_cb = CircuitBreaker(
         final=0.5,        # 50%까지 점진적으로 증가시킵니다.
         duration=60.0     # 60초에 걸쳐 증가시킵니다.
     ),
-    listeners=[LogListener(), PrometheusListener()],
+    listeners=[LogListener(name="payment_api"), PrometheusListener(name="payment_api")],
 )
 
 @payment_cb

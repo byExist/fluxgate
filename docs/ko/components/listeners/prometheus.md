@@ -86,9 +86,8 @@ from fluxgate.listeners.prometheus import PrometheusListener
 start_http_server(8000)
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
-    listeners=[PrometheusListener()],
+    listeners=[PrometheusListener(name="payment_api")],
 )
 
 # 여기에 애플리케이션 로직을 작성...
@@ -113,9 +112,8 @@ app = FastAPI()
 app.mount("/metrics", metrics_app)
 
 cb = AsyncCircuitBreaker(
-    name="api_gateway",
     ...,
-    listeners=[PrometheusListener()],
+    listeners=[PrometheusListener(name="api_gateway")],
 )
 
 @app.get("/")
@@ -131,7 +129,7 @@ async def root():
 
 ## 여러 Circuit Breaker 모니터링 {#multiple-circuits}
 
-동일한 애플리케이션에서 여러 Circuit Breaker를 모니터링하려면, 동일한 `PrometheusListener` 인스턴스를 재사용하기만 하면 됩니다. 각 브레이커에 대해 메트릭은 `circuit_name`으로 올바르게 라벨링됩니다.
+각 `PrometheusListener` 인스턴스는 자기가 발행할 `circuit_name` 라벨을 가지므로, 회로마다 하나씩 생성합니다. 메트릭은 같은 모듈 레벨 Gauge/Counter를 공유하며 Prometheus가 라벨로 구분합니다.
 
 ```python
 from prometheus_client import start_http_server
@@ -140,12 +138,14 @@ from fluxgate.listeners.prometheus import PrometheusListener
 
 start_http_server(8000)
 
-# 단일 Listener 인스턴스를 생성합니다.
-listener = PrometheusListener()
-
-# 여러 브레이커에 동일한 인스턴스를 추가합니다.
-payment_cb = CircuitBreaker(name="payment_api", ..., listeners=[listener])
-inventory_cb = CircuitBreaker(name="inventory_api", ..., listeners=[listener])
+payment_cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="payment_api")],
+)
+inventory_cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="inventory_api")],
+)
 ```
 
 ---
@@ -198,9 +198,12 @@ OPEN_TRANSITIONS = Counter(
 )
 
 class CustomPrometheusListener(Listener):
+    def __init__(self, name: str) -> None:
+        self._name = name
+
     def __call__(self, signal: Signal) -> None:
         if signal.new_state == StateEnum.OPEN:
-            OPEN_TRANSITIONS.labels(circuit_name=signal.circuit_name).inc()
+            OPEN_TRANSITIONS.labels(circuit_name=self._name).inc()
 ```
 
 ## 다음 단계 {#next-steps}

@@ -110,7 +110,7 @@ Listeners는 상태 변경 이벤트에 등록하여 로깅, 모니터링 또는
 ```python
 from fluxgate.listeners.log import LogListener
 
-listeners = [LogListener()]
+listeners = [LogListener(name="api")]
 cb = CircuitBreaker(..., listeners=listeners)
 ```
 
@@ -125,7 +125,6 @@ from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
-    name="api",
     window=TimeWindow(size=60),  # 최근 60초 동안의 호출 추적
     tracker=TypeOf(ConnectionError, TimeoutError),
     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.8, threshold=2.0)),

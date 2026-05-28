@@ -21,7 +21,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = CircuitBreaker(
-    name="payment_api",
     tracker=TypeOf(httpx.HTTPError),  # HTTP 오류만 추적
 )
 
@@ -52,7 +51,6 @@ app = FastAPI()
 
 # 중요한 외부 서비스를 위한 단일 circuit breaker.
 external_api_cb = AsyncCircuitBreaker(
-    name="external_product_api",
     tracker=TypeOf(httpx.HTTPError),
     retry=Cooldown(duration=30.0),  # 더 빠른 복구를 위해 짧은 쿨다운
 )
@@ -98,7 +96,6 @@ from fluxgate.retries import Backoff
 # 중요한 결제 서비스에 대한 더 보수적인 정책.
 # FailureStreak은 MinRequests가 충족되기 전 콜드 스타트 시 빠른 보호를 제공합니다.
 payment_cb = AsyncCircuitBreaker(
-    name="payment_service",
     window=TimeWindow(size=300),
     tracker=TypeOf(httpx.HTTPError),
     tripper=FailureStreak(5) | (MinRequests(20) & FailureRate(0.4)),
@@ -107,7 +104,6 @@ payment_cb = AsyncCircuitBreaker(
 
 # 덜 중요한 인벤토리 서비스에 대한 더 공격적인 정책.
 inventory_cb = AsyncCircuitBreaker(
-    name="inventory_service",
     window=TimeWindow(size=60),
     tracker=TypeOf(httpx.HTTPError),
     tripper=MinRequests(10) & FailureRate(0.6),
@@ -212,7 +208,6 @@ def is_retriable_server_error(e: Exception) -> bool:
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 cb = CircuitBreaker(
-    name="api_client",
     tracker=Custom(is_retriable_server_error),
     ...
 )
@@ -226,7 +221,6 @@ cb = CircuitBreaker(
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate
 
 cb = CircuitBreaker(
-    name="api",
     # CLOSED 및 HALF_OPEN 상태에 대해 다른 트립 조건을 사용합니다.
     tripper=(
         (Closed() & MinRequests(20) & FailureRate(0.6)) |
@@ -250,12 +244,10 @@ def circuit_breaker_factory(name: str, policy: str) -> CircuitBreaker:
     """정의된 정책 이름에 따라 circuit breaker를 생성합니다."""
     if policy == "strict":
         return CircuitBreaker(
-            name=name,
             tripper=MinRequests(20) & FailureRate(0.4),
         )
     elif policy == "lenient":
         return CircuitBreaker(
-            name=name,
             window=CountWindow(50),
             tripper=MinRequests(10) & FailureRate(0.7),
             retry=Cooldown(30.0),

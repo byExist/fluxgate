@@ -52,12 +52,12 @@ from fluxgate import CircuitBreaker
 from fluxgate.listeners.slack import SlackListener
 
 slack_listener = SlackListener(
+    name="payment_api",
     channel=os.environ["SLACK_CHANNEL_ID"],
     token=os.environ["SLACK_BOT_TOKEN"]
 )
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
     listeners=[slack_listener],
 )
@@ -73,12 +73,12 @@ from fluxgate import AsyncCircuitBreaker
 from fluxgate.listeners.slack import AsyncSlackListener
 
 slack_listener = AsyncSlackListener(
+    name="async_api",
     channel=os.environ["SLACK_CHANNEL_ID"],
     token=os.environ["SLACK_BOT_TOKEN"]
 )
 
 cb = AsyncCircuitBreaker(
-    name="async_api",
     ...,
     listeners=[slack_listener],
 )

@@ -26,7 +26,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate, FailureStreak
 
 cb = CircuitBreaker(
-    name="payment_api",
     tripper=FailureStreak(5) | (MinRequests(20) & (
         FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
     )),
@@ -51,7 +50,6 @@ from fluxgate import AsyncCircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = AsyncCircuitBreaker(
-    name="api",
     tracker=TypeOf(httpx.ConnectError, httpx.TimeoutException),
     max_half_open_calls=10,
 )
@@ -122,7 +120,7 @@ Beyond automatic trips, the breaker exposes hooks for safe rollouts and manual c
 
 ## Monitoring
 
-Pass listeners via `listeners=...` — built-in: `LogListener`, `PrometheusListener` (optional), `SlackListener` (optional). Each state transition emits a `Signal` event; `AsyncCircuitBreaker` additionally accepts `AsyncListener`.
+Pass listeners via `listeners=...` — built-in: `LogListener`, `PrometheusListener` (optional), `SlackListener` (optional). Each listener takes a `name=` identifier used in log lines, Prometheus labels, or Slack messages. State transitions emit `Signal` events; `AsyncCircuitBreaker` additionally accepts `AsyncListener`.
 
 ## Documentation
 

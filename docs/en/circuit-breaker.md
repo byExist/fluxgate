@@ -35,7 +35,7 @@ This is the default operational state where all calls pass through to the protec
 from fluxgate import CircuitBreaker
 
 # Use defaults: trips at 50% failure rate after 100 calls, 60s cooldown
-cb = CircuitBreaker("api")
+cb = CircuitBreaker()
 ```
 
 ### OPEN: The Failing State {#state-open}
@@ -77,7 +77,6 @@ from fluxgate.trippers import MinRequests, FailureRate
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
-    name="api",
     # Use a stricter tripping condition during recovery testing.
     tripper=MinRequests(5) & FailureRate(0.3),
     # Start by allowing 10% of traffic, then ramp up to 80% over 60 seconds.
@@ -145,7 +144,6 @@ from fluxgate import CircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = CircuitBreaker(
-    name="payment_api",
     tracker=TypeOf(ConnectionError, TimeoutError),  # Only track these errors
 )
 
@@ -180,7 +178,6 @@ from fluxgate import AsyncCircuitBreaker
 from fluxgate.trackers import TypeOf
 
 cb = AsyncCircuitBreaker(
-    name="async_api",
     tracker=TypeOf(httpx.ConnectError),
     max_half_open_calls=5,  # Limit concurrent calls in HALF_OPEN to 5.
 )
@@ -313,7 +310,6 @@ def is_retriable_error(e: Exception) -> bool:
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 payment_cb = CircuitBreaker(
-    name="payment_api",
     tracker=Custom(is_retriable_error),
     tripper=(
         # Fast trip on 5 consecutive failures (protects during cold start).
@@ -335,7 +331,7 @@ payment_cb = CircuitBreaker(
         final=0.5,        # Gradually increase to 50%.
         duration=60.0     # Ramp up over 60 seconds.
     ),
-    listeners=[LogListener(), PrometheusListener()],
+    listeners=[LogListener(name="payment_api"), PrometheusListener(name="payment_api")],
 )
 
 @payment_cb

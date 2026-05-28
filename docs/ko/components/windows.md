@@ -27,7 +27,6 @@ from fluxgate.windows import CountWindow
 
 # 이 브레이커는 마지막 100개 호출을 기준으로 결정을 내립니다.
 cb = CircuitBreaker(
-    name="stable_api",
     window=CountWindow(size=100),
     ...
 )
@@ -51,7 +50,6 @@ from fluxgate.windows import TimeWindow
 
 # 이 브레이커는 마지막 60초 동안 발생한 호출을 기준으로 결정을 내립니다.
 cb = CircuitBreaker(
-    name="variable_traffic_api",
     window=TimeWindow(size=60),
     ...
 )

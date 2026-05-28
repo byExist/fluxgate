@@ -33,7 +33,7 @@ pip install fluxgate
 ```python
 from fluxgate import CircuitBreaker
 
-cb = CircuitBreaker("payment_api")
+cb = CircuitBreaker()
 
 @cb
 def call_payment_api(amount: float):
@@ -92,7 +92,7 @@ Asyncio 애플리케이션을 완벽하게 지원합니다.
 import asyncio
 from fluxgate import AsyncCircuitBreaker
 
-cb = AsyncCircuitBreaker("async_api")
+cb = CircuitBreaker()
 
 @cb
 async def call_async_api():
@@ -126,7 +126,6 @@ def is_retriable_error(e: Exception) -> bool:
     return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
 
 payment_cb = CircuitBreaker(
-    name="payment_api",
     window=CountWindow(size=100),
     tracker=Custom(is_retriable_error),
     tripper=FailureStreak(5) | (MinRequests(20) & (
@@ -135,7 +134,7 @@ payment_cb = CircuitBreaker(
     )),
     retry=Backoff(initial=10.0, multiplier=2.0, max_duration=300.0, jitter_ratio=0.1),
     permit=RampUp(initial=0.1, final=0.5, duration=60.0),
-    listeners=[LogListener(), PrometheusListener()],
+    listeners=[LogListener(name="payment_api"), PrometheusListener(name="payment_api")],
 )
 
 @payment_cb

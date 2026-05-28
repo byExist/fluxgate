@@ -82,7 +82,6 @@ from fluxgate.trippers import SlowRate
 
 # Trip if more than 30% of calls take 1 second or longer.
 cb = CircuitBreaker(
-    name="api",
     tripper=SlowRate(0.3, threshold=1.0),
     ...
 )

@@ -24,7 +24,6 @@ from fluxgate.permits import All
 
 # HALF_OPEN 상태에서 모든 호출을 통과시킵니다.
 cb = CircuitBreaker(
-    name="api",
     permit=All(),
     ...
 )
@@ -49,7 +48,6 @@ from fluxgate.permits import Random
 
 # HALF_OPEN 상태에서 대략 50%의 호출을 통과시킵니다.
 cb = CircuitBreaker(
-    name="api",
     permit=Random(ratio=0.5),
     ...
 )
@@ -71,7 +69,6 @@ from fluxgate.permits import RampUp
 
 # 10%의 트래픽을 허용하는 것으로 시작하여 60초 동안 80%까지 점진적으로 증가시킵니다.
 cb = CircuitBreaker(
-    name="api",
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
     ...
 )
@@ -153,7 +150,6 @@ from fluxgate.retries import Backoff
 from fluxgate.permits import RampUp
 
 cb = CircuitBreaker(
-    name="api",
     retry=Backoff(initial=10.0, multiplier=2.0),
     permit=RampUp(initial=0.1, final=0.8, duration=60.0),
     ...

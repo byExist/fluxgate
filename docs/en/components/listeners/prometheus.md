@@ -86,9 +86,8 @@ from fluxgate.listeners.prometheus import PrometheusListener
 start_http_server(8000)
 
 cb = CircuitBreaker(
-    name="payment_api",
     ...,
-    listeners=[PrometheusListener()],
+    listeners=[PrometheusListener(name="payment_api")],
 )
 
 # Your application logic here...
@@ -114,9 +113,8 @@ app = FastAPI()
 app.mount("/metrics", metrics_app)
 
 cb = AsyncCircuitBreaker(
-    name="api_gateway",
     ...,
-    listeners=[PrometheusListener()],
+    listeners=[PrometheusListener(name="api_gateway")],
 )
 
 @app.get("/")
@@ -132,7 +130,7 @@ async def root():
 
 ## Monitoring Multiple Circuit Breakers {#multiple-circuits}
 
-To monitor multiple circuit breakers in the same application, simply reuse the same `PrometheusListener` instance. The metrics will be correctly labeled with the `circuit_name` for each breaker.
+Each `PrometheusListener` instance owns the `circuit_name` label it emits, so create one per circuit. The metrics share the same module-level Gauge/Counter and Prometheus separates them by label.
 
 ```python
 from prometheus_client import start_http_server
@@ -141,12 +139,14 @@ from fluxgate.listeners.prometheus import PrometheusListener
 
 start_http_server(8000)
 
-# Create a single listener instance.
-listener = PrometheusListener()
-
-# Add the same instance to multiple breakers.
-payment_cb = CircuitBreaker(name="payment_api", ..., listeners=[listener])
-inventory_cb = CircuitBreaker(name="inventory_api", ..., listeners=[listener])
+payment_cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="payment_api")],
+)
+inventory_cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="inventory_api")],
+)
 ```
 
 ---
@@ -199,9 +199,12 @@ OPEN_TRANSITIONS = Counter(
 )
 
 class CustomPrometheusListener(Listener):
+    def __init__(self, name: str) -> None:
+        self._name = name
+
     def __call__(self, signal: Signal) -> None:
         if signal.new_state == StateEnum.OPEN:
-            OPEN_TRANSITIONS.labels(circuit_name=signal.circuit_name).inc()
+            OPEN_TRANSITIONS.labels(circuit_name=self._name).inc()
 ```
 
 ## Next Steps {#next-steps}

@@ -27,7 +27,6 @@ from fluxgate.windows import CountWindow
 
 # This breaker will base its decisions on the last 100 calls.
 cb = CircuitBreaker(
-    name="stable_api",
     window=CountWindow(size=100),
     ...
 )
@@ -53,7 +52,6 @@ from fluxgate.windows import TimeWindow
 
 # This breaker will base its decisions on calls made in the last 60 seconds.
 cb = CircuitBreaker(
-    name="variable_traffic_api",
     window=TimeWindow(size=60),
     ...
 )

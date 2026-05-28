@@ -23,7 +23,7 @@ from fluxgate import CircuitBreaker
 from fluxgate.retries import Always
 
 # 일반적으로 권장되지 않습니다.
-cb = CircuitBreaker(name="api", retry=Always(), ...)
+cb = CircuitBreaker(retry=Always(), ...)
 ```
 
 ---
@@ -36,7 +36,7 @@ cb = CircuitBreaker(name="api", retry=Always(), ...)
 from fluxgate import CircuitBreaker
 from fluxgate.retries import Never
 
-cb = CircuitBreaker(name="api", retry=Never(), ...)
+cb = CircuitBreaker(retry=Never(), ...)
 
 # 운영자는 서비스 복구 후 수동으로 브레이커를 재설정해야 합니다.
 cb.reset()
@@ -56,7 +56,6 @@ from fluxgate.retries import Cooldown
 
 # 첫 번째 복구 시도 전에 60초 동안 기다립니다.
 cb = CircuitBreaker(
-    name="api",
     retry=Cooldown(duration=60.0),
     ...
 )
@@ -77,7 +76,6 @@ from fluxgate.retries import Backoff
 # 대기 시간은 10초에서 시작하여, 실패한 각 복구 시도 후에 두 배가 되며,
 # 최대 300초로 제한됩니다.
 cb = CircuitBreaker(
-    name="api",
     retry=Backoff(
         initial=10.0,
         multiplier=2.0,

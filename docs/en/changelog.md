@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026.05.28
+
+### Breaking Changes
+
+- **`name` parameter removed from `CircuitBreaker` and `AsyncCircuitBreaker`**. The circuit breaker is now anonymous — its identity is determined by where it's attached, not by a string. Identification for monitoring is the listener's responsibility.
+- **`Signal.circuit_name` field removed**. `Signal` now carries only `old_state`, `new_state`, and `timestamp`.
+- **`CircuitBreakerInfo.name` field removed**. Use the variable name or surrounding context to identify the breaker when inspecting `cb.info()`.
+- **Listeners require a `name` parameter**: `LogListener`, `PrometheusListener`, `SlackListener`, and `AsyncSlackListener` all take `name` as their first argument. The name is used as a log prefix, a Prometheus label, or the identifier shown in Slack messages.
+- **`SlackListener._open_threads` simplified**: a listener now tracks a single open thread instead of a per-circuit dictionary, since one instance is intended for one circuit.
+
+**Migration:**
+
+```python
+# Before (v0.7.x)
+cb = CircuitBreaker(
+    name="payment_api",
+    tripper=MinRequests(20) & FailureRate(0.5),
+    listeners=[
+        LogListener(),
+        PrometheusListener(),
+        SlackListener(channel="C123", token="xoxb-..."),
+    ],
+)
+
+# After (v0.8.0)
+cb = CircuitBreaker(
+    tripper=MinRequests(20) & FailureRate(0.5),
+    listeners=[
+        LogListener(name="payment_api"),
+        PrometheusListener(name="payment_api"),
+        SlackListener(name="payment_api", channel="C123", token="xoxb-..."),
+    ],
+)
+```
+
+To attach a single `PrometheusListener` to many circuits as before, create one instance per circuit — the module-level Gauge/Counter still aggregates via the `circuit_name` label.
+
+Custom listeners that previously read `signal.circuit_name` should accept `name` in their `__init__` and use `self._name`.
+
 ## [0.7.0] - 2026.05.28
 
 ### Breaking Changes

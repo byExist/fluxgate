@@ -1,136 +1,138 @@
-# Fluxgate
+<h1 align="center">Fluxgate</h1>
 
-A composable circuit breaker library for Python.
+<p align="center">
+  <a href="https://github.com/byExist/fluxgate/actions/workflows/ci.yml"><img src="https://github.com/byExist/fluxgate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://pypi.org/project/fluxgate/"><img src="https://img.shields.io/pypi/v/fluxgate" alt="PyPI"></a>
+  <a href="https://pypi.org/project/fluxgate/"><img src="https://img.shields.io/pypi/pyversions/fluxgate" alt="Python"></a>
+  <a href="https://github.com/byExist/fluxgate/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/fluxgate" alt="License"></a>
+</p>
 
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Python](https://img.shields.io/pypi/pyversions/fluxgate.svg)](https://pypi.org/project/fluxgate/)
+<p align="center">
+  A composable <b>circuit breaker</b> library for Python with first-class sync and async support.
+</p>
+
+<p align="center">
+  <b>English</b> | <a href="README.ko.md">한국어</a>
+</p>
+
+---
+
+## Why Fluxgate?
+
+Circuit breakers prevent cascading failures by monitoring service health and temporarily blocking calls to failing dependencies. Most Python libraries trip on **consecutive failures** — brittle for any service with intermittent errors. Fluxgate trips on **failure rates over a sliding window**, and rules are first-class values you compose:
+
+```python
+from fluxgate import CircuitBreaker
+from fluxgate.trippers import MinRequests, FailureRate, SlowRate, FailureStreak
+
+cb = CircuitBreaker(
+    name="payment_api",
+    tripper=FailureStreak(5) | (MinRequests(20) & (
+        FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
+    )),
+)
+```
+
+> **Note:** State is process-local and not thread-safe. For concurrency, use `asyncio` + `AsyncCircuitBreaker`, not threading.
 
 ## Installation
 
 ```bash
-pip install fluxgate
+pip install fluxgate                  # core, zero dependencies
+pip install "fluxgate[prometheus]"    # +PrometheusListener
+pip install "fluxgate[slack]"         # +SlackListener
 ```
 
-## Quick Start
-
-```python
-from fluxgate import CircuitBreaker
-
-cb = CircuitBreaker(name="my_api")
-
-@cb
-def call_api():
-    return requests.get("https://api.example.com")
-```
-
-That's it. The circuit breaker will:
-
-- Track the last 100 calls
-- Open when failure rate exceeds 50% (after 100+ requests)
-- Wait 60 seconds before testing recovery
-- Gradually allow more calls as the service recovers
-
-## Async Support
-
-For async applications, use `AsyncCircuitBreaker`:
-
-```python
-from fluxgate import AsyncCircuitBreaker
-
-cb = AsyncCircuitBreaker(name="my_api")
-
-@cb
-async def call_api():
-    async with httpx.AsyncClient() as client:
-        return await client.get("https://api.example.com")
-```
-
-## Customization
-
-Every component is customizable. You can apply different policies to different services based on their criticality:
+## Usage
 
 ```python
 import httpx
 from fluxgate import AsyncCircuitBreaker
-from fluxgate.windows import TimeWindow
-from fluxgate.trackers import TypeOf, Custom
-from fluxgate.trippers import MinRequests, FailureRate, FailureStreak
-from fluxgate.retries import Backoff
-from fluxgate.permits import RampUp
+from fluxgate.trackers import TypeOf
 
-# Track only 5xx errors and network failures (not 4xx client errors)
-def is_server_error(e: Exception) -> bool:
-    if isinstance(e, httpx.HTTPStatusError):
-        return e.response.status_code >= 500
-    return isinstance(e, (httpx.ConnectError, httpx.TimeoutException))
-
-# Conservative policy for critical payment service
-payment_cb = AsyncCircuitBreaker(
-    name="payment_service",
-    window=TimeWindow(size=300),              # Track calls over 5 minutes
-    tracker=Custom(is_server_error),          # Custom error filtering
-    tripper=(
-        FailureStreak(5) |                    # Trip on 5 consecutive failures OR
-        (MinRequests(20) & FailureRate(0.4))  # 40% failure rate after 20 calls
-    ),
-    retry=Backoff(initial=30.0, max_duration=600.0),  # 30s, 60s, 120s... up to 10min
-    permit=RampUp(0.1, 1.0, 60.0),            # Gradually allow 10% → 100% over 60s
+cb = AsyncCircuitBreaker(
+    name="api",
+    tracker=TypeOf(httpx.ConnectError, httpx.TimeoutException),
+    max_half_open_calls=10,
 )
 
-# Aggressive policy for less critical inventory service
-inventory_cb = AsyncCircuitBreaker(
-    name="inventory_service",
-    window=TimeWindow(size=60),               # Track calls over 1 minute
-    tracker=TypeOf(httpx.HTTPError),          # Track all HTTP errors
-    tripper=MinRequests(10) & FailureRate(0.6),  # 60% failure rate after 10 calls
-    retry=Backoff(initial=10.0, max_duration=300.0),
-)
-
-@payment_cb
-async def charge_payment(amount: float):
+@cb
+async def fetch(url):
     async with httpx.AsyncClient() as client:
-        response = await client.post("https://payment.example.com/charge", json={"amount": amount})
-        response.raise_for_status()
-        return response.json()
-
-@inventory_cb
-async def check_inventory(product_id: str):
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"https://inventory.example.com/products/{product_id}")
-        response.raise_for_status()
-        return response.json()
+        return (await client.get(url)).json()
 ```
 
-### Components
+`CircuitBreaker` mirrors this API for sync code. A tripped circuit raises `CallNotPermittedError`; pass `@cb(fallback=...)` to fall back gracefully.
 
-| Component | Purpose | Examples |
-|-----------|---------|----------|
-| **Window** | How to track call history | `CountWindow(100)`, `TimeWindow(60)` |
-| **Tracker** | Which exceptions to track | `All()`, `TypeOf(HTTPError)`, `Custom(func)` |
-| **Tripper** | When to open the circuit | `MinRequests(n)`, `FailureRate(0.5)`, `FailureStreak(5)`, `SlowRate(0.3, threshold=1.0)`, `AvgLatency(1.0)`, `Closed()`, `HalfOpened()` |
-| **Retry** | When to attempt recovery | `Cooldown(60.0)`, `Backoff(initial=10.0)`, `Always()`, `Never()` |
-| **Permit** | How to allow calls during recovery | `All()`, `Random(0.5)`, `RampUp(0.1, 1.0, 60.0)` |
+## How It Works
+
+Fluxgate is a state machine. The core cycle is CLOSED → OPEN → HALF_OPEN:
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> CLOSED
+    CLOSED --> OPEN: tripper
+    OPEN --> HALF_OPEN: retry
+    HALF_OPEN --> CLOSED: !tripper
+    HALF_OPEN --> OPEN: tripper
+```
+
+Three additional states (`METRICS_ONLY`, `DISABLED`, `FORCED_OPEN`) are documented in [Operational Controls](#operational-controls).
+
+## Composable Rules
+
+Every condition is a value and combines with `&` / `|`:
+
+```python
+from fluxgate.trippers import (
+    Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak,
+)
+
+# State-specific rules: stricter when probing recovery.
+tripper = FailureStreak(5) | (MinRequests(20) & (
+    (Closed()    & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))) |
+    (HalfOpened() & (FailureRate(0.3) | SlowRate(0.2, threshold=1.0)))
+))
+```
+
+`Tracker` (failure classification) follows the same pattern with `&` / `|` / `~`.
+
+## Components
+
+| Component | Role | Examples |
+|-----------|------|----------|
+| `Window` | Track recent calls (count- or time-based) | `CountWindow(100)`, `TimeWindow(60)` |
+| `Tracker` | Classify which exceptions count as failures | `All()`, `TypeOf(HTTPError)`, `Custom(fn)`; combine with `&` / `\|` / `~` |
+| `Tripper` | Decide when to open the circuit | `MinRequests`, `FailureRate`, `SlowRate`, `AvgLatency`, `FailureStreak`, `Closed`/`HalfOpened`; combine with `&` / `\|` |
+| `Retry` | Trigger `OPEN → HALF_OPEN` | `Cooldown`, `Backoff`, `Always`, `Never` |
+| `Permit` | Admit calls in `HALF_OPEN` | `All`, `Random(p)`, `RampUp(start, end, duration)` |
+| `Listener` | React to state transitions | `LogListener`, `PrometheusListener`, `SlackListener` |
+
+All components are abstract base classes (`abc.ABC`) with input validation — misconfigurations fail fast at construction time. Subclass to write your own.
+
+## Operational Controls
+
+Beyond automatic trips, the breaker exposes hooks for safe rollouts and manual control:
+
+- **`cb.metrics_only()`** — shadow mode: collect metrics without ever tripping. Ideal for validating thresholds in production before going live.
+- **`cb.force_open()`** / **`cb.disable()`** — manual override during incident response or maintenance.
+- **`cb.info()`** — snapshot of state, metrics, and reopen count.
+- **`cb.reset()`** — return to CLOSED and clear metrics.
 
 ## Monitoring
 
-Attach listeners to get notified on state transitions:
-
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.listeners.log import LogListener
-from fluxgate.listeners.prometheus import PrometheusListener
-from fluxgate.listeners.slack import SlackListener
-
-cb = CircuitBreaker(
-    name="my_api",
-    listeners=[
-        LogListener(),
-        PrometheusListener(),
-        SlackListener(channel="C123", token="xoxb-..."),
-    ],
-)
-```
+Pass listeners via `listeners=...` — built-in: `LogListener`, `PrometheusListener` (optional), `SlackListener` (optional). Each state transition emits a `Signal` event; `AsyncCircuitBreaker` additionally accepts `AsyncListener`.
 
 ## Documentation
 
-[Full documentation](https://byExist.github.io/fluxgate/)
+- [Full documentation](https://byExist.github.io/fluxgate/latest/) — concepts, components, examples, API reference
+- [Comparison with other libraries](https://byExist.github.io/fluxgate/latest/about/comparison/) — vs `pybreaker`, `circuitbreaker`, `aiobreaker`
+- [Changelog](https://byExist.github.io/fluxgate/latest/changelog/) — version history and migration guides
+
+## Development
+
+```bash
+uv sync --all-extras --all-groups
+uv run pytest
+```

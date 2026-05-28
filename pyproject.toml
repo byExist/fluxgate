@@ -31,9 +31,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/byExist/fluxgate"
-Documentation = "https://byExist.github.io/fluxgate"
+Documentation = "https://byExist.github.io/fluxgate/latest/"
 Repository = "https://github.com/byExist/fluxgate"
-Changelog = "https://byExist.github.io/fluxgate/changelog/"
+Changelog = "https://byExist.github.io/fluxgate/latest/changelog/"
 
 [project.optional-dependencies]
 prometheus = [

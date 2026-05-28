@@ -7,6 +7,7 @@ on:
 
 permissions:
   id-token: write
+  contents: write
 
 jobs:
   ci:
@@ -42,3 +43,22 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Extract release notes from changelog
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          awk -v tag="$TAG_VERSION" '
+            index($0, "## [" tag "]") == 1 { flag=1; next }
+            /^## \[/ { flag=0 }
+            flag
+          ' docs/en/changelog.md > release-notes.md
+          echo "--- release-notes.md ---"
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF#refs/tags/}" \
+            --title "${GITHUB_REF#refs/tags/}" \
+            --notes-file release-notes.md

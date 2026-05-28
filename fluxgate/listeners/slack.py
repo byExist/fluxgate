@@ -48,6 +48,7 @@ _DEFAULT_FALLBACK_TEMPLATE: Template = {
 
 def _build_message(
     channel: str,
+    name: str,
     signal: Signal,
     template: Template,
     thread: Optional[str] = None,
@@ -68,7 +69,7 @@ def _build_message(
                         "fields": [
                             {
                                 "type": "mrkdwn",
-                                "text": f"*Circuit Breaker:*\n{signal.circuit_name}",
+                                "text": f"*Circuit Breaker:*\n{name}",
                             },
                             {
                                 "type": "mrkdwn",
@@ -105,6 +106,7 @@ class SlackListener(Listener):
     - Thread ends on → CLOSED, DISABLED, or METRICS_ONLY
 
     Args:
+        name: Identifier shown in the Slack message body.
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
         token: Slack bot token with chat:write permissions
 
@@ -117,11 +119,12 @@ class SlackListener(Listener):
         >>> from fluxgate.listeners.slack import SlackListener
         >>>
         >>> listener = SlackListener(
+        ...     name="api",
         ...     channel="C1234567890",
         ...     token="xoxb-your-slack-bot-token"
         ... )
         >>>
-        >>> cb = CircuitBreaker(..., listeners=[listener])
+        >>> cb = CircuitBreaker(listeners=[listener])
 
         To customize messages (e.g., for Korean):
 
@@ -146,14 +149,15 @@ class SlackListener(Listener):
     )
     FALLBACK_TEMPLATE: ClassVar[Template] = _DEFAULT_FALLBACK_TEMPLATE
 
-    def __init__(self, channel: str, token: str) -> None:
+    def __init__(self, name: str, channel: str, token: str) -> None:
+        self._name = name
         self._channel = channel
         self._token = token
         self._client = httpx.Client(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,
         )
-        self._open_threads: dict[str, str] = {}
+        self._open_thread: Optional[str] = None
 
     def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
         """Get message template with fallback for unknown transitions."""
@@ -165,9 +169,10 @@ class SlackListener(Listener):
         template = self._get_template(signal.old_state, signal.new_state)
         message = _build_message(
             channel=self._channel,
+            name=self._name,
             signal=signal,
             template=template,
-            thread=self._open_threads.get(signal.circuit_name),
+            thread=self._open_thread,
         )
         response = self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
@@ -178,13 +183,14 @@ class SlackListener(Listener):
         if not data.get("ok") or not ts:
             raise RuntimeError(f"Failed to send message: {data.get('error')}")
         if signal.new_state == StateEnum.OPEN:
-            self._open_threads.setdefault(signal.circuit_name, ts)
+            if self._open_thread is None:
+                self._open_thread = ts
         elif signal.new_state in (
             StateEnum.CLOSED,
             StateEnum.DISABLED,
             StateEnum.METRICS_ONLY,
         ):
-            self._open_threads.pop(signal.circuit_name, None)
+            self._open_thread = None
 
 
 class AsyncSlackListener(AsyncListener):
@@ -197,6 +203,7 @@ class AsyncSlackListener(AsyncListener):
     - Thread ends on → CLOSED, DISABLED, or METRICS_ONLY
 
     Args:
+        name: Identifier shown in the Slack message body.
         channel: Slack channel ID (e.g., "C1234567890") or name (e.g., "#alerts")
         token: Slack bot token with chat:write permissions
 
@@ -212,11 +219,12 @@ class AsyncSlackListener(AsyncListener):
         >>> from fluxgate.listeners.slack import AsyncSlackListener
         >>>
         >>> listener = AsyncSlackListener(
+        ...     name="api",
         ...     channel="C1234567890",
         ...     token="xoxb-your-slack-bot-token"
         ... )
         >>>
-        >>> cb = AsyncCircuitBreaker(..., listeners=[listener])
+        >>> cb = AsyncCircuitBreaker(listeners=[listener])
     """
 
     TRANSITION_TEMPLATES: ClassVar[dict[tuple[StateEnum, StateEnum], Template]] = (
@@ -224,14 +232,15 @@ class AsyncSlackListener(AsyncListener):
     )
     FALLBACK_TEMPLATE: ClassVar[Template] = SlackListener.FALLBACK_TEMPLATE
 
-    def __init__(self, channel: str, token: str) -> None:
+    def __init__(self, name: str, channel: str, token: str) -> None:
+        self._name = name
         self._channel = channel
         self._token = token
         self._client = httpx.AsyncClient(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,
         )
-        self._open_threads: dict[str, str] = {}
+        self._open_thread: Optional[str] = None
 
     def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
         """Get message template with fallback for unknown transitions."""
@@ -243,9 +252,10 @@ class AsyncSlackListener(AsyncListener):
         template = self._get_template(signal.old_state, signal.new_state)
         message = _build_message(
             channel=self._channel,
+            name=self._name,
             signal=signal,
             template=template,
-            thread=self._open_threads.get(signal.circuit_name),
+            thread=self._open_thread,
         )
         response = await self._client.post(
             "https://slack.com/api/chat.postMessage", json=message
@@ -256,10 +266,11 @@ class AsyncSlackListener(AsyncListener):
         if not data.get("ok") or not ts:
             raise RuntimeError(f"Failed to send message: {data.get('error')}")
         if signal.new_state == StateEnum.OPEN:
-            self._open_threads.setdefault(signal.circuit_name, ts)
+            if self._open_thread is None:
+                self._open_thread = ts
         elif signal.new_state in (
             StateEnum.CLOSED,
             StateEnum.DISABLED,
             StateEnum.METRICS_ONLY,
         ):
-            self._open_threads.pop(signal.circuit_name, None)
+            self._open_thread = None

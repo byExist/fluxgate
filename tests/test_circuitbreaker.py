@@ -36,7 +36,7 @@ async def async_failing_func() -> None:
 
 def test_call_passes_through():
     """Successful calls pass through when circuit is CLOSED."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     assert cb.call(success_func, 5) == 10
     assert cb.call(success_func, 10) == 20
@@ -49,7 +49,7 @@ def test_call_passes_through():
 
 def test_decorator_usage():
     """CircuitBreaker works as a decorator."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     @cb
     def decorated(x: int) -> int:
@@ -63,7 +63,6 @@ def test_decorator_usage():
 def test_failure_is_recorded():
     """Failures are recorded in metrics."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(10) & FailureRate(0.5),
     )
 
@@ -78,7 +77,6 @@ def test_failure_is_recorded():
 def test_closed_to_open_on_failure_threshold():
     """Circuit opens when failure rate exceeds threshold."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(3) & FailureRate(0.5),
     )
 
@@ -92,7 +90,6 @@ def test_closed_to_open_on_failure_threshold():
 def test_open_state_blocks_calls():
     """Circuit blocks calls with CallNotPermittedError when OPEN."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(10.0),
     )
@@ -108,7 +105,6 @@ def test_open_state_blocks_calls():
 def test_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
     """Circuit transitions to HALF_OPEN after cooldown period."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=All(),
@@ -130,7 +126,6 @@ def test_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
 def test_half_open_to_closed_on_success(freezer: FrozenDateTimeFactory):
     """Circuit closes after successful calls in HALF_OPEN state."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=All(),
@@ -150,7 +145,6 @@ def test_half_open_to_closed_on_success(freezer: FrozenDateTimeFactory):
 def test_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
     """Circuit reopens if failures continue in HALF_OPEN state."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=All(),
@@ -174,7 +168,6 @@ def test_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
 def test_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactory):
     """Calls blocked by permit in HALF_OPEN state raise CallNotPermittedError."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=Random(0.0),
@@ -192,7 +185,6 @@ def test_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactory):
 def test_reset_transitions_to_closed():
     """reset() transitions circuit to CLOSED state."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
     )
 
@@ -208,7 +200,7 @@ def test_reset_transitions_to_closed():
 
 def test_disable_allows_all_calls():
     """disable() allows all calls without state changes."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
     cb.disable()
 
     assert cb.info().state == StateEnum.DISABLED.value
@@ -221,7 +213,7 @@ def test_disable_allows_all_calls():
 
 def test_force_open_blocks_all_calls():
     """force_open() blocks all calls."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
     cb.force_open()
 
     assert cb.info().state == StateEnum.FORCED_OPEN.value
@@ -233,7 +225,6 @@ def test_force_open_blocks_all_calls():
 def test_metrics_only_collects_without_tripping():
     """metrics_only() enables metric collection without circuit breaking."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
     )
     cb.metrics_only()
@@ -249,7 +240,7 @@ def test_metrics_only_collects_without_tripping():
 
 def test_untracked_exceptions_propagate():
     """Exceptions not tracked by tracker are propagated without recording."""
-    cb = CircuitBreaker(name="test", tracker=TypeOf(ValueError))
+    cb = CircuitBreaker(tracker=TypeOf(ValueError))
 
     def raises_type_error() -> None:
         raise TypeError("not tracked")
@@ -265,7 +256,6 @@ def test_untracked_exceptions_propagate():
 def test_half_open_untracked_exception_propagates(freezer: FrozenDateTimeFactory):
     """Untracked exceptions in HALF_OPEN propagate without state change."""
     cb = CircuitBreaker(
-        name="test",
         tracker=TypeOf(ValueError),
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
@@ -289,7 +279,6 @@ def test_half_open_untracked_exception_propagates(freezer: FrozenDateTimeFactory
 def test_all_exception_types_tracked_by_default():
     """Default tracker (All) tracks all exception types."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(3) & FailureRate(0.5),
     )
 
@@ -317,7 +306,6 @@ def test_listener_notification_on_state_change():
         signals.append(signal)
 
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[listener],
     )
@@ -341,7 +329,6 @@ def test_listener_exception_does_not_break_operation():
         raise RuntimeError("listener failed")
 
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[failing_listener],
     )
@@ -355,7 +342,7 @@ def test_listener_exception_does_not_break_operation():
 
 def test_decorator_with_fallback():
     """Decorator with fallback returns fallback value on exception."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     @cb(fallback=lambda e: "fallback_value")
     def func() -> str:
@@ -366,7 +353,7 @@ def test_decorator_with_fallback():
 
 def test_fallback_receives_exception():
     """Fallback function receives the exception as argument."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
     received: list[Exception] = []
 
     def capture_fallback(e: Exception) -> str:
@@ -385,7 +372,7 @@ def test_fallback_receives_exception():
 
 def test_fallback_can_reraise():
     """Fallback can re-raise the exception."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     def selective_fallback(e: Exception) -> str:
         if isinstance(e, ValueError):
@@ -405,7 +392,6 @@ def test_fallback_can_reraise():
 def test_fallback_on_circuit_open():
     """Fallback is called when circuit is OPEN."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(10.0),
     )
@@ -427,7 +413,7 @@ def test_fallback_on_circuit_open():
 
 def test_call_with_fallback():
     """call_with_fallback returns fallback value on exception."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     result = cb.call_with_fallback(
         failing_func, lambda e: f"fallback: {type(e).__name__}"
@@ -437,7 +423,7 @@ def test_call_with_fallback():
 
 def test_call_with_fallback_passes_args():
     """call_with_fallback passes arguments to the function."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     def add(a: int, b: int) -> int:
         return a + b
@@ -449,7 +435,6 @@ def test_call_with_fallback_passes_args():
 def test_default_window_size_is_100():
     """Default window uses CountWindow(100) - tracks last 100 calls."""
     cb = CircuitBreaker(
-        name="test",
         tripper=MinRequests(50) & FailureRate(0.5),
     )
 
@@ -461,7 +446,7 @@ def test_default_window_size_is_100():
 
 def test_default_tripper_requires_100_requests():
     """Default tripper requires MinRequests(100) before tripping."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     for _ in range(99):
         with pytest.raises(ValueError):
@@ -477,7 +462,7 @@ def test_default_tripper_requires_100_requests():
 
 def test_default_tripper_50_percent_failure_rate():
     """Default tripper trips at 50% failure rate after 100 requests."""
-    cb = CircuitBreaker(name="test")
+    cb = CircuitBreaker()
 
     for _ in range(50):
         cb.call(success_func)
@@ -497,7 +482,6 @@ def test_default_tripper_50_percent_failure_rate():
 def test_failure_streak_tripper():
     """FailureStreak tripper opens circuit after N consecutive failures."""
     cb = CircuitBreaker(
-        name="test",
         tripper=FailureStreak(3),
     )
 
@@ -517,7 +501,7 @@ def test_failure_streak_tripper():
 
 async def test_async_call_passes_through():
     """Successful async calls pass through when circuit is CLOSED."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     assert await cb.call(async_success_func, 5) == 10
     assert await cb.call(async_success_func, 10) == 20
@@ -529,7 +513,7 @@ async def test_async_call_passes_through():
 
 async def test_async_decorator_usage():
     """AsyncCircuitBreaker works as a decorator."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     @cb
     async def decorated(x: int) -> int:
@@ -543,7 +527,6 @@ async def test_async_decorator_usage():
 async def test_async_closed_to_open_on_failure_threshold():
     """Async circuit opens when failure rate exceeds threshold."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(3) & FailureRate(0.5),
     )
 
@@ -557,7 +540,6 @@ async def test_async_closed_to_open_on_failure_threshold():
 async def test_async_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
     """Async circuit transitions to HALF_OPEN after cooldown period."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=All(),
@@ -577,7 +559,6 @@ async def test_async_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFac
 async def test_async_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
     """Async circuit transitions from HALF_OPEN back to OPEN on failure."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=All(),
@@ -598,7 +579,6 @@ async def test_async_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory
 async def test_async_open_blocks_before_cooldown():
     """Async circuit blocks calls in OPEN state before cooldown expires."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(10.0),
     )
@@ -614,7 +594,6 @@ async def test_async_open_blocks_before_cooldown():
 async def test_async_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactory):
     """Async permit can block calls in HALF_OPEN state."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
         permit=Random(0.0),
@@ -632,7 +611,6 @@ async def test_async_half_open_permit_blocks_calls(freezer: FrozenDateTimeFactor
 async def test_async_reset_transitions_to_closed():
     """Async reset() transitions circuit to CLOSED state."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
     )
 
@@ -646,7 +624,7 @@ async def test_async_reset_transitions_to_closed():
 
 async def test_async_disable_and_force_open():
     """disable() and force_open() manually control async circuit state."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     await cb.disable()
     assert cb.info().state == StateEnum.DISABLED.value
@@ -664,7 +642,6 @@ async def test_async_disable_and_force_open():
 async def test_async_metrics_only_mode():
     """metrics_only() enables metric collection without circuit breaking."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
     )
 
@@ -681,7 +658,7 @@ async def test_async_metrics_only_mode():
 
 async def test_async_untracked_exceptions_propagate():
     """Untracked exceptions propagate without affecting circuit state."""
-    cb = AsyncCircuitBreaker(name="test", tracker=TypeOf(ValueError))
+    cb = AsyncCircuitBreaker(tracker=TypeOf(ValueError))
 
     async def raises_type_error() -> None:
         raise TypeError("not tracked")
@@ -697,7 +674,6 @@ async def test_async_half_open_untracked_exception_propagates(
 ):
     """Untracked exceptions propagate in HALF_OPEN state without affecting circuit."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tracker=TypeOf(ValueError),
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(60.0),
@@ -727,7 +703,6 @@ async def test_async_listener_notification():
         notification_count += 1
 
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[listener],
     )
@@ -755,7 +730,6 @@ async def test_async_listener_callable_class_notification():
     listener = AsyncListener()
 
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[listener],
     )
@@ -777,7 +751,6 @@ async def test_async_listener_exception_handling():
         raise RuntimeError("listener failed")
 
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         listeners=[failing_listener],
     )
@@ -791,7 +764,7 @@ async def test_async_listener_exception_handling():
 
 async def test_async_decorator_with_fallback():
     """Async decorator with fallback returns fallback value on exception."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     @cb(fallback=lambda e: "fallback_value")
     async def func() -> str:
@@ -802,7 +775,7 @@ async def test_async_decorator_with_fallback():
 
 async def test_async_fallback_receives_exception():
     """Async fallback function receives the exception as argument."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
     received: list[Exception] = []
 
     def capture_fallback(e: Exception) -> str:
@@ -821,7 +794,6 @@ async def test_async_fallback_receives_exception():
 async def test_async_fallback_on_circuit_open():
     """Async fallback is called when circuit is OPEN."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(2) & FailureRate(0.5),
         retry=Cooldown(10.0),
     )
@@ -843,7 +815,7 @@ async def test_async_fallback_on_circuit_open():
 
 async def test_async_call_with_fallback():
     """async call_with_fallback returns fallback value on exception."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     result = await cb.call_with_fallback(
         async_failing_func, lambda e: f"fallback: {type(e).__name__}"
@@ -853,7 +825,7 @@ async def test_async_call_with_fallback():
 
 async def test_async_call_with_fallback_passes_args():
     """async call_with_fallback passes arguments to the function."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     async def add(a: int, b: int) -> int:
         return a + b
@@ -864,7 +836,7 @@ async def test_async_call_with_fallback_passes_args():
 
 async def test_async_default_tripper_requires_100_requests():
     """Async default tripper requires MinRequests(100) before tripping."""
-    cb = AsyncCircuitBreaker(name="test")
+    cb = AsyncCircuitBreaker()
 
     for _ in range(99):
         with pytest.raises(ValueError):
@@ -881,7 +853,6 @@ async def test_async_default_tripper_requires_100_requests():
 async def test_async_all_exception_types_tracked():
     """Async default tracker (All) tracks all exception types."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=MinRequests(3) & FailureRate(0.5),
     )
 
@@ -904,7 +875,6 @@ async def test_async_all_exception_types_tracked():
 async def test_async_max_half_open_calls_limits_concurrency():
     """max_half_open_calls limits concurrent execution in HALF_OPEN state."""
     cb = AsyncCircuitBreaker(
-        name="test",
         tripper=FailureStreak(1),
         retry=Cooldown(0.01),
         permit=All(),

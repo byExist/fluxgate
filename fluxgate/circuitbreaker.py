@@ -33,14 +33,12 @@ class CircuitBreakerInfo:
     """Circuit breaker state information.
 
     Attributes:
-        name: Circuit breaker name
         state: Current state (CLOSED, OPEN, HALF_OPEN, etc.)
         changed_at: Timestamp of last state change
         reopens: Number of times circuit reopened from HALF_OPEN to OPEN
         metrics: Aggregated metrics
     """
 
-    name: str
     state: str
     changed_at: float
     reopens: int
@@ -101,7 +99,6 @@ class CircuitBreaker:
     - HALF_OPEN: Testing if the service recovered, limited calls allowed
 
     Args:
-        name: Circuit breaker identifier
         window: Sliding window for metrics collection (default: CountWindow(100))
         tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
@@ -113,7 +110,7 @@ class CircuitBreaker:
     Examples:
         Basic usage with defaults:
 
-        >>> cb = CircuitBreaker("my-service")
+        >>> cb = CircuitBreaker()
         >>> @cb
         ... def call_api():
         ...     return requests.get("https://api.example.com")
@@ -121,7 +118,6 @@ class CircuitBreaker:
         Custom configuration with slow-call detection:
 
         >>> cb = CircuitBreaker(
-        ...     name="payment_api",
         ...     tracker=TypeOf(ConnectionError),
         ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
         ... )
@@ -134,7 +130,6 @@ class CircuitBreaker:
 
     def __init__(
         self,
-        name: str,
         window: Window | None = None,
         tracker: Tracker | None = None,
         tripper: Tripper | None = None,
@@ -142,7 +137,6 @@ class CircuitBreaker:
         permit: Permit | None = None,
         listeners: Iterable[Listener] = (),
     ) -> None:
-        self._name = name
         self._window = window or CountWindow(100)
         self._tracker = tracker or All()
         self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
@@ -395,7 +389,6 @@ class CircuitBreaker:
             Dictionary with circuit breaker state information
         """
         return CircuitBreakerInfo(
-            name=self._name,
             state=self._state.get_state_enum().value,
             changed_at=self._changed_at,
             reopens=self._reopens,
@@ -412,7 +405,6 @@ class CircuitBreaker:
         self._window.reset()
 
         signal = Signal(
-            circuit_name=self._name,
             old_state=current_state,
             new_state=StateEnum.CLOSED,
             timestamp=self._changed_at,
@@ -457,7 +449,6 @@ class CircuitBreaker:
         self._window.reset()
 
         signal = Signal(
-            circuit_name=self._name,
             old_state=current_state,
             new_state=state,
             timestamp=self._changed_at,
@@ -485,7 +476,6 @@ class AsyncCircuitBreaker:
     - HALF_OPEN: Testing if the service recovered, limited calls allowed
 
     Args:
-        name: Circuit breaker identifier
         window: Sliding window for metrics collection (default: CountWindow(100))
         tracker: Determines which exceptions to track as failures (default: All())
         tripper: Condition to open/close the circuit based on metrics
@@ -498,7 +488,7 @@ class AsyncCircuitBreaker:
     Examples:
         Basic usage with defaults:
 
-        >>> cb = AsyncCircuitBreaker("my-service")
+        >>> cb = AsyncCircuitBreaker()
         >>> @cb
         ... async def call_api():
         ...     async with httpx.AsyncClient() as client:
@@ -507,7 +497,6 @@ class AsyncCircuitBreaker:
         Custom configuration with slow-call detection:
 
         >>> cb = AsyncCircuitBreaker(
-        ...     name="payment_api",
         ...     tracker=TypeOf(httpx.ConnectError),
         ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
         ... )
@@ -519,7 +508,6 @@ class AsyncCircuitBreaker:
 
     def __init__(
         self,
-        name: str,
         window: Window | None = None,
         tracker: Tracker | None = None,
         tripper: Tripper | None = None,
@@ -528,7 +516,6 @@ class AsyncCircuitBreaker:
         max_half_open_calls: int = 10,
         listeners: Iterable[Listener | AsyncListener] = (),
     ) -> None:
-        self._name = name
         self._window = window or CountWindow(100)
         self._tracker = tracker or All()
         self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
@@ -831,7 +818,6 @@ class AsyncCircuitBreaker:
             Dictionary with circuit breaker state information
         """
         return CircuitBreakerInfo(
-            name=self._name,
             state=self._state.get_state_enum().value,
             changed_at=self._changed_at,
             reopens=self._reopens,
@@ -915,7 +901,6 @@ class AsyncCircuitBreaker:
             self._window.reset()
 
         signal = Signal(
-            circuit_name=self._name,
             old_state=current_state,
             new_state=state,
             timestamp=self._changed_at,

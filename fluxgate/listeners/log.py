@@ -15,6 +15,7 @@ class LogListener(Listener):
     Works with both CircuitBreaker and AsyncCircuitBreaker.
 
     Args:
+        name: Identifier for the circuit, included in every log line.
         logger: Custom logger instance. If None, uses the root logger.
         level_map: Mapping from new_state to log level (logging.INFO, etc.).
             Default levels: OPEN/FORCED_OPEN -> WARNING, others -> INFO.
@@ -30,12 +31,14 @@ class LogListener(Listener):
         >>> from fluxgate.listeners.log import LogListener
         >>>
         >>> logging.basicConfig(level=logging.INFO)
-        >>> cb = CircuitBreaker(..., listeners=[LogListener()])
+        >>> cb = CircuitBreaker(listeners=[LogListener(name="api")])
 
         With custom logger:
 
         >>> logger = logging.getLogger("my_app.circuit_breaker")
-        >>> cb = CircuitBreaker(..., listeners=[LogListener(logger=logger)])
+        >>> cb = CircuitBreaker(
+        ...     listeners=[LogListener(name="api", logger=logger)]
+        ... )
 
         With custom level_map:
 
@@ -45,7 +48,9 @@ class LogListener(Listener):
         ...     StateEnum.HALF_OPEN: logging.WARNING,
         ...     StateEnum.CLOSED: logging.DEBUG,
         ... }
-        >>> cb = CircuitBreaker(..., listeners=[LogListener(level_map=level_map)])
+        >>> cb = CircuitBreaker(
+        ...     listeners=[LogListener(name="api", level_map=level_map)]
+        ... )
     """
 
     DEFAULT_LEVEL_MAP: dict[StateEnum, int] = {
@@ -59,9 +64,11 @@ class LogListener(Listener):
 
     def __init__(
         self,
+        name: str,
         logger: logging.Logger | None = None,
         level_map: dict[StateEnum, int] | None = None,
     ) -> None:
+        self._name = name
         self._logger = logger or logging.getLogger()
         self._level_map = {**self.DEFAULT_LEVEL_MAP, **(level_map or {})}
 
@@ -72,7 +79,7 @@ class LogListener(Listener):
             level,
             "[%s] Circuit Breaker '%s' transitioned from %s to %s",
             timestamp,
-            signal.circuit_name,
+            self._name,
             signal.old_state.value,
             signal.new_state.value,
         )

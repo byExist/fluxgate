@@ -29,6 +29,9 @@ class PrometheusListener(Listener):
 
     Works with both CircuitBreaker and AsyncCircuitBreaker.
 
+    Args:
+        name: Identifier used as the ``circuit_name`` label on emitted metrics.
+
     Note:
         prometheus_client is thread-safe and can be safely used in async contexts.
 
@@ -39,20 +42,25 @@ class PrometheusListener(Listener):
         >>>
         >>> start_http_server(8000)
         >>>
-        >>> cb = CircuitBreaker(..., listeners=[PrometheusListener()])
-        >>> async_cb = AsyncCircuitBreaker(..., listeners=[PrometheusListener()])
+        >>> cb = CircuitBreaker(listeners=[PrometheusListener(name="api")])
+        >>> async_cb = AsyncCircuitBreaker(
+        ...     listeners=[PrometheusListener(name="api")]
+        ... )
         >>>
         >>> # Metrics available at http://localhost:8000/metrics
     """
 
+    def __init__(self, name: str) -> None:
+        self._name = name
+
     def __call__(self, signal: Signal) -> None:
         for state in StateEnum:
             _STATE_GAUGE.labels(
-                circuit_name=signal.circuit_name,
+                circuit_name=self._name,
                 state=state.value,
             ).set(1 if state == signal.new_state else 0)
         _STATE_TRANSITION.labels(
-            circuit_name=signal.circuit_name,
+            circuit_name=self._name,
             old_state=signal.old_state.value,
             new_state=signal.new_state.value,
         ).inc()

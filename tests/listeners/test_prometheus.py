@@ -37,10 +37,9 @@ def _get_counter_value(counter: Counter, **labels: str) -> float | None:
 
 def test_prometheus_listener_basic():
     """PrometheusListener updates Prometheus metrics."""
-    listener = PrometheusListener()
+    listener = PrometheusListener(name="test_circuit")
 
     signal = Signal(
-        circuit_name="test_circuit",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1234567890.0,
@@ -61,10 +60,9 @@ def test_prometheus_listener_basic():
 
 def test_prometheus_listener_state_transitions():
     """PrometheusListener tracks state transitions."""
-    listener = PrometheusListener()
+    listener = PrometheusListener(name="transition_test")
 
     signal = Signal(
-        circuit_name="transition_test",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1234567890.0,
@@ -92,23 +90,22 @@ def test_prometheus_listener_state_transitions():
 
 def test_prometheus_listener_multiple_circuits():
     """PrometheusListener handles multiple circuits independently."""
-    listener = PrometheusListener()
+    listener_a = PrometheusListener(name="circuit_a")
+    listener_b = PrometheusListener(name="circuit_b")
 
     signal1 = Signal(
-        circuit_name="circuit_a",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1.0,
     )
     signal2 = Signal(
-        circuit_name="circuit_b",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.HALF_OPEN,
         timestamp=2.0,
     )
 
-    listener(signal1)
-    listener(signal2)
+    listener_a(signal1)
+    listener_b(signal2)
 
     circuit_a_open = _get_gauge_value(
         _STATE_GAUGE, circuit_name="circuit_a", state="open"
@@ -123,10 +120,9 @@ def test_prometheus_listener_multiple_circuits():
 
 def test_prometheus_listener_all_states():
     """PrometheusListener correctly sets gauges for all states."""
-    listener = PrometheusListener()
+    listener = PrometheusListener(name="all_states_test")
 
     signal = Signal(
-        circuit_name="all_states_test",
         old_state=StateEnum.CLOSED,
         new_state=StateEnum.OPEN,
         timestamp=1.0,
@@ -146,8 +142,8 @@ async def test_prometheus_listener_with_async_circuit_breaker():
     """PrometheusListener works with AsyncCircuitBreaker."""
     from fluxgate import AsyncCircuitBreaker
 
-    listener = PrometheusListener()
-    cb = AsyncCircuitBreaker(name="async_prom_test", listeners=[listener])
+    listener = PrometheusListener(name="async_prom_test")
+    cb = AsyncCircuitBreaker(listeners=[listener])
 
     await cb.reset()
 

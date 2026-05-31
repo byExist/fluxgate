@@ -203,7 +203,7 @@ asyncio.run(main())
 
 ```python
 info = cb.info()
-print(f"State: {info.state.value}")
+print(f"State: {info.state}")
 print(f"Last state change: {info.changed_at}")
 print(f"Reopens at: {info.reopens}")
 print(f"Current metrics: {info.metrics}")

@@ -150,7 +150,7 @@ class WebhookListener(AsyncListener):
     async def __call__(self, signal: Signal) -> None:
         payload = {
             "circuit": self._name,
-            "transition": f"{signal.old_state.value} -> {signal.new_state.value}",
+            "transition": f"{signal.old_state} -> {signal.new_state}",
             "timestamp": signal.timestamp,
         }
         await self.client.post(self.url, json=payload)

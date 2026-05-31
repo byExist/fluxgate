@@ -107,8 +107,8 @@ class JsonLogListener(Listener):
         log_data = {
             "message": "Circuit breaker transition",
             "circuit_name": self.name,
-            "previous_state": signal.old_state.value,
-            "current_state": signal.new_state.value,
+            "previous_state": signal.old_state,
+            "current_state": signal.new_state,
             "timestamp_utc": signal.timestamp,
         }
         self.logger.info(json.dumps(log_data))

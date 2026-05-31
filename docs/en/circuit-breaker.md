@@ -199,7 +199,7 @@ You can inspect the current state and metrics of a circuit breaker at any time u
 
 ```python
 info = cb.info()
-print(f"State: {info.state.value}")
+print(f"State: {info.state}")
 print(f"Last state change: {info.changed_at}")
 print(f"Reopens at: {info.reopens}")
 print(f"Current metrics: {info.metrics}")

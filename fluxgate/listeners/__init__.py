@@ -11,28 +11,6 @@ Usage:
     from fluxgate.listeners.slack import SlackListener, AsyncSlackListener
 """
 
-from abc import ABC, abstractmethod
-
-from fluxgate.signal import Signal
+from fluxgate.listeners.base import AsyncListener, Listener
 
 __all__ = ["Listener", "AsyncListener"]
-
-
-class Listener(ABC):
-    """Base class for synchronous circuit breaker listeners.
-
-    Subclasses override ``__call__`` to react to state transitions.
-    """
-
-    @abstractmethod
-    def __call__(self, signal: Signal) -> None: ...
-
-
-class AsyncListener(ABC):
-    """Base class for asynchronous circuit breaker listeners.
-
-    Subclasses override ``__call__`` to react to state transitions.
-    """
-
-    @abstractmethod
-    async def __call__(self, signal: Signal) -> None: ...

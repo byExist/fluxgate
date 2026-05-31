@@ -5,7 +5,7 @@ import httpx
 
 from fluxgate.listeners import AsyncListener, Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 __all__ = ["SlackListener", "AsyncSlackListener", "Template"]
 
@@ -16,23 +16,23 @@ class Template(TypedDict):
     description: str
 
 
-_DEFAULT_TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
-    (StateEnum.CLOSED, StateEnum.OPEN): {
+_DEFAULT_TRANSITION_TEMPLATES: dict[tuple[State, State], Template] = {
+    ("closed", "open"): {
         "title": "🚨 Circuit Breaker Triggered",
         "color": "#FF4C4C",
         "description": "The request failure rate exceeded the threshold.",
     },
-    (StateEnum.OPEN, StateEnum.HALF_OPEN): {
+    ("open", "half_open"): {
         "title": "🔄 Attempting Circuit Breaker Recovery",
         "color": "#FFA500",
         "description": "Testing service status with partial requests.",
     },
-    (StateEnum.HALF_OPEN, StateEnum.OPEN): {
+    ("half_open", "open"): {
         "title": "⚠️ Circuit Breaker Re-triggered",
         "color": "#FF4C4C",
         "description": "Test request failed, reverting to open state.",
     },
-    (StateEnum.HALF_OPEN, StateEnum.CLOSED): {
+    ("half_open", "closed"): {
         "title": "✅ Circuit Breaker Recovered",
         "color": "#36a64f",
         "description": "Test request succeeded, service is now healthy.",
@@ -44,6 +44,10 @@ _DEFAULT_FALLBACK_TEMPLATE: Template = {
     "color": "#808080",
     "description": "Circuit breaker state has been changed.",
 }
+
+
+_SLACK_POST_URL = "https://slack.com/api/chat.postMessage"
+_THREAD_CLEAR_STATES = ("closed", "disabled", "metrics_only")
 
 
 def _build_message(
@@ -73,7 +77,7 @@ def _build_message(
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": f"*State Transition:*\n{signal.old_state.value} → {signal.new_state.value}",
+                                "text": f"*State Transition:*\n{signal.old_state} → {signal.new_state}",
                             },
                             {
                                 "type": "mrkdwn",
@@ -91,12 +95,53 @@ def _build_message(
     }
     if thread:
         payload["thread_ts"] = thread
-    if signal.new_state == StateEnum.CLOSED:
+    if signal.new_state == "closed":
         payload["reply_broadcast"] = True
     return payload
 
 
-class SlackListener(Listener):
+class _SlackBase:
+    """Shared template, payload, and thread-tracking logic for Slack listeners.
+
+    Subclasses own the HTTP client and define ``__call__`` for their concurrency
+    model (sync ``def`` or ``async def``).
+    """
+
+    TRANSITION_TEMPLATES: ClassVar[dict[tuple[State, State], Template]] = (
+        _DEFAULT_TRANSITION_TEMPLATES
+    )
+    FALLBACK_TEMPLATE: ClassVar[Template] = _DEFAULT_FALLBACK_TEMPLATE
+
+    def __init__(self, name: str, channel: str, token: str) -> None:
+        self._name = name
+        self._channel = channel
+        self._token = token
+        self._open_thread: Optional[str] = None
+
+    def _build_payload(self, signal: Signal) -> dict[str, Any]:
+        template = self.TRANSITION_TEMPLATES.get(
+            (signal.old_state, signal.new_state), self.FALLBACK_TEMPLATE
+        )
+        return _build_message(
+            channel=self._channel,
+            name=self._name,
+            signal=signal,
+            template=template,
+            thread=self._open_thread,
+        )
+
+    def _consume_response(self, signal: Signal, data: dict[str, Any]) -> None:
+        ts = data.get("ts")
+        if not data.get("ok") or not ts:
+            raise RuntimeError(f"Failed to send message: {data.get('error')}")
+        if signal.new_state == "open":
+            if self._open_thread is None:
+                self._open_thread = ts
+        elif signal.new_state in _THREAD_CLEAR_STATES:
+            self._open_thread = None
+
+
+class SlackListener(_SlackBase, Listener):
     """Listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.
@@ -130,7 +175,7 @@ class SlackListener(Listener):
 
         >>> class KoreanSlackListener(SlackListener):
         ...     TRANSITION_TEMPLATES = {
-        ...         (StateEnum.CLOSED, StateEnum.OPEN): {
+        ...         ("closed", "open"): {
         ...             "title": "🚨 서킷 브레이커 작동",
         ...             "color": "#FF4C4C",
         ...             "description": "요청 실패율이 임계값을 초과했습니다.",
@@ -144,56 +189,21 @@ class SlackListener(Listener):
         ...     }
     """
 
-    TRANSITION_TEMPLATES: ClassVar[dict[tuple[StateEnum, StateEnum], Template]] = (
-        _DEFAULT_TRANSITION_TEMPLATES
-    )
-    FALLBACK_TEMPLATE: ClassVar[Template] = _DEFAULT_FALLBACK_TEMPLATE
-
     def __init__(self, name: str, channel: str, token: str) -> None:
-        self._name = name
-        self._channel = channel
-        self._token = token
+        super().__init__(name, channel, token)
         self._client = httpx.Client(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,
         )
-        self._open_thread: Optional[str] = None
-
-    def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
-        """Get message template with fallback for unknown transitions."""
-        return self.TRANSITION_TEMPLATES.get(
-            (old_state, new_state), self.FALLBACK_TEMPLATE
-        )
 
     def __call__(self, signal: Signal) -> None:
-        template = self._get_template(signal.old_state, signal.new_state)
-        message = _build_message(
-            channel=self._channel,
-            name=self._name,
-            signal=signal,
-            template=template,
-            thread=self._open_thread,
-        )
-        response = self._client.post(
-            "https://slack.com/api/chat.postMessage", json=message
-        )
+        payload = self._build_payload(signal)
+        response = self._client.post(_SLACK_POST_URL, json=payload)
         response.raise_for_status()
-        data = response.json()
-        ts = data.get("ts")
-        if not data.get("ok") or not ts:
-            raise RuntimeError(f"Failed to send message: {data.get('error')}")
-        if signal.new_state == StateEnum.OPEN:
-            if self._open_thread is None:
-                self._open_thread = ts
-        elif signal.new_state in (
-            StateEnum.CLOSED,
-            StateEnum.DISABLED,
-            StateEnum.METRICS_ONLY,
-        ):
-            self._open_thread = None
+        self._consume_response(signal, response.json())
 
 
-class AsyncSlackListener(AsyncListener):
+class AsyncSlackListener(_SlackBase, AsyncListener):
     """Async listener that sends circuit breaker state transitions to Slack.
 
     Posts formatted messages to a Slack channel when state transitions occur.
@@ -227,50 +237,15 @@ class AsyncSlackListener(AsyncListener):
         >>> cb = AsyncCircuitBreaker(listeners=[listener])
     """
 
-    TRANSITION_TEMPLATES: ClassVar[dict[tuple[StateEnum, StateEnum], Template]] = (
-        SlackListener.TRANSITION_TEMPLATES
-    )
-    FALLBACK_TEMPLATE: ClassVar[Template] = SlackListener.FALLBACK_TEMPLATE
-
     def __init__(self, name: str, channel: str, token: str) -> None:
-        self._name = name
-        self._channel = channel
-        self._token = token
+        super().__init__(name, channel, token)
         self._client = httpx.AsyncClient(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,
         )
-        self._open_thread: Optional[str] = None
-
-    def _get_template(self, old_state: StateEnum, new_state: StateEnum) -> Template:
-        """Get message template with fallback for unknown transitions."""
-        return self.TRANSITION_TEMPLATES.get(
-            (old_state, new_state), self.FALLBACK_TEMPLATE
-        )
 
     async def __call__(self, signal: Signal) -> None:
-        template = self._get_template(signal.old_state, signal.new_state)
-        message = _build_message(
-            channel=self._channel,
-            name=self._name,
-            signal=signal,
-            template=template,
-            thread=self._open_thread,
-        )
-        response = await self._client.post(
-            "https://slack.com/api/chat.postMessage", json=message
-        )
+        payload = self._build_payload(signal)
+        response = await self._client.post(_SLACK_POST_URL, json=payload)
         response.raise_for_status()
-        data = response.json()
-        ts = data.get("ts")
-        if not data.get("ok") or not ts:
-            raise RuntimeError(f"Failed to send message: {data.get('error')}")
-        if signal.new_state == StateEnum.OPEN:
-            if self._open_thread is None:
-                self._open_thread = ts
-        elif signal.new_state in (
-            StateEnum.CLOSED,
-            StateEnum.DISABLED,
-            StateEnum.METRICS_ONLY,
-        ):
-            self._open_thread = None
+        self._consume_response(signal, response.json())

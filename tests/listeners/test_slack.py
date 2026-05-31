@@ -6,7 +6,6 @@ from unittest.mock import Mock, AsyncMock, patch
 import pytest
 
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
 
 pytest.importorskip("httpx")
 
@@ -50,8 +49,8 @@ def test_closed_to_open_sends_triggered_message(mock_sync_client: Mock):
     """CLOSED -> OPEN sends triggered message."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -67,8 +66,8 @@ def test_open_to_half_open_sends_recovery_attempt_message(mock_sync_client: Mock
     """OPEN -> HALF_OPEN sends recovery attempt message."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.OPEN,
-        new_state=StateEnum.HALF_OPEN,
+        old_state="open",
+        new_state="half_open",
         timestamp=1.0,
     )
 
@@ -82,8 +81,8 @@ def test_half_open_to_open_sends_re_triggered_message(mock_sync_client: Mock):
     """HALF_OPEN -> OPEN sends re-triggered message."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.HALF_OPEN,
-        new_state=StateEnum.OPEN,
+        old_state="half_open",
+        new_state="open",
         timestamp=1.0,
     )
 
@@ -97,8 +96,8 @@ def test_half_open_to_closed_sends_recovered_message(mock_sync_client: Mock):
     """HALF_OPEN -> CLOSED sends recovered message with broadcast."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.HALF_OPEN,
-        new_state=StateEnum.CLOSED,
+        old_state="half_open",
+        new_state="closed",
         timestamp=1.0,
     )
 
@@ -113,8 +112,8 @@ def test_unknown_transition_sends_fallback_message(mock_sync_client: Mock):
     """Unknown transition sends fallback message."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.DISABLED,
-        new_state=StateEnum.CLOSED,
+        old_state="disabled",
+        new_state="closed",
         timestamp=1.0,
     )
 
@@ -128,8 +127,8 @@ def test_open_transition_starts_new_thread(mock_sync_client: Mock):
     """First CLOSED -> OPEN starts a new thread (no thread_ts)."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1.0,
     )
 
@@ -146,8 +145,8 @@ def test_subsequent_transitions_use_thread(mock_sync_client: Mock):
     # First: CLOSED -> OPEN
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -155,8 +154,8 @@ def test_subsequent_transitions_use_thread(mock_sync_client: Mock):
     # Second: OPEN -> HALF_OPEN
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.HALF_OPEN,
+            old_state="open",
+            new_state="half_open",
             timestamp=2.0,
         )
     )
@@ -172,8 +171,8 @@ def test_recovery_clears_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -181,8 +180,8 @@ def test_recovery_clears_thread(mock_sync_client: Mock):
     # Recover
     listener(
         Signal(
-            old_state=StateEnum.HALF_OPEN,
-            new_state=StateEnum.CLOSED,
+            old_state="half_open",
+            new_state="closed",
             timestamp=2.0,
         )
     )
@@ -190,8 +189,8 @@ def test_recovery_clears_thread(mock_sync_client: Mock):
     # New incident
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=3.0,
         )
     )
@@ -207,15 +206,15 @@ def test_separate_listeners_have_separate_threads(mock_sync_client: Mock):
 
     listener_a(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
     listener_b(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=2.0,
         )
     )
@@ -233,8 +232,8 @@ def test_raises_on_api_error(mock_sync_client: Mock):
 
     listener = SlackListener(name="api", channel="#invalid", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1.0,
     )
 
@@ -246,8 +245,8 @@ async def test_async_listener_sends_message(mock_async_client: AsyncMock):
     """AsyncSlackListener sends message to Slack."""
     listener = AsyncSlackListener(name="api", channel="#alerts", token="xoxb-test")
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1.0,
     )
 
@@ -266,8 +265,8 @@ async def test_async_listener_threading(mock_async_client: AsyncMock):
     # First: CLOSED -> OPEN
     await listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -275,8 +274,8 @@ async def test_async_listener_threading(mock_async_client: AsyncMock):
     # Second: OPEN -> HALF_OPEN
     await listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.HALF_OPEN,
+            old_state="open",
+            new_state="half_open",
             timestamp=2.0,
         )
     )
@@ -292,8 +291,8 @@ def test_reset_from_open_clears_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -301,8 +300,8 @@ def test_reset_from_open_clears_thread(mock_sync_client: Mock):
     # Direct reset (skipping HALF_OPEN)
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.CLOSED,
+            old_state="open",
+            new_state="closed",
             timestamp=2.0,
         )
     )
@@ -310,8 +309,8 @@ def test_reset_from_open_clears_thread(mock_sync_client: Mock):
     # New incident should start fresh thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=3.0,
         )
     )
@@ -327,8 +326,8 @@ def test_disable_clears_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -336,8 +335,8 @@ def test_disable_clears_thread(mock_sync_client: Mock):
     # Disable circuit
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.DISABLED,
+            old_state="open",
+            new_state="disabled",
             timestamp=2.0,
         )
     )
@@ -345,15 +344,15 @@ def test_disable_clears_thread(mock_sync_client: Mock):
     # Re-enable and new incident
     listener(
         Signal(
-            old_state=StateEnum.DISABLED,
-            new_state=StateEnum.CLOSED,
+            old_state="disabled",
+            new_state="closed",
             timestamp=3.0,
         )
     )
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=4.0,
         )
     )
@@ -369,8 +368,8 @@ def test_metrics_only_clears_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -378,8 +377,8 @@ def test_metrics_only_clears_thread(mock_sync_client: Mock):
     # Switch to metrics only
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.METRICS_ONLY,
+            old_state="open",
+            new_state="metrics_only",
             timestamp=2.0,
         )
     )
@@ -387,15 +386,15 @@ def test_metrics_only_clears_thread(mock_sync_client: Mock):
     # Re-enable and new incident
     listener(
         Signal(
-            old_state=StateEnum.METRICS_ONLY,
-            new_state=StateEnum.CLOSED,
+            old_state="metrics_only",
+            new_state="closed",
             timestamp=3.0,
         )
     )
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=4.0,
         )
     )
@@ -411,8 +410,8 @@ def test_forced_open_keeps_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -420,8 +419,8 @@ def test_forced_open_keeps_thread(mock_sync_client: Mock):
     # Force open (manual intervention)
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.FORCED_OPEN,
+            old_state="open",
+            new_state="forced_open",
             timestamp=2.0,
         )
     )
@@ -438,8 +437,8 @@ def test_reset_from_forced_open_clears_thread(mock_sync_client: Mock):
     # Start thread
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -447,8 +446,8 @@ def test_reset_from_forced_open_clears_thread(mock_sync_client: Mock):
     # Force open
     listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.FORCED_OPEN,
+            old_state="open",
+            new_state="forced_open",
             timestamp=2.0,
         )
     )
@@ -456,8 +455,8 @@ def test_reset_from_forced_open_clears_thread(mock_sync_client: Mock):
     # Reset
     listener(
         Signal(
-            old_state=StateEnum.FORCED_OPEN,
-            new_state=StateEnum.CLOSED,
+            old_state="forced_open",
+            new_state="closed",
             timestamp=3.0,
         )
     )
@@ -465,8 +464,8 @@ def test_reset_from_forced_open_clears_thread(mock_sync_client: Mock):
     # New incident should start fresh
     listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=4.0,
         )
     )
@@ -482,8 +481,8 @@ async def test_async_reset_from_open_clears_thread(mock_async_client: AsyncMock)
     # Start thread
     await listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -491,8 +490,8 @@ async def test_async_reset_from_open_clears_thread(mock_async_client: AsyncMock)
     # Direct reset
     await listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.CLOSED,
+            old_state="open",
+            new_state="closed",
             timestamp=2.0,
         )
     )
@@ -500,8 +499,8 @@ async def test_async_reset_from_open_clears_thread(mock_async_client: AsyncMock)
     # New incident
     await listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=3.0,
         )
     )
@@ -517,8 +516,8 @@ async def test_async_disable_clears_thread(mock_async_client: AsyncMock):
     # Start thread
     await listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=1.0,
         )
     )
@@ -526,8 +525,8 @@ async def test_async_disable_clears_thread(mock_async_client: AsyncMock):
     # Disable
     await listener(
         Signal(
-            old_state=StateEnum.OPEN,
-            new_state=StateEnum.DISABLED,
+            old_state="open",
+            new_state="disabled",
             timestamp=2.0,
         )
     )
@@ -535,15 +534,15 @@ async def test_async_disable_clears_thread(mock_async_client: AsyncMock):
     # Re-enable and new incident
     await listener(
         Signal(
-            old_state=StateEnum.DISABLED,
-            new_state=StateEnum.CLOSED,
+            old_state="disabled",
+            new_state="closed",
             timestamp=3.0,
         )
     )
     await listener(
         Signal(
-            old_state=StateEnum.CLOSED,
-            new_state=StateEnum.OPEN,
+            old_state="closed",
+            new_state="open",
             timestamp=4.0,
         )
     )

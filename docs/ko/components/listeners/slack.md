@@ -119,28 +119,28 @@ Listener는 장애 사이클을 기반으로 대화를 체계적으로 유지하
 
 ```python
 from fluxgate.listeners.slack import SlackListener, Template
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 class KoreanSlackListener(SlackListener):
     """한국어 메시지를 사용하는 SlackListener."""
 
-    TRANSITION_TEMPLATES: dict[tuple[StateEnum, StateEnum], Template] = {
-        (StateEnum.CLOSED, StateEnum.OPEN): {
+    TRANSITION_TEMPLATES: dict[tuple[State, State], Template] = {
+        ("closed", "open"): {
             "title": "🚨 서킷 브레이커 작동",
             "color": "#FF4C4C",
             "description": "요청 실패율이 임계값을 초과했습니다.",
         },
-        (StateEnum.OPEN, StateEnum.HALF_OPEN): {
+        ("open", "half_open"): {
             "title": "🔄 서킷 브레이커 복구 시도 중",
             "color": "#FFA500",
             "description": "부분 요청으로 서비스 상태를 테스트하고 있습니다.",
         },
-        (StateEnum.HALF_OPEN, StateEnum.OPEN): {
+        ("half_open", "open"): {
             "title": "⚠️ 서킷 브레이커 재작동",
             "color": "#FF4C4C",
             "description": "테스트 요청이 실패하여 열림 상태로 복귀합니다.",
         },
-        (StateEnum.HALF_OPEN, StateEnum.CLOSED): {
+        ("half_open", "closed"): {
             "title": "✅ 서킷 브레이커 복구됨",
             "color": "#36a64f",
             "description": "테스트 요청이 성공하여 서비스가 정상입니다.",

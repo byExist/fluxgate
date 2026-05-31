@@ -13,6 +13,57 @@ def _empty_slow_counts() -> dict[float, int]:
     return {}
 
 
+@dataclass
+class _Aggregator:
+    """Running counts derived from admitted records.
+
+    Centralises the cumulative metric state shared by both window types.
+    Adding a new aggregate (e.g. p99 latency) means extending this one
+    dataclass instead of touching every window's admit/evict path.
+    """
+
+    total_count: int = 0
+    total_failure_count: int = 0
+    total_duration: float = 0.0
+    slow_counts: dict[float, int] = field(default_factory=_empty_slow_counts)
+
+    def add(self, record: Record) -> None:
+        self.total_count += 1
+        self.total_failure_count += 0 if record.success else 1
+        self.total_duration += record.duration
+        for t in record.slow_at:
+            self.slow_counts[t] = self.slow_counts.get(t, 0) + 1
+
+    def remove(self, record: Record) -> None:
+        self.total_count -= 1
+        self.total_failure_count -= 0 if record.success else 1
+        self.total_duration -= record.duration
+        for t in record.slow_at:
+            self.slow_counts[t] -= 1
+
+    def subtract(self, other: "_Aggregator") -> None:
+        """Subtract another aggregator's counts (used when a bucket expires)."""
+        self.total_count -= other.total_count
+        self.total_failure_count -= other.total_failure_count
+        self.total_duration -= other.total_duration
+        for t, count in other.slow_counts.items():
+            self.slow_counts[t] -= count
+
+    def reset(self) -> None:
+        self.total_count = 0
+        self.total_failure_count = 0
+        self.total_duration = 0.0
+        self.slow_counts.clear()
+
+    def to_metric(self) -> Metric:
+        return Metric(
+            total_count=self.total_count,
+            failure_count=self.total_failure_count,
+            total_duration=self.total_duration,
+            slow_counts=dict(self.slow_counts),
+        )
+
+
 class Window(ABC):
     """Base class for sliding windows over recent call records.
 
@@ -52,46 +103,21 @@ class CountWindow(Window):
     def __init__(self, size: int) -> None:
         self._max_size = size
         self._records: deque[Record] = deque(maxlen=size)
-        self._total_count = 0
-        self._total_failure_count = 0
-        self._total_duration = 0.0
-        self._slow_counts: dict[float, int] = {}
+        self._agg = _Aggregator()
 
     def record(self, record: Record) -> None:
         if len(self._records) == self._max_size:
             evicted = self._records.popleft()
-            self._evict(evicted)
-        self._admit(record)
-
-    def _admit(self, record: Record) -> None:
+            self._agg.remove(evicted)
         self._records.append(record)
-        self._total_count += 1
-        self._total_duration += record.duration
-        self._total_failure_count += 1 if not record.success else 0
-        for t in record.slow_at:
-            self._slow_counts[t] = self._slow_counts.get(t, 0) + 1
-
-    def _evict(self, evicted: Record) -> None:
-        self._total_count -= 1
-        self._total_failure_count -= 1 if not evicted.success else 0
-        self._total_duration -= evicted.duration
-        for t in evicted.slow_at:
-            self._slow_counts[t] -= 1
+        self._agg.add(record)
 
     def get_metric(self) -> Metric:
-        return Metric(
-            total_count=self._total_count,
-            failure_count=self._total_failure_count,
-            total_duration=self._total_duration,
-            slow_counts=dict(self._slow_counts),
-        )
+        return self._agg.to_metric()
 
     def reset(self) -> None:
         self._records.clear()
-        self._total_count = 0
-        self._total_failure_count = 0
-        self._total_duration = 0.0
-        self._slow_counts.clear()
+        self._agg.reset()
 
 
 class TimeWindow(Window):
@@ -111,50 +137,11 @@ class TimeWindow(Window):
         are grouped into the same bucket.
     """
 
-    @dataclass
-    class Bucket:
-        sec_count: int = field(default=0)
-        sec_failure_count: int = field(default=0)
-        sec_total_duration: float = field(default=0.0)
-        sec_slow_counts: dict[float, int] = field(default_factory=_empty_slow_counts)
-
-        def admit(self, record: Record) -> None:
-            self.sec_count += 1
-            self.sec_failure_count += 1 if not record.success else 0
-            self.sec_total_duration += record.duration
-            for t in record.slow_at:
-                self.sec_slow_counts[t] = self.sec_slow_counts.get(t, 0) + 1
-
-        def reset(self) -> None:
-            self.sec_count = 0
-            self.sec_failure_count = 0
-            self.sec_total_duration = 0.0
-            self.sec_slow_counts.clear()
-
     def __init__(self, size: int) -> None:
         self._size = size
-        self._buckets = [self.Bucket() for _ in range(size)]
+        self._buckets: list[_Aggregator] = [_Aggregator() for _ in range(size)]
         self._timestamps = [0 for _ in range(size)]
-        self._total_count = 0
-        self._total_failure_count = 0
-        self._total_duration = 0.0
-        self._slow_counts: dict[float, int] = {}
-
-    def _admit(self, record: Record, bucket: Bucket) -> None:
-        self._total_count += 1
-        self._total_failure_count += 1 if not record.success else 0
-        self._total_duration += record.duration
-        for t in record.slow_at:
-            self._slow_counts[t] = self._slow_counts.get(t, 0) + 1
-        bucket.admit(record)
-
-    def _evict(self, evicted: Bucket) -> None:
-        self._total_count -= evicted.sec_count
-        self._total_failure_count -= evicted.sec_failure_count
-        self._total_duration -= evicted.sec_total_duration
-        for t, count in evicted.sec_slow_counts.items():
-            self._slow_counts[t] -= count
-        evicted.reset()
+        self._total = _Aggregator()
 
     def record(self, record: Record) -> None:
         now = int(record.timestamp)
@@ -162,25 +149,18 @@ class TimeWindow(Window):
         bucket = self._buckets[index]
 
         if self._timestamps[index] != now:
-            evicted = self._buckets[index]
-            self._evict(evicted)
+            self._total.subtract(bucket)
+            bucket.reset()
             self._timestamps[index] = now
 
-        self._admit(record, bucket)
+        bucket.add(record)
+        self._total.add(record)
 
     def get_metric(self) -> Metric:
-        return Metric(
-            total_count=self._total_count,
-            failure_count=self._total_failure_count,
-            total_duration=self._total_duration,
-            slow_counts=dict(self._slow_counts),
-        )
+        return self._total.to_metric()
 
     def reset(self) -> None:
         for bucket in self._buckets:
             bucket.reset()
         self._timestamps = [0 for _ in range(self._size)]
-        self._total_count = 0
-        self._total_failure_count = 0
-        self._total_duration = 0.0
-        self._slow_counts.clear()
+        self._total.reset()

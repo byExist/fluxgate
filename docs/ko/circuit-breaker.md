@@ -58,7 +58,7 @@ try:
     result = call_api()
 except CallNotPermittedError as e:
     # 회로가 열려 있으므로, 대체 로직을 실행합니다.
-    print(f"Circuit is open: {e.message}")
+    print(f"Circuit is open: {e}")
     return {"fallback": "data"}
 ```
 
@@ -203,14 +203,12 @@ asyncio.run(main())
 
 ```python
 info = cb.info()
-print(f"Circuit: {info.name}")
-print(f"State: {info.state}")
+print(f"State: {info.state.value}")
 print(f"Last state change: {info.changed_at}")
 print(f"Reopens at: {info.reopens}")
 print(f"Current metrics: {info.metrics}")
 
 # 출력 예시
-# Circuit: payment_api
 # State: closed
 # Last state change: 1234567890.123
 # Reopens at: 0

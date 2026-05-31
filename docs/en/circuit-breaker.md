@@ -57,7 +57,7 @@ try:
     result = call_api()
 except CallNotPermittedError as e:
     # The circuit is open, so execute fallback logic.
-    print(f"Circuit is open: {e.message}")
+    print(f"Circuit is open: {e}")
     return {"fallback": "data"}
 ```
 
@@ -199,14 +199,12 @@ You can inspect the current state and metrics of a circuit breaker at any time u
 
 ```python
 info = cb.info()
-print(f"Circuit: {info.name}")
-print(f"State: {info.state}")
+print(f"State: {info.state.value}")
 print(f"Last state change: {info.changed_at}")
 print(f"Reopens at: {info.reopens}")
 print(f"Current metrics: {info.metrics}")
 
 # Example output:
-# Circuit: payment_api
 # State: closed
 # Last state change: 1234567890.123
 # Reopens at: 0

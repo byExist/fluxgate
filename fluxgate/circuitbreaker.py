@@ -814,9 +814,7 @@ class AsyncCircuitBreaker:
         self._consecutive_failures += 1
         self._window.record(Record(success=False))
 
-    async def _try_transition_to_open(
-        self, metric: Metric, from_state: State
-    ) -> bool:
+    async def _try_transition_to_open(self, metric: Metric, from_state: State) -> bool:
         async with self._state_lock:
             current_state = self._state.state
             if current_state != from_state:

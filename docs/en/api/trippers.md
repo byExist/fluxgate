@@ -6,6 +6,8 @@ For a high-level guide on choosing and combining trippers, see the [Trippers Com
 
 ---
 
+::: fluxgate.trippers.CallContext
+
 ::: fluxgate.trippers.Closed
 
 ::: fluxgate.trippers.HalfOpened

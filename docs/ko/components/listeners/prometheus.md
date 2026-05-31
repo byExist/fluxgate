@@ -188,7 +188,7 @@ inventory_cb = CircuitBreaker(
 from prometheus_client import Counter
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 # OPEN 전환만 계산하는 커스텀 메트릭을 정의합니다.
 OPEN_TRANSITIONS = Counter(
@@ -202,7 +202,7 @@ class CustomPrometheusListener(Listener):
         self._name = name
 
     def __call__(self, signal: Signal) -> None:
-        if signal.new_state == StateEnum.OPEN:
+        if signal.new_state == "open":
             OPEN_TRANSITIONS.labels(circuit_name=self._name).inc()
 ```
 

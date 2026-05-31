@@ -3,7 +3,7 @@ import time
 
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 __all__ = ["LogListener"]
 
@@ -42,31 +42,30 @@ class LogListener(Listener):
 
         With custom level_map:
 
-        >>> from fluxgate.state import StateEnum
         >>> level_map = {
-        ...     StateEnum.OPEN: logging.ERROR,
-        ...     StateEnum.HALF_OPEN: logging.WARNING,
-        ...     StateEnum.CLOSED: logging.DEBUG,
+        ...     "open": logging.ERROR,
+        ...     "half_open": logging.WARNING,
+        ...     "closed": logging.DEBUG,
         ... }
         >>> cb = CircuitBreaker(
         ...     listeners=[LogListener(name="api", level_map=level_map)]
         ... )
     """
 
-    DEFAULT_LEVEL_MAP: dict[StateEnum, int] = {
-        StateEnum.CLOSED: logging.INFO,
-        StateEnum.OPEN: logging.WARNING,
-        StateEnum.HALF_OPEN: logging.INFO,
-        StateEnum.METRICS_ONLY: logging.INFO,
-        StateEnum.DISABLED: logging.INFO,
-        StateEnum.FORCED_OPEN: logging.WARNING,
+    DEFAULT_LEVEL_MAP: dict[State, int] = {
+        "closed": logging.INFO,
+        "open": logging.WARNING,
+        "half_open": logging.INFO,
+        "metrics_only": logging.INFO,
+        "disabled": logging.INFO,
+        "forced_open": logging.WARNING,
     }
 
     def __init__(
         self,
         name: str,
         logger: logging.Logger | None = None,
-        level_map: dict[StateEnum, int] | None = None,
+        level_map: dict[State, int] | None = None,
     ) -> None:
         self._name = name
         self._logger = logger or logging.getLogger()
@@ -80,6 +79,6 @@ class LogListener(Listener):
             "[%s] Circuit Breaker '%s' transitioned from %s to %s",
             timestamp,
             self._name,
-            signal.old_state.value,
-            signal.new_state.value,
+            signal.old_state,
+            signal.new_state,
         )

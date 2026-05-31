@@ -18,6 +18,6 @@
 
 이것은 가장 일반적으로 상호 작용할 열거형(enum) 및 예외입니다.
 
-::: fluxgate.state.StateEnum
+::: fluxgate.state.State
 
 ::: fluxgate.errors.CallNotPermittedError

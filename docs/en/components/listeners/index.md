@@ -22,12 +22,12 @@ Listeners receive a `Signal` object on state transitions:
 
 ```python
 from dataclasses import dataclass
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 @dataclass(frozen=True)
 class Signal:
-    old_state: StateEnum  # Previous state
-    new_state: StateEnum  # New state
+    old_state: State  # Previous state
+    new_state: State  # New state
     timestamp: float      # Transition time (Unix timestamp)
 ```
 
@@ -119,7 +119,7 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ```python
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 class DatabaseListener(Listener):
     def __init__(self, name: str, db_connection):
@@ -127,7 +127,7 @@ class DatabaseListener(Listener):
         self.db = db_connection
 
     def __call__(self, signal: Signal) -> None:
-        if signal.new_state == StateEnum.OPEN:
+        if signal.new_state == "open":
             self.db.execute(
                 "INSERT INTO circuit_events (name, timestamp) VALUES (?, ?)",
                 (self._name, signal.timestamp)

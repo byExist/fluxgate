@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026.05.31
+
+### Changed
+
+- **Slack listeners share a private base class (`_SlackBase`)**. `SlackListener` and `AsyncSlackListener` no longer duplicate template lookup, payload construction, and thread-tracking logic line-by-line; only the HTTP client and `__call__` differ. As a side effect, both classes now read defaults from the shared base, so overriding `TRANSITION_TEMPLATES` on `SlackListener` no longer leaks into `AsyncSlackListener` (which was an accident of the previous direct reference).
+- **Window cumulative counters consolidated into `_Aggregator`**. The five-counter accumulation pattern (`total_count`, `total_failure_count`, `total_duration`, `slow_counts`) previously lived in three places — `CountWindow._admit`, `TimeWindow._admit`, and `TimeWindow.Bucket.admit`. They now live in one dataclass with `add`/`remove`/`subtract`/`reset`/`to_metric` methods. Adding a new aggregate metric (e.g. p99 latency) is now a single-site change. Public window API is unchanged.
+- **State instances reused via a `_states` dict**. Each breaker now builds one instance per `State` value at construction time and looks up `self._states[state]` in `_transition_to`. The six-branch `if/elif/else` ladder is gone; the previous silent `else` fallback that mapped unknown state values to `_ForcedOpen` becomes a `KeyError` instead, so a missing state in the dict fails loudly. State classes have no per-transition mutable state, so reuse is safe.
+- **State `execute` methods use `_record_success` / `_record_failure` helpers**. The `Record(success=..., duration=..., slow_at=_classify_slow(...))` + counter-update boilerplate previously appeared six times across `_Closed`, `_HalfOpen`, `_MetricsOnly` (sync and async). Centralising it makes what each state actually decides — tripper checks, transitions, no-op — visible at a glance. In the async breaker the helpers require the caller to hold `_window_lock`, keeping locking responsibility at the call site.
+
+### Breaking Changes
+
+- **`StateEnum` enum replaced with `State` Literal alias** (`fluxgate.State`). State values were always just six fixed strings with no behaviour attached — a Literal expresses that more honestly and removes the constant `.value` noise. Affects `CircuitBreakerInfo.state`, `Signal.old_state`/`new_state`, `CallContext.state`, and any user code that compares state values. Migration: replace `StateEnum.OPEN` with `"open"`, `StateEnum.CLOSED` with `"closed"`, etc. (full set: `"closed"`, `"open"`, `"half_open"`, `"metrics_only"`, `"disabled"`, `"forced_open"`). To iterate all valid states, use `typing.get_args(State)` instead of iterating the enum.
+- **`CallNotPermittedError.message` attribute removed**. The message was stored twice (in `args[0]` via `super().__init__` and again as `self.message`). Use `str(err)` or `err.args[0]` to read the message — the standard Python convention since PEP 352.
+- **`Tripper.__call__` signature changed to a single `CallContext` argument**. The previous `(metric, state, consecutive_failures)` triple is replaced by `(ctx: CallContext)`, where `CallContext` is a frozen dataclass exposing `.metric`, `.state`, and `.consecutive_failures`. Only `FailureStreak` actually used `consecutive_failures`, so the previous signature forced every other tripper to declare an unused parameter. Future additions to the breaker's per-call state can be added to `CallContext` without changing the signature again.
+
+**Migration (`Tripper.__call__`):**
+
+```python
+# Before (v0.8.x)
+from fluxgate.trippers import Tripper
+from fluxgate.metric import Metric
+from fluxgate.state import StateEnum
+
+class MyTripper(Tripper):
+    def __call__(
+        self, metric: Metric, state: StateEnum, consecutive_failures: int
+    ) -> bool:
+        return metric.failure_count > 10
+
+# After (v0.9.0)
+from fluxgate.trippers import CallContext, Tripper
+
+class MyTripper(Tripper):
+    def __call__(self, ctx: CallContext) -> bool:
+        return ctx.metric.failure_count > 10
+```
+
 ## [0.8.0] - 2026.05.28
 
 ### Breaking Changes

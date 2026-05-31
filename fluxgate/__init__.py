@@ -12,11 +12,11 @@ Examples:
 
 from fluxgate.circuitbreaker import CircuitBreaker, AsyncCircuitBreaker
 from fluxgate.errors import CallNotPermittedError
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 __all__ = [
     "CircuitBreaker",
     "AsyncCircuitBreaker",
-    "StateEnum",
+    "State",
     "CallNotPermittedError",
 ]

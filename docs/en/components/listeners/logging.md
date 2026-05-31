@@ -64,13 +64,13 @@ Use `level_map` to customize the log level for each state transition. By default
 import logging
 from fluxgate import CircuitBreaker
 from fluxgate.listeners.log import LogListener
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 # Log OPEN transitions as ERROR for alerting
 level_map = {
-    StateEnum.OPEN: logging.ERROR,
-    StateEnum.HALF_OPEN: logging.WARNING,
-    StateEnum.CLOSED: logging.DEBUG,
+    "open": logging.ERROR,
+    "half_open": logging.WARNING,
+    "closed": logging.DEBUG,
 }
 
 cb = CircuitBreaker(

@@ -18,6 +18,6 @@ These are the main classes you will instantiate to create a circuit breaker.
 
 These are the enums and exceptions you will most commonly interact with.
 
-::: fluxgate.state.StateEnum
+::: fluxgate.state.State
 
 ::: fluxgate.errors.CallNotPermittedError

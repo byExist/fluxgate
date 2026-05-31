@@ -3,7 +3,9 @@
 import pytest
 
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from typing import get_args
+
+from fluxgate.state import State
 
 pytest.importorskip("prometheus_client")
 
@@ -40,8 +42,8 @@ def test_prometheus_listener_basic():
     listener = PrometheusListener(name="test_circuit")
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -63,8 +65,8 @@ def test_prometheus_listener_state_transitions():
     listener = PrometheusListener(name="transition_test")
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -94,13 +96,13 @@ def test_prometheus_listener_multiple_circuits():
     listener_b = PrometheusListener(name="circuit_b")
 
     signal1 = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1.0,
     )
     signal2 = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.HALF_OPEN,
+        old_state="closed",
+        new_state="half_open",
         timestamp=2.0,
     )
 
@@ -123,18 +125,18 @@ def test_prometheus_listener_all_states():
     listener = PrometheusListener(name="all_states_test")
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1.0,
     )
 
     listener(signal)
 
-    for state in StateEnum:
+    for state in get_args(State):
         value = _get_gauge_value(
-            _STATE_GAUGE, circuit_name="all_states_test", state=state.value
+            _STATE_GAUGE, circuit_name="all_states_test", state=state
         )
-        expected_value = 1.0 if state == StateEnum.OPEN else 0.0
+        expected_value = 1.0 if state == "open" else 0.0
         assert value == expected_value
 
 

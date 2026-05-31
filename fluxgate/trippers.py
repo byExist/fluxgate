@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Iterator
 
 from fluxgate.metric import Metric
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 __all__ = [
+    "CallContext",
     "Tripper",
     "Closed",
     "HalfOpened",
@@ -20,6 +22,19 @@ __all__ = [
 ]
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CallContext:
+    """Snapshot passed to trippers on each evaluation.
+
+    Carries the window-derived :class:`Metric` together with the breaker's
+    immediate state and consecutive failure count.
+    """
+
+    metric: Metric
+    state: State
+    consecutive_failures: int
+
+
 class Tripper(ABC):
     """Base class for tripper conditions.
 
@@ -29,9 +44,7 @@ class Tripper(ABC):
     """
 
     @abstractmethod
-    def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int
-    ) -> bool: ...
+    def __call__(self, ctx: CallContext) -> bool: ...
 
     def __iter__(self) -> Iterator[Tripper]:
         yield self
@@ -47,12 +60,8 @@ class _And(Tripper):
     def __init__(self, lhs: Tripper, rhs: Tripper) -> None:
         self._lhs, self._rhs = lhs, rhs
 
-    def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int
-    ) -> bool:
-        return self._lhs(metric, state, consecutive_failures) and self._rhs(
-            metric, state, consecutive_failures
-        )
+    def __call__(self, ctx: CallContext) -> bool:
+        return self._lhs(ctx) and self._rhs(ctx)
 
     def __iter__(self) -> Iterator[Tripper]:
         yield from self._lhs
@@ -63,12 +72,8 @@ class _Or(Tripper):
     def __init__(self, lhs: Tripper, rhs: Tripper) -> None:
         self._lhs, self._rhs = lhs, rhs
 
-    def __call__(
-        self, metric: Metric, state: StateEnum, consecutive_failures: int
-    ) -> bool:
-        return self._lhs(metric, state, consecutive_failures) or self._rhs(
-            metric, state, consecutive_failures
-        )
+    def __call__(self, ctx: CallContext) -> bool:
+        return self._lhs(ctx) or self._rhs(ctx)
 
     def __iter__(self) -> Iterator[Tripper]:
         yield from self._lhs
@@ -85,10 +90,8 @@ class Closed(Tripper):
         >>> tripper = Closed() & FailureRate(0.5)
     """
 
-    def __call__(
-        self, _metric: Metric, state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        return state == StateEnum.CLOSED
+    def __call__(self, ctx: CallContext) -> bool:
+        return ctx.state == "closed"
 
 
 class HalfOpened(Tripper):
@@ -101,10 +104,8 @@ class HalfOpened(Tripper):
         >>> tripper = HalfOpened() & FailureRate(0.3)
     """
 
-    def __call__(
-        self, _metric: Metric, state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        return state == StateEnum.HALF_OPEN
+    def __call__(self, ctx: CallContext) -> bool:
+        return ctx.state == "half_open"
 
 
 class MinRequests(Tripper):
@@ -125,10 +126,8 @@ class MinRequests(Tripper):
             raise ValueError("Count must be greater than zero")
         self._count = count
 
-    def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        return metric.total_count >= self._count
+    def __call__(self, ctx: CallContext) -> bool:
+        return ctx.metric.total_count >= self._count
 
 
 class FailureRate(Tripper):
@@ -149,12 +148,10 @@ class FailureRate(Tripper):
             raise ValueError("Ratio must be between 0 and 1")
         self._ratio = ratio
 
-    def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        if metric.total_count == 0:
+    def __call__(self, ctx: CallContext) -> bool:
+        if ctx.metric.total_count == 0:
             return False
-        failure_rate = metric.failure_count / metric.total_count
+        failure_rate = ctx.metric.failure_count / ctx.metric.total_count
         return failure_rate >= self._ratio
 
 
@@ -176,12 +173,10 @@ class AvgLatency(Tripper):
             raise ValueError("Threshold must be greater than 0")
         self._threshold = threshold
 
-    def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        if metric.total_count == 0:
+    def __call__(self, ctx: CallContext) -> bool:
+        if ctx.metric.total_count == 0:
             return False
-        avg_duration = metric.total_duration / metric.total_count
+        avg_duration = ctx.metric.total_duration / ctx.metric.total_count
         return avg_duration >= self._threshold
 
 
@@ -214,13 +209,11 @@ class SlowRate(Tripper):
         self._ratio = ratio
         self.threshold = threshold
 
-    def __call__(
-        self, metric: Metric, _state: StateEnum, _consecutive_failures: int
-    ) -> bool:
-        if metric.total_count == 0:
+    def __call__(self, ctx: CallContext) -> bool:
+        if ctx.metric.total_count == 0:
             return False
-        slow_count = metric.slow_counts.get(self.threshold, 0)
-        return slow_count / metric.total_count >= self._ratio
+        slow_count = ctx.metric.slow_counts.get(self.threshold, 0)
+        return slow_count / ctx.metric.total_count >= self._ratio
 
 
 class FailureStreak(Tripper):
@@ -246,7 +239,5 @@ class FailureStreak(Tripper):
             raise ValueError("Count must be greater than zero")
         self._count = count
 
-    def __call__(
-        self, _metric: Metric, _state: StateEnum, consecutive_failures: int
-    ) -> bool:
-        return consecutive_failures >= self._count
+    def __call__(self, ctx: CallContext) -> bool:
+        return ctx.consecutive_failures >= self._count

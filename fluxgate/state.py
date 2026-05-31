@@ -1,10 +1,13 @@
-from enum import Enum
+from typing import Literal
+
+__all__ = ["State"]
 
 
-class StateEnum(Enum):
-    CLOSED = "closed"
-    OPEN = "open"
-    HALF_OPEN = "half_open"
-    METRICS_ONLY = "metrics_only"
-    DISABLED = "disabled"
-    FORCED_OPEN = "forced_open"
+State = Literal[
+    "closed",
+    "open",
+    "half_open",
+    "metrics_only",
+    "disabled",
+    "forced_open",
+]

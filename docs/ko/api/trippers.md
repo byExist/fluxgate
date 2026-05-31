@@ -6,6 +6,8 @@ Tripper 선택 및 조합에 대한 개요는 [Tripper 컴포넌트 가이드](.
 
 ---
 
+::: fluxgate.trippers.CallContext
+
 ::: fluxgate.trippers.Closed
 
 ::: fluxgate.trippers.HalfOpened

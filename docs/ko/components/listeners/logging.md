@@ -64,13 +64,13 @@ cb = CircuitBreaker(
 import logging
 from fluxgate import CircuitBreaker
 from fluxgate.listeners.log import LogListener
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 # OPEN 전환을 ERROR로 기록하여 알림 트리거
 level_map = {
-    StateEnum.OPEN: logging.ERROR,
-    StateEnum.HALF_OPEN: logging.WARNING,
-    StateEnum.CLOSED: logging.DEBUG,
+    "open": logging.ERROR,
+    "half_open": logging.WARNING,
+    "closed": logging.DEBUG,
 }
 
 cb = CircuitBreaker(

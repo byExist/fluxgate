@@ -22,12 +22,12 @@ Listener는 상태 전환 시 `Signal` 객체를 받습니다.
 
 ```python
 from dataclasses import dataclass
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 @dataclass(frozen=True)
 class Signal:
-    old_state: StateEnum  # 이전 상태
-    new_state: StateEnum  # 새 상태
+    old_state: State  # 이전 상태
+    new_state: State  # 새 상태
     timestamp: float      # 전환 시간 (Unix 타임스탬프)
 ```
 
@@ -120,7 +120,7 @@ async_cb = AsyncCircuitBreaker(..., listeners=[
 ```python
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 class DatabaseListener(Listener):
     def __init__(self, name: str, db_connection):
@@ -128,7 +128,7 @@ class DatabaseListener(Listener):
         self.db = db_connection
 
     def __call__(self, signal: Signal) -> None:
-        if signal.new_state == StateEnum.OPEN:
+        if signal.new_state == "open":
             self.db.execute(
                 "INSERT INTO circuit_events (name, timestamp) VALUES (?, ?)",
                 (self._name, signal.timestamp)

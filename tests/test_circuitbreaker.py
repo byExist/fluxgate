@@ -9,7 +9,6 @@ from fluxgate import (
     AsyncCircuitBreaker,
     CallNotPermittedError,
     CircuitBreaker,
-    StateEnum,
 )
 from fluxgate.permits import All, Random
 from fluxgate.retries import Cooldown
@@ -42,7 +41,7 @@ def test_call_passes_through():
     assert cb.call(success_func, 10) == 20
 
     info = cb.info()
-    assert info.state == StateEnum.CLOSED.value
+    assert info.state == "closed"
     assert info.metrics.total_count == 2
     assert info.metrics.failure_count == 0
 
@@ -84,7 +83,7 @@ def test_closed_to_open_on_failure_threshold():
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 def test_open_state_blocks_calls():
@@ -114,13 +113,13 @@ def test_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
     freezer.tick(61)
     result = cb.call(success_func)
 
     assert result == 2
-    assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
+    assert cb.info().state in ["half_open", "closed"]
 
 
 def test_half_open_to_closed_on_success(freezer: FrozenDateTimeFactory):
@@ -139,7 +138,7 @@ def test_half_open_to_closed_on_success(freezer: FrozenDateTimeFactory):
     for _ in range(3):
         cb.call(success_func)
 
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
 
 def test_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
@@ -161,7 +160,7 @@ def test_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
     assert cb.info().reopens == initial_reopens + 1
 
 
@@ -192,10 +191,10 @@ def test_reset_transitions_to_closed():
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
     cb.reset()
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
 
 def test_disable_allows_all_calls():
@@ -203,12 +202,12 @@ def test_disable_allows_all_calls():
     cb = CircuitBreaker()
     cb.disable()
 
-    assert cb.info().state == StateEnum.DISABLED.value
+    assert cb.info().state == "disabled"
 
     with pytest.raises(ValueError):
         cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.DISABLED.value
+    assert cb.info().state == "disabled"
 
 
 def test_force_open_blocks_all_calls():
@@ -216,7 +215,7 @@ def test_force_open_blocks_all_calls():
     cb = CircuitBreaker()
     cb.force_open()
 
-    assert cb.info().state == StateEnum.FORCED_OPEN.value
+    assert cb.info().state == "forced_open"
 
     with pytest.raises(CallNotPermittedError):
         cb.call(success_func)
@@ -234,7 +233,7 @@ def test_metrics_only_collects_without_tripping():
             cb.call(failing_func)
 
     info = cb.info()
-    assert info.state == StateEnum.METRICS_ONLY.value
+    assert info.state == "metrics_only"
     assert info.metrics.failure_count == 5
 
 
@@ -273,7 +272,7 @@ def test_half_open_untracked_exception_propagates(freezer: FrozenDateTimeFactory
     with pytest.raises(TypeError):
         cb.call(raises_type_error)
 
-    assert cb.info().state == StateEnum.HALF_OPEN.value
+    assert cb.info().state == "half_open"
 
 
 def test_all_exception_types_tracked_by_default():
@@ -295,7 +294,7 @@ def test_all_exception_types_tracked_by_default():
         with pytest.raises(Exception):
             cb.call(func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 def test_listener_notification_on_state_change():
@@ -315,8 +314,8 @@ def test_listener_notification_on_state_change():
             cb.call(failing_func)
 
     assert len(signals) == 1
-    assert signals[0].old_state == StateEnum.CLOSED
-    assert signals[0].new_state == StateEnum.OPEN
+    assert signals[0].old_state == "closed"
+    assert signals[0].new_state == "open"
 
     cb.reset()
     assert len(signals) == 2
@@ -337,7 +336,7 @@ def test_listener_exception_does_not_break_operation():
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 def test_decorator_with_fallback():
@@ -452,12 +451,12 @@ def test_default_tripper_requires_100_requests():
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
     with pytest.raises(ValueError):
         cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 def test_default_tripper_50_percent_failure_rate():
@@ -471,12 +470,12 @@ def test_default_tripper_50_percent_failure_rate():
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
     with pytest.raises(ValueError):
         cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 def test_failure_streak_tripper():
@@ -490,13 +489,13 @@ def test_failure_streak_tripper():
             cb.call(failing_func)
 
     cb.call(success_func)
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
     for _ in range(3):
         with pytest.raises(ValueError):
             cb.call(failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_call_passes_through():
@@ -507,7 +506,7 @@ async def test_async_call_passes_through():
     assert await cb.call(async_success_func, 10) == 20
 
     info = cb.info()
-    assert info.state == StateEnum.CLOSED.value
+    assert info.state == "closed"
     assert info.metrics.total_count == 2
 
 
@@ -534,7 +533,7 @@ async def test_async_closed_to_open_on_failure_threshold():
         with pytest.raises(ValueError):
             await cb.call(async_failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFactory):
@@ -553,7 +552,7 @@ async def test_async_open_to_half_open_after_cooldown(freezer: FrozenDateTimeFac
     result = await cb.call(async_success_func)
 
     assert result == 2
-    assert cb.info().state in [StateEnum.HALF_OPEN.value, StateEnum.CLOSED.value]
+    assert cb.info().state in ["half_open", "closed"]
 
 
 async def test_async_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory):
@@ -573,7 +572,7 @@ async def test_async_half_open_to_open_on_failure(freezer: FrozenDateTimeFactory
         with pytest.raises(ValueError):
             await cb.call(async_failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_open_blocks_before_cooldown():
@@ -619,7 +618,7 @@ async def test_async_reset_transitions_to_closed():
             await cb.call(async_failing_func)
 
     await cb.reset()
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
 
 async def test_async_disable_and_force_open():
@@ -627,13 +626,13 @@ async def test_async_disable_and_force_open():
     cb = AsyncCircuitBreaker()
 
     await cb.disable()
-    assert cb.info().state == StateEnum.DISABLED.value
+    assert cb.info().state == "disabled"
 
     with pytest.raises(ValueError):
         await cb.call(async_failing_func)
 
     await cb.force_open()
-    assert cb.info().state == StateEnum.FORCED_OPEN.value
+    assert cb.info().state == "forced_open"
 
     with pytest.raises(CallNotPermittedError):
         await cb.call(async_success_func)
@@ -652,7 +651,7 @@ async def test_async_metrics_only_mode():
             await cb.call(async_failing_func)
 
     info = cb.info()
-    assert info.state == StateEnum.METRICS_ONLY.value
+    assert info.state == "metrics_only"
     assert info.metrics.failure_count == 5
 
 
@@ -691,7 +690,7 @@ async def test_async_half_open_untracked_exception_propagates(
     with pytest.raises(TypeError):
         await cb.call(raises_type_error)
 
-    assert cb.info().state == StateEnum.HALF_OPEN.value
+    assert cb.info().state == "half_open"
 
 
 async def test_async_listener_notification():
@@ -759,7 +758,7 @@ async def test_async_listener_exception_handling():
         with pytest.raises(ValueError):
             await cb.call(async_failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_decorator_with_fallback():
@@ -842,12 +841,12 @@ async def test_async_default_tripper_requires_100_requests():
         with pytest.raises(ValueError):
             await cb.call(async_failing_func)
 
-    assert cb.info().state == StateEnum.CLOSED.value
+    assert cb.info().state == "closed"
 
     with pytest.raises(ValueError):
         await cb.call(async_failing_func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_all_exception_types_tracked():
@@ -869,7 +868,7 @@ async def test_async_all_exception_types_tracked():
         with pytest.raises(Exception):
             await cb.call(func)
 
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
 
 async def test_async_max_half_open_calls_limits_concurrency():
@@ -883,7 +882,7 @@ async def test_async_max_half_open_calls_limits_concurrency():
 
     with pytest.raises(ValueError):
         await cb.call(async_failing_func)
-    assert cb.info().state == StateEnum.OPEN.value
+    assert cb.info().state == "open"
 
     await asyncio.sleep(0.02)
 
@@ -910,7 +909,7 @@ async def test_async_max_half_open_calls_limits_concurrency():
     await asyncio.wait_for(semaphore_saturated.wait(), timeout=1.0)
     await asyncio.sleep(0.05)
 
-    assert cb.info().state == StateEnum.HALF_OPEN.value
+    assert cb.info().state == "half_open"
     async with lock:
         assert current_concurrent == 2
         assert max_concurrent == 2

@@ -189,7 +189,7 @@ If you need to export additional custom metrics, you can create your own listene
 from prometheus_client import Counter
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 # Define a custom metric to count only OPEN transitions.
 OPEN_TRANSITIONS = Counter(
@@ -203,7 +203,7 @@ class CustomPrometheusListener(Listener):
         self._name = name
 
     def __call__(self, signal: Signal) -> None:
-        if signal.new_state == StateEnum.OPEN:
+        if signal.new_state == "open":
             OPEN_TRANSITIONS.labels(circuit_name=self._name).inc()
 ```
 

@@ -14,9 +14,9 @@ from fluxgate.metric import Record, Metric
 from fluxgate.permits import Permit, RampUp
 from fluxgate.retries import Cooldown, Retry
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 from fluxgate.trackers import All, Tracker
-from fluxgate.trippers import FailureRate, MinRequests, SlowRate, Tripper
+from fluxgate.trippers import CallContext, FailureRate, MinRequests, SlowRate, Tripper
 from fluxgate.windows import CountWindow, Window
 
 __all__ = [
@@ -39,7 +39,7 @@ class CircuitBreakerInfo:
         metrics: Aggregated metrics
     """
 
-    state: str
+    state: State
     changed_at: float
     reopens: int
     metrics: Metric
@@ -147,61 +147,60 @@ class CircuitBreaker:
         self._changed_at = time.time()
         self._reopens = 0
         self._consecutive_failures = 0
-        self._state: CircuitBreaker._State = self._Closed(self)
+        self._handlers: dict[State, CircuitBreaker._Handler] = {
+            "closed": self._Closed(self),
+            "open": self._Open(self),
+            "half_open": self._HalfOpen(self),
+            "metrics_only": self._MetricsOnly(self),
+            "disabled": self._Disabled(self),
+            "forced_open": self._ForcedOpen(self),
+        }
+        self._state: CircuitBreaker._Handler = self._handlers["closed"]
 
-    class _State(ABC):
+    class _Handler(ABC):
+        state: State
+
         def __init__(self, cb: CircuitBreaker) -> None:
             self.cb = cb
 
         @abstractmethod
-        def get_state_enum(self) -> StateEnum:
-            pass
-
-        @abstractmethod
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             pass
 
-    class _Closed(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.CLOSED
+    class _Closed(_Handler):
+        state: State = "closed"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                self.cb._window.record(
-                    Record(
-                        success=True,
-                        duration=duration,
-                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
-                    )
-                )
-                self.cb._consecutive_failures = 0
+                self.cb._record_success(duration)
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
-                self.cb._consecutive_failures += 1
-                self.cb._window.record(Record(success=False))
+                self.cb._record_failure()
                 metric = self.cb._window.get_metric()
                 if self.cb._tripper(
-                    metric, StateEnum.CLOSED, self.cb._consecutive_failures
+                    CallContext(
+                        metric=metric,
+                        state="closed",
+                        consecutive_failures=self.cb._consecutive_failures,
+                    )
                 ):
-                    self.cb._transition_to(StateEnum.OPEN)
+                    self.cb._transition_to("open")
                 raise e
 
-    class _Open(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.OPEN
+    class _Open(_Handler):
+        state: State = "open"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             if not self.cb._retry(self.cb._changed_at, self.cb._reopens):
                 raise CallNotPermittedError("Circuit breaker is open")
-            self.cb._transition_to(StateEnum.HALF_OPEN)
+            self.cb._transition_to("half_open")
             return self.cb._state.execute(func, *args, **kwargs)
 
-    class _HalfOpen(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.HALF_OPEN
+    class _HalfOpen(_Handler):
+        state: State = "half_open"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             if not self.cb._permit(self.cb._changed_at):
@@ -210,65 +209,54 @@ class CircuitBreaker:
                 )
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                self.cb._window.record(
-                    Record(
-                        success=True,
-                        duration=duration,
-                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
-                    )
-                )
-                self.cb._consecutive_failures = 0
+                self.cb._record_success(duration)
                 metric = self.cb._window.get_metric()
                 if not self.cb._tripper(
-                    metric, StateEnum.HALF_OPEN, self.cb._consecutive_failures
+                    CallContext(
+                        metric=metric,
+                        state="half_open",
+                        consecutive_failures=self.cb._consecutive_failures,
+                    )
                 ):
-                    self.cb._transition_to(StateEnum.CLOSED)
+                    self.cb._transition_to("closed")
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
-                self.cb._consecutive_failures += 1
-                self.cb._window.record(Record(success=False))
+                self.cb._record_failure()
                 metric = self.cb._window.get_metric()
                 if self.cb._tripper(
-                    metric, StateEnum.HALF_OPEN, self.cb._consecutive_failures
+                    CallContext(
+                        metric=metric,
+                        state="half_open",
+                        consecutive_failures=self.cb._consecutive_failures,
+                    )
                 ):
-                    self.cb._transition_to(StateEnum.OPEN)
+                    self.cb._transition_to("open")
                 raise e
 
-    class _MetricsOnly(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.METRICS_ONLY
+    class _MetricsOnly(_Handler):
+        state: State = "metrics_only"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
-                self.cb._window.record(
-                    Record(
-                        success=True,
-                        duration=duration,
-                        slow_at=_classify_slow(duration, self.cb._slow_thresholds),
-                    )
-                )
-                self.cb._consecutive_failures = 0
+                self.cb._record_success(duration)
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
-                self.cb._consecutive_failures += 1
-                self.cb._window.record(Record(success=False))
+                self.cb._record_failure()
                 raise e
 
-    class _Disabled(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.DISABLED
+    class _Disabled(_Handler):
+        state: State = "disabled"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             return func(*args, **kwargs)
 
-    class _ForcedOpen(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.FORCED_OPEN
+    class _ForcedOpen(_Handler):
+        state: State = "forced_open"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
             raise CallNotPermittedError("Circuit breaker is forced open")
@@ -389,7 +377,7 @@ class CircuitBreaker:
             Dictionary with circuit breaker state information
         """
         return CircuitBreakerInfo(
-            state=self._state.get_state_enum().value,
+            state=self._state.state,
             changed_at=self._changed_at,
             reopens=self._reopens,
             metrics=self._window.get_metric(),
@@ -397,54 +385,46 @@ class CircuitBreaker:
 
     def reset(self) -> None:
         """Reset circuit breaker to CLOSED state and clear metrics."""
-        current_state = self._state.get_state_enum()
-        self._state = self._Closed(self)
-        self._changed_at = time.time()
-        self._reopens = 0
-        self._consecutive_failures = 0
-        self._window.reset()
-
-        signal = Signal(
-            old_state=current_state,
-            new_state=StateEnum.CLOSED,
-            timestamp=self._changed_at,
-        )
-        self._notify(signal)
+        self._transition_to("closed")
 
     def disable(self) -> None:
         """Disable circuit breaker (all calls pass through without tracking)."""
-        self._transition_to(StateEnum.DISABLED)
+        self._transition_to("disabled")
 
     def metrics_only(self) -> None:
         """Enable metrics-only mode (track metrics but never open circuit)."""
-        self._transition_to(StateEnum.METRICS_ONLY)
+        self._transition_to("metrics_only")
 
     def force_open(self) -> None:
         """Force circuit breaker to OPEN state (all calls blocked)."""
-        self._transition_to(StateEnum.FORCED_OPEN)
+        self._transition_to("forced_open")
 
-    def _transition_to(self, state: StateEnum) -> None:
-        current_state = self._state.get_state_enum()
+    def _record_success(self, duration: float) -> None:
+        """Record a successful call."""
+        self._window.record(
+            Record(
+                success=True,
+                duration=duration,
+                slow_at=_classify_slow(duration, self._slow_thresholds),
+            )
+        )
+        self._consecutive_failures = 0
 
-        if state == StateEnum.OPEN and current_state == StateEnum.HALF_OPEN:
+    def _record_failure(self) -> None:
+        """Record a failed call."""
+        self._consecutive_failures += 1
+        self._window.record(Record(success=False))
+
+    def _transition_to(self, state: State) -> None:
+        current_state = self._state.state
+
+        if state == "open" and current_state == "half_open":
             self._reopens += 1
-        elif state == StateEnum.CLOSED:
+        elif state == "closed":
             self._reopens = 0
             self._consecutive_failures = 0
 
-        if state == StateEnum.CLOSED:
-            self._state = self._Closed(self)
-        elif state == StateEnum.OPEN:
-            self._state = self._Open(self)
-        elif state == StateEnum.HALF_OPEN:
-            self._state = self._HalfOpen(self)
-        elif state == StateEnum.METRICS_ONLY:
-            self._state = self._MetricsOnly(self)
-        elif state == StateEnum.DISABLED:
-            self._state = self._Disabled(self)
-        else:
-            self._state = self._ForcedOpen(self)
-
+        self._state = self._handlers[state]
         self._changed_at = time.time()
         self._window.reset()
 
@@ -526,18 +506,24 @@ class AsyncCircuitBreaker:
         self._changed_at = time.time()
         self._reopens = 0
         self._consecutive_failures = 0
-        self._state: AsyncCircuitBreaker._State = self._Closed(self)
+        self._handlers: dict[State, AsyncCircuitBreaker._Handler] = {
+            "closed": self._Closed(self),
+            "open": self._Open(self),
+            "half_open": self._HalfOpen(self),
+            "metrics_only": self._MetricsOnly(self),
+            "disabled": self._Disabled(self),
+            "forced_open": self._ForcedOpen(self),
+        }
+        self._state: AsyncCircuitBreaker._Handler = self._handlers["closed"]
         self._state_lock = asyncio.Lock()
         self._half_open_semaphore = asyncio.Semaphore(max_half_open_calls)
         self._window_lock = asyncio.Lock()
 
-    class _State(ABC):
+    class _Handler(ABC):
+        state: State
+
         def __init__(self, cb: AsyncCircuitBreaker) -> None:
             self.cb = cb
-
-        @abstractmethod
-        def get_state_enum(self) -> StateEnum:
-            pass
 
         @abstractmethod
         async def execute(
@@ -548,9 +534,8 @@ class AsyncCircuitBreaker:
         ) -> R:
             pass
 
-    class _Closed(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.CLOSED
+    class _Closed(_Handler):
+        state: State = "closed"
 
         async def execute(
             self,
@@ -561,28 +546,19 @@ class AsyncCircuitBreaker:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
                 async with self.cb._window_lock:
-                    self.cb._window.record(
-                        Record(
-                            success=True,
-                            duration=duration,
-                            slow_at=_classify_slow(duration, self.cb._slow_thresholds),
-                        )
-                    )
-                    self.cb._consecutive_failures = 0
+                    self.cb._record_success(duration)
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
                 async with self.cb._window_lock:
-                    self.cb._consecutive_failures += 1
-                    self.cb._window.record(Record(success=False))
+                    self.cb._record_failure()
                     metric = self.cb._window.get_metric()
-                await self.cb._try_transition_to_open(metric, StateEnum.CLOSED)
+                await self.cb._try_transition_to_open(metric, "closed")
                 raise e
 
-    class _Open(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.OPEN
+    class _Open(_Handler):
+        state: State = "open"
 
         async def execute(
             self,
@@ -595,9 +571,8 @@ class AsyncCircuitBreaker:
             await self.cb._try_transition_to_half_open()
             return await self.cb._state.execute(func, *args, **kwargs)
 
-    class _HalfOpen(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.HALF_OPEN
+    class _HalfOpen(_Handler):
+        state: State = "half_open"
 
         async def execute(
             self,
@@ -606,7 +581,7 @@ class AsyncCircuitBreaker:
             **kwargs: P.kwargs,
         ) -> R:
             async with self.cb._half_open_semaphore:
-                if self.cb._state.get_state_enum() != StateEnum.HALF_OPEN:
+                if self.cb._state.state != "half_open":
                     return await self.cb._state.execute(func, *args, **kwargs)
                 if not self.cb._permit(self.cb._changed_at):
                     raise CallNotPermittedError(
@@ -617,16 +592,7 @@ class AsyncCircuitBreaker:
                         func, *args, **kwargs
                     )
                     async with self.cb._window_lock:
-                        self.cb._window.record(
-                            Record(
-                                success=True,
-                                duration=duration,
-                                slow_at=_classify_slow(
-                                    duration, self.cb._slow_thresholds
-                                ),
-                            )
-                        )
-                        self.cb._consecutive_failures = 0
+                        self.cb._record_success(duration)
                         metric = self.cb._window.get_metric()
                     await self.cb._try_transition_to_closed(metric)
                     return result
@@ -634,15 +600,13 @@ class AsyncCircuitBreaker:
                     if not self.cb._tracker(e):
                         raise e
                     async with self.cb._window_lock:
-                        self.cb._consecutive_failures += 1
-                        self.cb._window.record(Record(success=False))
+                        self.cb._record_failure()
                         metric = self.cb._window.get_metric()
-                    await self.cb._try_transition_to_open(metric, StateEnum.HALF_OPEN)
+                    await self.cb._try_transition_to_open(metric, "half_open")
                     raise e
 
-    class _MetricsOnly(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.METRICS_ONLY
+    class _MetricsOnly(_Handler):
+        state: State = "metrics_only"
 
         async def execute(
             self,
@@ -653,26 +617,17 @@ class AsyncCircuitBreaker:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
                 async with self.cb._window_lock:
-                    self.cb._window.record(
-                        Record(
-                            success=True,
-                            duration=duration,
-                            slow_at=_classify_slow(duration, self.cb._slow_thresholds),
-                        )
-                    )
-                    self.cb._consecutive_failures = 0
+                    self.cb._record_success(duration)
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise e
                 async with self.cb._window_lock:
-                    self.cb._consecutive_failures += 1
-                    self.cb._window.record(Record(success=False))
+                    self.cb._record_failure()
                 raise e
 
-    class _Disabled(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.DISABLED
+    class _Disabled(_Handler):
+        state: State = "disabled"
 
         async def execute(
             self,
@@ -682,9 +637,8 @@ class AsyncCircuitBreaker:
         ) -> R:
             return await func(*args, **kwargs)
 
-    class _ForcedOpen(_State):
-        def get_state_enum(self) -> StateEnum:
-            return StateEnum.FORCED_OPEN
+    class _ForcedOpen(_Handler):
+        state: State = "forced_open"
 
         async def execute(
             self,
@@ -818,7 +772,7 @@ class AsyncCircuitBreaker:
             Dictionary with circuit breaker state information
         """
         return CircuitBreakerInfo(
-            state=self._state.get_state_enum().value,
+            state=self._state.state,
             changed_at=self._changed_at,
             reopens=self._reopens,
             metrics=self._window.get_metric(),
@@ -827,75 +781,91 @@ class AsyncCircuitBreaker:
     async def reset(self) -> None:
         """Reset circuit breaker to CLOSED state and clear metrics."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.CLOSED)
+            await self._transition_to("closed")
 
     async def disable(self) -> None:
         """Disable circuit breaker (all calls pass through without tracking)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.DISABLED)
+            await self._transition_to("disabled")
 
     async def metrics_only(self) -> None:
         """Enable metrics-only mode (track metrics but never open circuit)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.METRICS_ONLY)
+            await self._transition_to("metrics_only")
 
     async def force_open(self) -> None:
         """Force circuit breaker to OPEN state (all calls blocked)."""
         async with self._state_lock:
-            await self._transition_to(StateEnum.FORCED_OPEN)
+            await self._transition_to("forced_open")
+
+    def _record_success(self, duration: float) -> None:
+        """Record a successful call. Caller must hold ``_window_lock``."""
+        self._window.record(
+            Record(
+                success=True,
+                duration=duration,
+                slow_at=_classify_slow(duration, self._slow_thresholds),
+            )
+        )
+        self._consecutive_failures = 0
+
+    def _record_failure(self) -> None:
+        """Record a failed call. Caller must hold ``_window_lock``."""
+        self._consecutive_failures += 1
+        self._window.record(Record(success=False))
 
     async def _try_transition_to_open(
-        self, metric: Metric, from_state: StateEnum
+        self, metric: Metric, from_state: State
     ) -> bool:
         async with self._state_lock:
-            current_state = self._state.get_state_enum()
+            current_state = self._state.state
             if current_state != from_state:
                 return False
-            if not self._tripper(metric, current_state, self._consecutive_failures):
+            if not self._tripper(
+                CallContext(
+                    metric=metric,
+                    state=current_state,
+                    consecutive_failures=self._consecutive_failures,
+                )
+            ):
                 return False
-            await self._transition_to(StateEnum.OPEN)
+            await self._transition_to("open")
             return True
 
     async def _try_transition_to_half_open(self) -> bool:
         async with self._state_lock:
-            current_state = self._state.get_state_enum()
-            if current_state != StateEnum.OPEN:
+            current_state = self._state.state
+            if current_state != "open":
                 return False
-            await self._transition_to(StateEnum.HALF_OPEN)
+            await self._transition_to("half_open")
             return True
 
     async def _try_transition_to_closed(self, metric: Metric) -> bool:
         async with self._state_lock:
-            current_state = self._state.get_state_enum()
-            if current_state != StateEnum.HALF_OPEN:
+            current_state = self._state.state
+            if current_state != "half_open":
                 return False
-            if self._tripper(metric, current_state, self._consecutive_failures):
+            if self._tripper(
+                CallContext(
+                    metric=metric,
+                    state=current_state,
+                    consecutive_failures=self._consecutive_failures,
+                )
+            ):
                 return False
-            await self._transition_to(StateEnum.CLOSED)
+            await self._transition_to("closed")
             return True
 
-    async def _transition_to(self, state: StateEnum) -> None:
-        current_state = self._state.get_state_enum()
+    async def _transition_to(self, state: State) -> None:
+        current_state = self._state.state
 
-        if state == StateEnum.OPEN and current_state == StateEnum.HALF_OPEN:
+        if state == "open" and current_state == "half_open":
             self._reopens += 1
-        elif state == StateEnum.CLOSED:
+        elif state == "closed":
             self._reopens = 0
             self._consecutive_failures = 0
 
-        if state == StateEnum.CLOSED:
-            self._state = self._Closed(self)
-        elif state == StateEnum.OPEN:
-            self._state = self._Open(self)
-        elif state == StateEnum.HALF_OPEN:
-            self._state = self._HalfOpen(self)
-        elif state == StateEnum.METRICS_ONLY:
-            self._state = self._MetricsOnly(self)
-        elif state == StateEnum.DISABLED:
-            self._state = self._Disabled(self)
-        else:
-            self._state = self._ForcedOpen(self)
-
+        self._state = self._handlers[state]
         self._changed_at = time.time()
         async with self._window_lock:
             self._window.reset()

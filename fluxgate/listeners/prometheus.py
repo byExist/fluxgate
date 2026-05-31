@@ -1,9 +1,13 @@
+from typing import get_args
+
 from fluxgate.listeners import Listener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 from prometheus_client import Counter, Gauge
 
 __all__ = ["PrometheusListener"]
+
+_ALL_STATES: tuple[State, ...] = get_args(State)
 
 _STATE_GAUGE = Gauge(
     name="circuit_breaker_state",
@@ -54,13 +58,13 @@ class PrometheusListener(Listener):
         self._name = name
 
     def __call__(self, signal: Signal) -> None:
-        for state in StateEnum:
+        for state in _ALL_STATES:
             _STATE_GAUGE.labels(
                 circuit_name=self._name,
-                state=state.value,
+                state=state,
             ).set(1 if state == signal.new_state else 0)
         _STATE_TRANSITION.labels(
             circuit_name=self._name,
-            old_state=signal.old_state.value,
-            new_state=signal.new_state.value,
+            old_state=signal.old_state,
+            new_state=signal.new_state,
         ).inc()

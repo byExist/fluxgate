@@ -6,7 +6,7 @@ from pytest import LogCaptureFixture
 
 from fluxgate.listeners.log import LogListener
 from fluxgate.signal import Signal
-from fluxgate.state import StateEnum
+from fluxgate.state import State
 
 
 def test_logging_listener_basic(caplog: LogCaptureFixture):
@@ -14,8 +14,8 @@ def test_logging_listener_basic(caplog: LogCaptureFixture):
     listener = LogListener(name="payment_api")
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -32,10 +32,10 @@ def test_logging_listener_multiple_transitions(caplog: LogCaptureFixture):
     """LogListener handles multiple transitions."""
     listener = LogListener(name="multi")
 
-    transitions = [
-        (StateEnum.CLOSED, StateEnum.OPEN),
-        (StateEnum.OPEN, StateEnum.HALF_OPEN),
-        (StateEnum.HALF_OPEN, StateEnum.CLOSED),
+    transitions: list[tuple[State, State]] = [
+        ("closed", "open"),
+        ("open", "half_open"),
+        ("half_open", "closed"),
     ]
 
     with caplog.at_level(logging.INFO):
@@ -54,16 +54,16 @@ def test_logging_listener_all_states(caplog: LogCaptureFixture):
     """LogListener logs all state transitions correctly."""
     listener = LogListener(name="comprehensive_test")
 
-    all_transitions = [
-        (StateEnum.CLOSED, StateEnum.OPEN),
-        (StateEnum.OPEN, StateEnum.HALF_OPEN),
-        (StateEnum.HALF_OPEN, StateEnum.CLOSED),
-        (StateEnum.CLOSED, StateEnum.DISABLED),
-        (StateEnum.DISABLED, StateEnum.CLOSED),
-        (StateEnum.CLOSED, StateEnum.METRICS_ONLY),
-        (StateEnum.METRICS_ONLY, StateEnum.CLOSED),
-        (StateEnum.CLOSED, StateEnum.FORCED_OPEN),
-        (StateEnum.FORCED_OPEN, StateEnum.CLOSED),
+    all_transitions: list[tuple[State, State]] = [
+        ("closed", "open"),
+        ("open", "half_open"),
+        ("half_open", "closed"),
+        ("closed", "disabled"),
+        ("disabled", "closed"),
+        ("closed", "metrics_only"),
+        ("metrics_only", "closed"),
+        ("closed", "forced_open"),
+        ("forced_open", "closed"),
     ]
 
     with caplog.at_level(logging.INFO):
@@ -84,8 +84,8 @@ def test_logging_listener_timestamp_formatting(caplog: LogCaptureFixture):
     listener = LogListener(name="ts_test")
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -118,8 +118,8 @@ def test_logging_listener_custom_logger(caplog: LogCaptureFixture):
     listener = LogListener(name="custom_test", logger=custom_logger)
 
     signal = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
@@ -136,14 +136,14 @@ def test_logging_listener_default_level_map(caplog: LogCaptureFixture):
     listener = LogListener(name="level_default")
 
     signal_open = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
     signal_closed = Signal(
-        old_state=StateEnum.OPEN,
-        new_state=StateEnum.CLOSED,
+        old_state="open",
+        new_state="closed",
         timestamp=1234567890.0,
     )
 
@@ -158,21 +158,21 @@ def test_logging_listener_default_level_map(caplog: LogCaptureFixture):
 
 def test_logging_listener_custom_level_map(caplog: LogCaptureFixture):
     """LogListener uses custom level_map when provided."""
-    level_map = {
-        StateEnum.OPEN: logging.ERROR,
-        StateEnum.CLOSED: logging.DEBUG,
+    level_map: dict[State, int] = {
+        "open": logging.ERROR,
+        "closed": logging.DEBUG,
     }
     listener = LogListener(name="level_custom", level_map=level_map)
 
     signal_open = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
     signal_closed = Signal(
-        old_state=StateEnum.OPEN,
-        new_state=StateEnum.CLOSED,
+        old_state="open",
+        new_state="closed",
         timestamp=1234567890.0,
     )
 
@@ -187,18 +187,18 @@ def test_logging_listener_custom_level_map(caplog: LogCaptureFixture):
 
 def test_logging_listener_partial_level_map(caplog: LogCaptureFixture):
     """LogListener merges partial level_map with defaults."""
-    level_map = {StateEnum.OPEN: logging.CRITICAL}
+    level_map: dict[State, int] = {"open": logging.CRITICAL}
     listener = LogListener(name="level_partial", level_map=level_map)
 
     signal_open = Signal(
-        old_state=StateEnum.CLOSED,
-        new_state=StateEnum.OPEN,
+        old_state="closed",
+        new_state="open",
         timestamp=1234567890.0,
     )
 
     signal_half_open = Signal(
-        old_state=StateEnum.OPEN,
-        new_state=StateEnum.HALF_OPEN,
+        old_state="open",
+        new_state="half_open",
         timestamp=1234567890.0,
     )
 

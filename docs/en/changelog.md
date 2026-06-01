@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026.06.01
+
+### Changed
+
+- **`Metric` is now a monoid; `_Aggregator` removed**. The cumulative-counter dataclass introduced in 0.9.0 is gone — `Metric` gained `empty()`, `from_record()`, `__add__`, and `__sub__`, and `CountWindow`/`TimeWindow` keep a running `Metric` updated via these operators on every `record()`. The two-class indirection (mutable `_Aggregator` mirror of immutable `Metric`) collapses into one. Public `Window`/`Metric` API is unchanged.
+- **`TimeWindow.__init__` delegates to `reset()`**, and **`CountWindow._max_size` is replaced by `self._records.maxlen`** — both eliminate state-init duplication.
+- **Test fixture for empty `Metric` uses `Metric.empty()`** instead of a hand-rolled `Metric(...)` literal, so adding a field to `Metric` won't silently bypass empty-metric coverage in `test_trippers_with_empty_metrics`.
+
 ## [0.9.0] - 2026.05.31
 
 ### Changed

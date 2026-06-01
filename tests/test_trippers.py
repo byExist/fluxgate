@@ -244,9 +244,7 @@ def test_or_operator():
 
 def test_trippers_with_empty_metrics():
     """Trippers handle empty metrics (total_count=0) correctly."""
-    empty_metric = Metric(
-        total_count=0, failure_count=0, total_duration=0.0, slow_counts={}
-    )
+    empty_metric = Metric.empty()
 
     # MinRequests should fail
     assert MinRequests(10)(_ctx(empty_metric, "closed")) is False

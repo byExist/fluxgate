@@ -171,32 +171,31 @@ class CircuitBreaker:
         state: State = "closed"
 
         def execute(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+            outcome: tuple[R, float] | Exception
             try:
-                result, duration = _measure_duration(func, *args, **kwargs)
-                self.cb._record_success(duration)
-                if self.cb._tripper(
-                    CallContext(
-                        metric=self.cb._window.get_metric(),
-                        state="closed",
-                        consecutive_failures=self.cb._consecutive_failures,
-                    )
-                ):
-                    self.cb._transition_to("open")
-                return result
+                outcome = _measure_duration(func, *args, **kwargs)
             except Exception as e:
                 if not self.cb._tracker(e):
-                    raise e
+                    raise
+                outcome = e
+
+            if isinstance(outcome, Exception):
                 self.cb._record_failure()
-                metric = self.cb._window.get_metric()
-                if self.cb._tripper(
-                    CallContext(
-                        metric=metric,
-                        state="closed",
-                        consecutive_failures=self.cb._consecutive_failures,
-                    )
-                ):
-                    self.cb._transition_to("open")
-                raise e
+            else:
+                self.cb._record_success(outcome[1])
+
+            if self.cb._tripper(
+                CallContext(
+                    metric=self.cb._window.get_metric(),
+                    state="closed",
+                    consecutive_failures=self.cb._consecutive_failures,
+                )
+            ):
+                self.cb._transition_to("open")
+
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome[0]
 
     class _Open(_Handler):
         state: State = "open"
@@ -574,32 +573,20 @@ class AsyncCircuitBreaker:
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> R:
+            outcome: tuple[R, float] | Exception
             try:
-                result, duration = await _async_measure_duration(func, *args, **kwargs)
+                outcome = await _async_measure_duration(func, *args, **kwargs)
             except Exception as e:
                 if not self.cb._tracker(e):
                     raise
-                async with self.cb._lock:
-                    if self.cb._state is self:
-                        self.cb._record_failure()
-                        if self.cb._tripper(
-                            CallContext(
-                                metric=self.cb._window.get_metric(),
-                                state="closed",
-                                consecutive_failures=self.cb._consecutive_failures,
-                            )
-                        ):
-                            signal = self.cb._transition_to("open")
-                        else:
-                            signal = None
-                    else:
-                        signal = None
-                if signal is not None:
-                    await self.cb._notify(signal)
-                raise
+                outcome = e
+
             async with self.cb._lock:
                 if self.cb._state is self:
-                    self.cb._record_success(duration)
+                    if isinstance(outcome, Exception):
+                        self.cb._record_failure()
+                    else:
+                        self.cb._record_success(outcome[1])
                     if self.cb._tripper(
                         CallContext(
                             metric=self.cb._window.get_metric(),
@@ -614,7 +601,10 @@ class AsyncCircuitBreaker:
                     signal = None
             if signal is not None:
                 await self.cb._notify(signal)
-            return result
+
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome[0]
 
     class _Open(_Handler):
         state: State = "open"

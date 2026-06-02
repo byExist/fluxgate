@@ -153,3 +153,81 @@ async def test_prometheus_listener_with_async_circuit_breaker():
         _STATE_GAUGE, circuit_name="async_prom_test", state="closed"
     )
     assert closed_value == 1.0
+
+
+def test_prometheus_listener_close_removes_timeseries():
+    """``close()`` drops every timeseries this listener registered."""
+    from prometheus_client import CollectorRegistry
+
+    custom_registry = CollectorRegistry()
+    listener = PrometheusListener(name="ephemeral", registry=custom_registry)
+
+    signal = Signal(
+        old_state="closed",
+        new_state="open",
+        timestamp=1.0,
+    )
+    listener(signal)
+
+    has_before = any(
+        sample.labels.get("circuit_name") == "ephemeral"
+        for metric in custom_registry.collect()
+        for sample in metric.samples
+    )
+    assert has_before, "expected the timeseries to be present before close()"
+
+    listener.close()
+
+    still_has = any(
+        sample.labels.get("circuit_name") == "ephemeral"
+        for metric in custom_registry.collect()
+        for sample in metric.samples
+    )
+    assert not still_has, (
+        "close() must drop every timeseries labelled with the circuit name"
+    )
+
+
+def test_prometheus_listener_close_is_idempotent():
+    """``close()`` no-ops on a listener whose labelset was never emitted."""
+    from prometheus_client import CollectorRegistry
+
+    custom_registry = CollectorRegistry()
+    listener = PrometheusListener(name="never_emitted", registry=custom_registry)
+
+    # No signal sent — no labels created. close() must not raise.
+    listener.close()
+    listener.close()
+
+
+def test_prometheus_listener_custom_registry_isolation():
+    """``registry=`` kwarg isolates metrics from the default ``REGISTRY``."""
+    from prometheus_client import CollectorRegistry
+
+    custom_registry = CollectorRegistry()
+    listener = PrometheusListener(name="isolated_test", registry=custom_registry)
+
+    signal = Signal(
+        old_state="closed",
+        new_state="open",
+        timestamp=1.0,
+    )
+    listener(signal)
+
+    open_in_custom: float | None = None
+    for metric in custom_registry.collect():
+        if metric.name == "circuit_breaker_state":
+            for sample in metric.samples:
+                if (
+                    sample.labels.get("circuit_name") == "isolated_test"
+                    and sample.labels.get("state") == "open"
+                ):
+                    open_in_custom = sample.value
+    assert open_in_custom == 1.0, "expected metric in the custom registry"
+
+    open_in_default = _get_gauge_value(
+        _STATE_GAUGE, circuit_name="isolated_test", state="open"
+    )
+    assert open_in_default is None, (
+        "isolated_test must not appear on the default REGISTRY"
+    )

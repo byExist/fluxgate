@@ -446,9 +446,17 @@ class CircuitBreaker:
     def _notify(self, signal: Signal) -> None:
         for listener in self._listeners:
             try:
-                listener(signal)
+                result = listener(signal)
             except Exception:
                 logging.exception(f"Listener {listener.__class__.__name__} failed")
+                continue
+            if inspect.iscoroutine(result):
+                result.close()
+                logging.error(
+                    "Listener %s returned a coroutine; async listeners require "
+                    "AsyncCircuitBreaker. The notification was dropped.",
+                    getattr(listener, "__qualname__", listener.__class__.__name__),
+                )
 
 
 class AsyncCircuitBreaker:

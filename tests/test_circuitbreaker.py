@@ -1,6 +1,7 @@
 """Tests for CircuitBreaker (sync and async)."""
 
 import asyncio
+import logging
 import time
 
 import pytest
@@ -354,6 +355,38 @@ def test_listener_exception_does_not_break_operation():
             cb.call(failing_func)
 
     assert cb.info().state == "open"
+
+
+def test_async_listener_in_sync_cb_is_reported_not_silently_dropped(
+    caplog: pytest.LogCaptureFixture,
+):
+    """Sync CircuitBreaker must not silently drop a coroutine-returning listener.
+
+    Listener is a runtime_checkable Protocol on __call__, so an async callable
+    type-checks as a Listener at static and runtime isinstance time. Without
+    a runtime guard, sync _notify would invoke the callable, get an un-awaited
+    coroutine, and the alert would be lost (only a RuntimeWarning, which is
+    invisible in most production logging setups). Subsequent sync listeners
+    must still fire.
+    """
+    sync_calls: list[Signal] = []
+
+    def sync_listener(signal: Signal) -> None:
+        sync_calls.append(signal)
+
+    async def async_listener(signal: Signal) -> None:
+        raise AssertionError("async listener must not be invoked silently")
+
+    cb = CircuitBreaker(listeners=[async_listener, sync_listener])
+
+    with caplog.at_level(logging.ERROR):
+        cb.reset()
+
+    assert len(sync_calls) == 1, "subsequent sync listener must still fire"
+    assert any(
+        "coroutine" in rec.message.lower() or "async" in rec.message.lower()
+        for rec in caplog.records
+    ), "expected an explicit error log mentioning the async/coroutine misuse"
 
 
 def test_decorator_with_fallback():

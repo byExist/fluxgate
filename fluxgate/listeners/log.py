@@ -16,7 +16,9 @@ class LogListener(Listener):
 
     Args:
         name: Identifier for the circuit, included in every log line.
-        logger: Custom logger instance. If None, uses the root logger.
+        logger: Custom logger instance. If None, uses
+            ``logging.getLogger("fluxgate.listeners.log")`` so
+            ``logging.getLogger("fluxgate").setLevel(...)`` scopes correctly.
         level_map: Mapping from new_state to log level (logging.INFO, etc.).
             Default levels: OPEN/FORCED_OPEN -> WARNING, others -> INFO.
 
@@ -68,7 +70,7 @@ class LogListener(Listener):
         level_map: dict[State, int] | None = None,
     ) -> None:
         self._name = name
-        self._logger = logger or logging.getLogger()
+        self._logger = logger or logging.getLogger(__name__)
         self._level_map = {**self.DEFAULT_LEVEL_MAP, **(level_map or {})}
 
     def __call__(self, signal: Signal) -> None:

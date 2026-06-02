@@ -112,6 +112,27 @@ async def test_logging_listener_with_async_circuit_breaker(caplog: LogCaptureFix
     assert "async_test" in caplog.text
 
 
+def test_logging_listener_default_logger_is_fluxgate_namespaced(
+    caplog: LogCaptureFixture,
+):
+    """LogListener emits on a fluxgate-prefixed logger by default, not root."""
+    listener = LogListener(name="ns_default")
+
+    signal = Signal(
+        old_state="closed",
+        new_state="open",
+        timestamp=1234567890.0,
+    )
+
+    with caplog.at_level(logging.INFO):
+        listener(signal)
+
+    assert len(caplog.records) == 1
+    assert caplog.records[0].name.startswith("fluxgate"), (
+        f"expected fluxgate-prefixed logger, got {caplog.records[0].name!r}"
+    )
+
+
 def test_logging_listener_custom_logger(caplog: LogCaptureFixture):
     """LogListener uses custom logger when provided."""
     custom_logger = logging.getLogger("custom.circuit_breaker")

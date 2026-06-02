@@ -174,6 +174,14 @@ class CircuitBreaker:
             try:
                 result, duration = _measure_duration(func, *args, **kwargs)
                 self.cb._record_success(duration)
+                if self.cb._tripper(
+                    CallContext(
+                        metric=self.cb._window.get_metric(),
+                        state="closed",
+                        consecutive_failures=self.cb._consecutive_failures,
+                    )
+                ):
+                    self.cb._transition_to("open")
                 return result
             except Exception as e:
                 if not self.cb._tracker(e):
@@ -584,6 +592,20 @@ class AsyncCircuitBreaker:
             async with self.cb._lock:
                 if self.cb._state is self:
                     self.cb._record_success(duration)
+                    if self.cb._tripper(
+                        CallContext(
+                            metric=self.cb._window.get_metric(),
+                            state="closed",
+                            consecutive_failures=self.cb._consecutive_failures,
+                        )
+                    ):
+                        signal = self.cb._transition_to("open")
+                    else:
+                        signal = None
+                else:
+                    signal = None
+            if signal is not None:
+                await self.cb._notify(signal)
             return result
 
     class _Open(_Handler):

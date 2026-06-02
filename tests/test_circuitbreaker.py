@@ -1,6 +1,7 @@
 """Tests for CircuitBreaker (sync and async)."""
 
 import asyncio
+import time
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
@@ -14,7 +15,13 @@ from fluxgate.permits import All, Random
 from fluxgate.retries import Cooldown
 from fluxgate.signal import Signal
 from fluxgate.trackers import TypeOf
-from fluxgate.trippers import FailureRate, FailureStreak, MinRequests
+from fluxgate.trippers import (
+    AvgLatency,
+    FailureRate,
+    FailureStreak,
+    MinRequests,
+    SlowRate,
+)
 
 
 def success_func(x: int = 1) -> int:
@@ -25,12 +32,22 @@ def failing_func() -> None:
     raise ValueError("fail")
 
 
+def slow_success_func() -> str:
+    time.sleep(0.005)
+    return "ok"
+
+
 async def async_success_func(x: int = 1) -> int:
     return x * 2
 
 
 async def async_failing_func() -> None:
     raise ValueError("fail")
+
+
+async def async_slow_success_func() -> str:
+    await asyncio.sleep(0.005)
+    return "ok"
 
 
 def test_call_passes_through():
@@ -494,6 +511,36 @@ def test_failure_streak_tripper():
     for _ in range(3):
         with pytest.raises(ValueError):
             cb.call(failing_func)
+
+    assert cb.info().state == "open"
+
+
+def test_slow_rate_trips_on_successful_slow_calls():
+    """SlowRate trips even when every call succeeds but exceeds the threshold."""
+    cb = CircuitBreaker(
+        tripper=MinRequests(5) & SlowRate(0.3, threshold=0.001),
+    )
+
+    for _ in range(10):
+        try:
+            cb.call(slow_success_func)
+        except CallNotPermittedError:
+            break
+
+    assert cb.info().state == "open"
+
+
+def test_avg_latency_trips_on_successful_slow_calls():
+    """AvgLatency trips even when every call succeeds but exceeds the threshold."""
+    cb = CircuitBreaker(
+        tripper=MinRequests(5) & AvgLatency(0.001),
+    )
+
+    for _ in range(10):
+        try:
+            cb.call(slow_success_func)
+        except CallNotPermittedError:
+            break
 
     assert cb.info().state == "open"
 
@@ -1009,3 +1056,33 @@ async def test_async_stale_outcome_does_not_pollute_new_window():
     assert info.state == "open"
     assert info.metrics.total_count == 0
     assert info.metrics.failure_count == 0
+
+
+async def test_async_slow_rate_trips_on_successful_slow_calls():
+    """Async SlowRate trips even when every call succeeds but exceeds the threshold."""
+    cb = AsyncCircuitBreaker(
+        tripper=MinRequests(5) & SlowRate(0.3, threshold=0.001),
+    )
+
+    for _ in range(10):
+        try:
+            await cb.call(async_slow_success_func)
+        except CallNotPermittedError:
+            break
+
+    assert cb.info().state == "open"
+
+
+async def test_async_avg_latency_trips_on_successful_slow_calls():
+    """Async AvgLatency trips even when every call succeeds but exceeds the threshold."""
+    cb = AsyncCircuitBreaker(
+        tripper=MinRequests(5) & AvgLatency(0.001),
+    )
+
+    for _ in range(10):
+        try:
+            await cb.call(async_slow_success_func)
+        except CallNotPermittedError:
+            break
+
+    assert cb.info().state == "open"

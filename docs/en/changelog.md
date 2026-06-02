@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] - 2026.06.02
+
+### Changed
+
+- **`AsyncCircuitBreaker` consolidated to a single `_lock`**. The two locks introduced in 0.9.0 (`_state_lock` + `_window_lock`) merged into one, and the nested locking pattern is gone. Critical sections now hold synchronous code only. Public API and observable behaviour are unchanged.
+- **Listener notifications moved outside the lock**. `_transition_to` returns a `Signal` for the caller to notify after releasing `_lock`, so a slow listener can no longer stall other calls or deadlock by re-entering the breaker.
+- **State freshness guard switched from `from_state` strings to handler identity**. The three `_try_transition_to_*` helpers are gone; each handler now checks `cb._state is not self` under `_lock` to discard stale outcomes. Equivalent protection against the normal trip race. A regression back to the same handler instance (e.g. `closed → open → half_open → closed`) may still let one stale sample land in the freshly reset window — pair small windows with `MinRequests` if that could flip your tripper.
+- **`_transition_to` is now synchronous and returns a `Signal`**. Callers hold `_lock`, transition, release, then `_notify`. Locking responsibility stays at the call site.
+- **Explicit-command entry points unified into `_command`**. `reset/disable/metrics_only/force_open` delegate to a single helper instead of each duplicating the `lock → transition → notify` pattern.
+- **`_HalfOpen` re-entry check uses `is self`** instead of `self.cb._state.state != "half_open"` — object identity over string comparison.
+- **New concurrency tests** cover the trip race, slow listener, in-flight `disable()`, and stale-outcome containment.
+
 ## [0.9.1] - 2026.06.01
 
 ### Changed

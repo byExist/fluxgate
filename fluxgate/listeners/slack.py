@@ -112,10 +112,9 @@ class _SlackBase:
     )
     FALLBACK_TEMPLATE: ClassVar[Template] = _DEFAULT_FALLBACK_TEMPLATE
 
-    def __init__(self, name: str, channel: str, token: str) -> None:
+    def __init__(self, name: str, channel: str) -> None:
         self._name = name
         self._channel = channel
-        self._token = token
         self._open_thread: Optional[str] = None
 
     def _build_payload(self, signal: Signal) -> dict[str, Any]:
@@ -190,7 +189,7 @@ class SlackListener(_SlackBase, Listener):
     """
 
     def __init__(self, name: str, channel: str, token: str) -> None:
-        super().__init__(name, channel, token)
+        super().__init__(name, channel)
         self._client = httpx.Client(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,
@@ -238,7 +237,7 @@ class AsyncSlackListener(_SlackBase, AsyncListener):
     """
 
     def __init__(self, name: str, channel: str, token: str) -> None:
-        super().__init__(name, channel, token)
+        super().__init__(name, channel)
         self._client = httpx.AsyncClient(
             headers={"Authorization": f"Bearer {token}"},
             timeout=5.0,

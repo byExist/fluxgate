@@ -45,6 +45,28 @@ def get_posted_json(mock_client: Mock, call_index: int = 0) -> dict[str, Any]:
     return mock_client.post.call_args_list[call_index][1]["json"]
 
 
+def test_token_not_stored_on_instance(mock_sync_client: Mock):
+    """Token must not surface through ``vars()`` / ``repr()`` on the listener."""
+    listener = SlackListener(name="api", channel="#alerts", token="xoxb-secret-token")
+
+    instance_state = repr(vars(listener))
+    assert "xoxb-secret-token" not in instance_state, (
+        f"token leaked through vars(): {instance_state}"
+    )
+
+
+def test_async_token_not_stored_on_instance(mock_async_client: AsyncMock):
+    """Same guarantee for AsyncSlackListener."""
+    listener = AsyncSlackListener(
+        name="api", channel="#alerts", token="xoxb-secret-token"
+    )
+
+    instance_state = repr(vars(listener))
+    assert "xoxb-secret-token" not in instance_state, (
+        f"token leaked through vars(): {instance_state}"
+    )
+
+
 def test_closed_to_open_sends_triggered_message(mock_sync_client: Mock):
     """CLOSED -> OPEN sends triggered message."""
     listener = SlackListener(name="api", channel="#alerts", token="xoxb-test")

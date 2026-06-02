@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.3] - 2026.06.02
+
+### Fixed
+
+- **Tripper now evaluated on the success path in `CLOSED`**. `_Closed.execute` previously evaluated the tripper only inside its `except` branch, so trippers that monitor metrics accumulating on successful calls (`SlowRate`, `AvgLatency`) never tripped a "successful but slow" workload even when the threshold was clearly exceeded. Evaluation now fires after every record, success or failure, in both the sync and async breakers; the async variant preserves the existing lock+signal+notify pattern. The two branches were collapsed into one by capturing the call outcome as a `tuple[R, float] | Exception` union and dispatching on `isinstance`.
+- **Synchronous `CircuitBreaker` no longer silently drops async listeners**. `Listener` and `AsyncListener` are `runtime_checkable` Protocols differentiated only by the syntactic async-ness of `__call__`, which `runtime_checkable` does not inspect — so a coroutine-returning callable was accepted by a sync breaker, invoked without `await`, and the notification was discarded with a `RuntimeWarning` invisible in most production logging setups. The sync `_notify` now mirrors the existing guard in `AsyncCircuitBreaker._notify`: a returned coroutine is closed cleanly and an explicit `ERROR`-level log is emitted, while other listeners in the same notification continue to fire.
+
+### Changed
+
+- **Default permit changed to `RampUp(0.1, 1.0, 60.0)`** (previously `RampUp(0.0, 1.0, 60.0)`). With `initial=0.0` the computed ratio at HALF_OPEN entry was 0, so `random() < 0` denied every probe until the ramp progressed — effectively blocking traffic for ~60s after every cooldown, on top of the `Cooldown` itself. The new default admits ~10% of probes immediately.
+
+### Breaking Changes
+
+- **`RampUp(initial=0.0, ...)` now raises `ValueError`**. The value never made sense for HALF_OPEN admission (see above) and any breaker still constructing one was silently locking itself out. Migration: pass any small positive `initial` such as `0.1`, matching the new default.
+
 ## [0.9.2] - 2026.06.02
 
 ### Changed

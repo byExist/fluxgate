@@ -15,11 +15,11 @@ class Listener(Protocol):
     a plain function or a class implementing ``__call__``.
     """
 
-    def __call__(self, signal: Signal) -> None: ...
+    def __call__(self, signal: Signal, /) -> None: ...
 
 
 @runtime_checkable
 class AsyncListener(Protocol):
     """Protocol for asynchronous circuit breaker listeners."""
 
-    async def __call__(self, signal: Signal) -> None: ...
+    async def __call__(self, signal: Signal, /) -> None: ...

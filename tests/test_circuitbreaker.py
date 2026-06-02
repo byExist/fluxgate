@@ -377,7 +377,7 @@ def test_async_listener_in_sync_cb_is_reported_not_silently_dropped(
     async def async_listener(signal: Signal) -> None:
         raise AssertionError("async listener must not be invoked silently")
 
-    cb = CircuitBreaker(listeners=[async_listener, sync_listener])
+    cb = CircuitBreaker(listeners=[async_listener, sync_listener])  # pyright: ignore[reportArgumentType]
 
     with caplog.at_level(logging.ERROR):
         cb.reset()
@@ -1205,7 +1205,7 @@ async def test_async_consecutive_failures_reset_on_half_open_entry(
 async def test_half_open_semaphore_released_during_dispatch():
     """A dispatched call out of HALF_OPEN must not keep the semaphore slot."""
     cb = AsyncCircuitBreaker(max_half_open_calls=1)
-    half_open_handler = cb._handlers["half_open"]
+    half_open_handler = cb._handlers["half_open"]  # type: ignore[reportPrivateUsage]
 
     blocker = asyncio.Event()
 
@@ -1229,6 +1229,6 @@ async def test_half_open_semaphore_released_during_dispatch():
             "in-flight dispatch — slot was never released"
         )
 
-    assert result2 == 2
+    assert result2 == 2  # pyright: ignore[reportPossiblyUnbound]
     blocker.set()
     assert await task1 == "ok"

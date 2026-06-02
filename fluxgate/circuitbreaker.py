@@ -638,55 +638,56 @@ class AsyncCircuitBreaker:
             **kwargs: P.kwargs,
         ) -> R:
             async with self.cb._half_open_semaphore:
-                if self.cb._state is not self:
-                    return await self.cb._state.execute(func, *args, **kwargs)
-                if not self.cb._permit(self.cb._changed_at):
-                    raise CallNotPermittedError(
-                        "Circuit breaker is half-open, not executing"
-                    )
-                try:
-                    result, duration = await _async_measure_duration(
-                        func, *args, **kwargs
-                    )
-                except Exception as e:
-                    if not self.cb._tracker(e):
+                if self.cb._state is self:
+                    if not self.cb._permit(self.cb._changed_at):
+                        raise CallNotPermittedError(
+                            "Circuit breaker is half-open, not executing"
+                        )
+                    try:
+                        result, duration = await _async_measure_duration(
+                            func, *args, **kwargs
+                        )
+                    except Exception as e:
+                        if not self.cb._tracker(e):
+                            raise
+                        async with self.cb._lock:
+                            if self.cb._state is self:
+                                self.cb._record_failure()
+                                if self.cb._tripper(
+                                    CallContext(
+                                        metric=self.cb._window.get_metric(),
+                                        state="half_open",
+                                        consecutive_failures=self.cb._consecutive_failures,
+                                    )
+                                ):
+                                    signal = self.cb._transition_to("open")
+                                else:
+                                    signal = None
+                            else:
+                                signal = None
+                        if signal is not None:
+                            await self.cb._notify(signal)
                         raise
                     async with self.cb._lock:
                         if self.cb._state is self:
-                            self.cb._record_failure()
-                            if self.cb._tripper(
+                            self.cb._record_success(duration)
+                            if not self.cb._tripper(
                                 CallContext(
                                     metric=self.cb._window.get_metric(),
                                     state="half_open",
                                     consecutive_failures=self.cb._consecutive_failures,
                                 )
                             ):
-                                signal = self.cb._transition_to("open")
+                                signal = self.cb._transition_to("closed")
                             else:
                                 signal = None
                         else:
                             signal = None
                     if signal is not None:
                         await self.cb._notify(signal)
-                    raise
-                async with self.cb._lock:
-                    if self.cb._state is self:
-                        self.cb._record_success(duration)
-                        if not self.cb._tripper(
-                            CallContext(
-                                metric=self.cb._window.get_metric(),
-                                state="half_open",
-                                consecutive_failures=self.cb._consecutive_failures,
-                            )
-                        ):
-                            signal = self.cb._transition_to("closed")
-                        else:
-                            signal = None
-                    else:
-                        signal = None
-                if signal is not None:
-                    await self.cb._notify(signal)
-                return result
+                    return result
+            # State changed mid-acquire; dispatch without holding the slot.
+            return await self.cb._state.execute(func, *args, **kwargs)
 
     class _MetricsOnly(_Handler):
         state: State = "metrics_only"

@@ -1200,3 +1200,35 @@ async def test_async_consecutive_failures_reset_on_half_open_entry(
         await cb.call(async_failing_func)
 
     assert cb.info().state == "half_open"
+
+
+async def test_half_open_semaphore_released_during_dispatch():
+    """A dispatched call out of HALF_OPEN must not keep the semaphore slot."""
+    cb = AsyncCircuitBreaker(max_half_open_calls=1)
+    half_open_handler = cb._handlers["half_open"]
+
+    blocker = asyncio.Event()
+
+    async def slow_fn() -> str:
+        await blocker.wait()
+        return "ok"
+
+    # task1 enters _HalfOpen.execute and dispatches to _Closed.execute (state
+    # is "closed"), which awaits the blocker.
+    task1 = asyncio.create_task(half_open_handler.execute(slow_fn))
+    await asyncio.sleep(0)  # let task1 reach the await
+
+    task2 = asyncio.create_task(half_open_handler.execute(async_success_func))
+    try:
+        result2 = await asyncio.wait_for(task2, timeout=0.3)
+    except asyncio.TimeoutError:
+        blocker.set()
+        await task1
+        pytest.fail(
+            "second _HalfOpen entry blocked on semaphore held by an "
+            "in-flight dispatch — slot was never released"
+        )
+
+    assert result2 == 2
+    blocker.set()
+    assert await task1 == "ok"

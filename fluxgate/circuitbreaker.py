@@ -427,6 +427,8 @@ class CircuitBreaker:
 
         if state == "open" and current_state == "half_open":
             self._reopens += 1
+        elif state == "half_open":
+            self._consecutive_failures = 0
         elif state == "closed":
             self._reopens = 0
             self._consecutive_failures = 0
@@ -905,6 +907,8 @@ class AsyncCircuitBreaker:
 
         if state == "open" and current_state == "half_open":
             self._reopens += 1
+        elif state == "half_open":
+            self._consecutive_failures = 0
         elif state == "closed":
             self._reopens = 0
             self._consecutive_failures = 0

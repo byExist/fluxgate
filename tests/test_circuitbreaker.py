@@ -1152,3 +1152,51 @@ async def test_async_avg_latency_trips_on_successful_slow_calls():
             break
 
     assert cb.info().state == "open"
+
+
+def test_consecutive_failures_reset_on_half_open_entry(
+    freezer: FrozenDateTimeFactory,
+):
+    """HALF_OPEN entry resets the failure streak so a probe starts fresh."""
+    cb = CircuitBreaker(
+        tripper=FailureStreak(3),
+        retry=Cooldown(60.0),
+        permit=All(),
+    )
+
+    for _ in range(3):
+        with pytest.raises(ValueError):
+            cb.call(failing_func)
+    assert cb.info().state == "open"
+
+    freezer.tick(61)
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
+
+    assert cb.info().state == "half_open", (
+        "one HALF_OPEN failure must not re-trip a FailureStreak(3) breaker"
+    )
+
+
+async def test_async_consecutive_failures_reset_on_half_open_entry(
+    freezer: FrozenDateTimeFactory,
+):
+    """Same fresh-streak contract for AsyncCircuitBreaker."""
+    cb = AsyncCircuitBreaker(
+        tripper=FailureStreak(3),
+        retry=Cooldown(60.0),
+        permit=All(),
+    )
+
+    for _ in range(3):
+        with pytest.raises(ValueError):
+            await cb.call(async_failing_func)
+    assert cb.info().state == "open"
+
+    freezer.tick(61)
+
+    with pytest.raises(ValueError):
+        await cb.call(async_failing_func)
+
+    assert cb.info().state == "half_open"

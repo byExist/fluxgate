@@ -545,6 +545,39 @@ def test_avg_latency_trips_on_successful_slow_calls():
     assert cb.info().state == "open"
 
 
+def test_default_permit_admits_probes_at_half_open_entry(
+    freezer: FrozenDateTimeFactory,
+):
+    """Default permit must admit some probes immediately after OPEN→HALF_OPEN.
+
+    Regression: the previous default RampUp(initial=0.0, final=1.0, duration=60.0)
+    computed ratio=0 at elapsed≈0, so every probe was denied until the ramp
+    progressed — effectively blocking traffic for ~60s after every cooldown.
+    """
+    cb = CircuitBreaker(
+        tripper=MinRequests(1) & FailureRate(0.5),
+        retry=Cooldown(1.0),
+    )
+
+    with pytest.raises(ValueError):
+        cb.call(failing_func)
+    assert cb.info().state == "open"
+
+    freezer.tick(2)
+
+    passes = 0
+    for _ in range(200):
+        try:
+            cb.call(success_func)
+            passes += 1
+        except CallNotPermittedError:
+            pass
+        if cb.info().state == "closed":
+            break
+
+    assert passes > 0, "default permit denied every probe at HALF_OPEN entry"
+
+
 async def test_async_call_passes_through():
     """Successful async calls pass through when circuit is CLOSED."""
     cb = AsyncCircuitBreaker()

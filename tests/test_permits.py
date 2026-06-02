@@ -56,12 +56,13 @@ def test_rampup_initial_phase():
 
 def test_rampup_progression():
     """RampUp gradually increases ratio over time."""
-    permit = RampUp(initial=0.0, final=1.0, duration=10.0)
+    permit = RampUp(initial=0.01, final=1.0, duration=10.0)
 
     # Simulate time progression
     changed_at = time.time() - 5.0  # 5 seconds ago
 
     # After 5 seconds (50% of duration), ratio should be ~0.5
+    # (initial=0.01 contributes 0.005, negligible at this margin)
     passes = sum(permit(changed_at) for _ in range(1000))
     # Allow margin: 400-600 passes (50% ± 10%)
     assert 400 <= passes <= 600
@@ -82,15 +83,21 @@ def test_rampup_completion():
 
 def test_rampup_invalid_parameters():
     """RampUp rejects invalid parameter combinations."""
-    with pytest.raises(
-        ValueError, match="Initial and final must be between 0.0 and 1.0"
-    ):
+    with pytest.raises(ValueError):
         RampUp(initial=-0.1, final=0.8, duration=10.0)
 
-    with pytest.raises(
-        ValueError, match="Initial and final must be between 0.0 and 1.0"
-    ):
+    with pytest.raises(ValueError):
         RampUp(initial=0.1, final=1.5, duration=10.0)
 
     with pytest.raises(ValueError, match="Duration must be greater than zero"):
         RampUp(initial=0.1, final=0.8, duration=0.0)
+
+
+def test_rampup_rejects_zero_initial():
+    """RampUp(initial=0.0, ...) is invalid: would deny every probe at HALF_OPEN entry.
+
+    At elapsed=0 the computed ratio is 0, so random() < 0 is always False,
+    leaving the breaker unable to admit any probe until the ramp progresses.
+    """
+    with pytest.raises(ValueError):
+        RampUp(initial=0.0, final=1.0, duration=60.0)

@@ -66,14 +66,18 @@ class RampUp(Permit):
         >>> permit = RampUp(initial=0.1, final=0.8, duration=60.0)
 
     Args:
-        initial: Initial permit ratio (0.0 to 1.0)
-        final: Final permit ratio (0.0 to 1.0, must be >= initial)
+        initial: Initial permit ratio, strictly greater than 0.0 and at most
+            ``final``. ``initial=0.0`` is rejected because it would deny every
+            probe at HALF_OPEN entry (elapsed≈0 ⇒ ratio=0).
+        final: Final permit ratio (initial to 1.0)
         duration: Ramp-up duration in seconds
     """
 
     def __init__(self, initial: float, final: float, duration: float) -> None:
-        if not (0.0 <= initial <= final <= 1.0):
-            raise ValueError("Initial and final must be between 0.0 and 1.0")
+        if not (0.0 < initial <= final <= 1.0):
+            raise ValueError(
+                "Initial must be > 0.0 and <= final, and final must be <= 1.0"
+            )
         if duration <= 0:
             raise ValueError("Duration must be greater than zero")
         self._initial = initial

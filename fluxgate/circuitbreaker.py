@@ -104,7 +104,7 @@ class CircuitBreaker:
         tripper: Condition to open/close the circuit based on metrics
             (default: MinRequests(100) & FailureRate(0.5))
         retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
-        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
+        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.1, 1.0, 60.0))
         listeners: Event listeners for state transitions (default: empty)
 
     Examples:
@@ -141,7 +141,7 @@ class CircuitBreaker:
         self._tracker = tracker or All()
         self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
         self._retry = retry or Cooldown(60.0)
-        self._permit = permit or RampUp(0.0, 1.0, 60.0)
+        self._permit = permit or RampUp(0.1, 1.0, 60.0)
         self._listeners = tuple(listeners)
         self._slow_thresholds = _collect_slow_thresholds(self._tripper)
         self._changed_at = time.time()
@@ -470,7 +470,7 @@ class AsyncCircuitBreaker:
         tripper: Condition to open/close the circuit based on metrics
             (default: MinRequests(100) & FailureRate(0.5))
         retry: Strategy for transitioning from OPEN to HALF_OPEN (default: Cooldown(60.0))
-        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.0, 1.0, 60.0))
+        permit: Strategy for allowing calls in HALF_OPEN state (default: RampUp(0.1, 1.0, 60.0))
         max_half_open_calls: Maximum concurrent calls allowed in HALF_OPEN state (default: 10)
         listeners: Event listeners for state transitions (default: empty)
 
@@ -524,7 +524,7 @@ class AsyncCircuitBreaker:
         self._tracker = tracker or All()
         self._tripper = tripper or MinRequests(100) & FailureRate(0.5)
         self._retry = retry or Cooldown(60.0)
-        self._permit = permit or RampUp(0.0, 1.0, 60.0)
+        self._permit = permit or RampUp(0.1, 1.0, 60.0)
         self._listeners = tuple(listeners)
         self._slow_thresholds = _collect_slow_thresholds(self._tripper)
         self._changed_at = time.time()

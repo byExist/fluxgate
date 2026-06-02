@@ -446,8 +446,9 @@ class CircuitBreaker:
 class AsyncCircuitBreaker:
     """Asynchronous circuit breaker implementation for asyncio applications.
 
-    Thread-safe circuit breaker with async/await support. Uses asyncio locks
-    to coordinate state transitions and metric updates across concurrent tasks.
+    Coordinates concurrent calls within a single event loop using one
+    ``asyncio.Lock`` for all internal state mutations, plus an
+    ``asyncio.Semaphore`` to cap concurrent HALF_OPEN trial calls.
 
     The circuit breaker operates in three main states:
 
@@ -481,8 +482,23 @@ class AsyncCircuitBreaker:
         ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
         ... )
 
+    Concurrency model:
+        All state mutations (window record, counter updates, state
+        transitions) happen under a single ``asyncio.Lock``. The protected
+        callable and listener notifications run outside the lock, so the
+        critical section is small and ``await`` never holds the lock.
+
+        Each call captures its handler on entry. When its outcome is
+        applied, the handler checks ``self is cb._state`` and discards the
+        outcome if the state has changed in the meantime, so a transition
+        cannot pollute the next state's metric window. The only race that
+        slips through is a regression back to the same handler instance
+        (e.g. ``closed → open → half_open → closed``); since the window is
+        reset on every transition, at most one stale sample may then land
+        in the new window. Pair small windows with ``MinRequests`` if a
+        single stale sample could flip your tripper.
+
     Note:
-        Uses asyncio locks for thread safety within a single event loop.
         Each process maintains its own independent circuit breaker state.
     """
 
@@ -515,9 +531,8 @@ class AsyncCircuitBreaker:
             "forced_open": self._ForcedOpen(self),
         }
         self._state: AsyncCircuitBreaker._Handler = self._handlers["closed"]
-        self._state_lock = asyncio.Lock()
+        self._lock = asyncio.Lock()
         self._half_open_semaphore = asyncio.Semaphore(max_half_open_calls)
-        self._window_lock = asyncio.Lock()
 
     class _Handler(ABC):
         state: State
@@ -545,17 +560,31 @@ class AsyncCircuitBreaker:
         ) -> R:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
-                async with self.cb._window_lock:
-                    self.cb._record_success(duration)
-                return result
             except Exception as e:
                 if not self.cb._tracker(e):
-                    raise e
-                async with self.cb._window_lock:
-                    self.cb._record_failure()
-                    metric = self.cb._window.get_metric()
-                await self.cb._try_transition_to_open(metric, "closed")
-                raise e
+                    raise
+                async with self.cb._lock:
+                    if self.cb._state is self:
+                        self.cb._record_failure()
+                        if self.cb._tripper(
+                            CallContext(
+                                metric=self.cb._window.get_metric(),
+                                state="closed",
+                                consecutive_failures=self.cb._consecutive_failures,
+                            )
+                        ):
+                            signal = self.cb._transition_to("open")
+                        else:
+                            signal = None
+                    else:
+                        signal = None
+                if signal is not None:
+                    await self.cb._notify(signal)
+                raise
+            async with self.cb._lock:
+                if self.cb._state is self:
+                    self.cb._record_success(duration)
+            return result
 
     class _Open(_Handler):
         state: State = "open"
@@ -566,9 +595,15 @@ class AsyncCircuitBreaker:
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> R:
-            if not self.cb._retry(self.cb._changed_at, self.cb._reopens):
-                raise CallNotPermittedError("Circuit breaker is open")
-            await self.cb._try_transition_to_half_open()
+            async with self.cb._lock:
+                if self.cb._state is self:
+                    if not self.cb._retry(self.cb._changed_at, self.cb._reopens):
+                        raise CallNotPermittedError("Circuit breaker is open")
+                    signal = self.cb._transition_to("half_open")
+                else:
+                    signal = None
+            if signal is not None:
+                await self.cb._notify(signal)
             return await self.cb._state.execute(func, *args, **kwargs)
 
     class _HalfOpen(_Handler):
@@ -581,7 +616,7 @@ class AsyncCircuitBreaker:
             **kwargs: P.kwargs,
         ) -> R:
             async with self.cb._half_open_semaphore:
-                if self.cb._state.state != "half_open":
+                if self.cb._state is not self:
                     return await self.cb._state.execute(func, *args, **kwargs)
                 if not self.cb._permit(self.cb._changed_at):
                     raise CallNotPermittedError(
@@ -591,19 +626,45 @@ class AsyncCircuitBreaker:
                     result, duration = await _async_measure_duration(
                         func, *args, **kwargs
                     )
-                    async with self.cb._window_lock:
-                        self.cb._record_success(duration)
-                        metric = self.cb._window.get_metric()
-                    await self.cb._try_transition_to_closed(metric)
-                    return result
                 except Exception as e:
                     if not self.cb._tracker(e):
-                        raise e
-                    async with self.cb._window_lock:
-                        self.cb._record_failure()
-                        metric = self.cb._window.get_metric()
-                    await self.cb._try_transition_to_open(metric, "half_open")
-                    raise e
+                        raise
+                    async with self.cb._lock:
+                        if self.cb._state is self:
+                            self.cb._record_failure()
+                            if self.cb._tripper(
+                                CallContext(
+                                    metric=self.cb._window.get_metric(),
+                                    state="half_open",
+                                    consecutive_failures=self.cb._consecutive_failures,
+                                )
+                            ):
+                                signal = self.cb._transition_to("open")
+                            else:
+                                signal = None
+                        else:
+                            signal = None
+                    if signal is not None:
+                        await self.cb._notify(signal)
+                    raise
+                async with self.cb._lock:
+                    if self.cb._state is self:
+                        self.cb._record_success(duration)
+                        if not self.cb._tripper(
+                            CallContext(
+                                metric=self.cb._window.get_metric(),
+                                state="half_open",
+                                consecutive_failures=self.cb._consecutive_failures,
+                            )
+                        ):
+                            signal = self.cb._transition_to("closed")
+                        else:
+                            signal = None
+                    else:
+                        signal = None
+                if signal is not None:
+                    await self.cb._notify(signal)
+                return result
 
     class _MetricsOnly(_Handler):
         state: State = "metrics_only"
@@ -616,15 +677,16 @@ class AsyncCircuitBreaker:
         ) -> R:
             try:
                 result, duration = await _async_measure_duration(func, *args, **kwargs)
-                async with self.cb._window_lock:
-                    self.cb._record_success(duration)
-                return result
             except Exception as e:
-                if not self.cb._tracker(e):
-                    raise e
-                async with self.cb._window_lock:
-                    self.cb._record_failure()
-                raise e
+                if self.cb._tracker(e):
+                    async with self.cb._lock:
+                        if self.cb._state is self:
+                            self.cb._record_failure()
+                raise
+            async with self.cb._lock:
+                if self.cb._state is self:
+                    self.cb._record_success(duration)
+            return result
 
     class _Disabled(_Handler):
         state: State = "disabled"
@@ -780,26 +842,27 @@ class AsyncCircuitBreaker:
 
     async def reset(self) -> None:
         """Reset circuit breaker to CLOSED state and clear metrics."""
-        async with self._state_lock:
-            await self._transition_to("closed")
+        await self._command("closed")
 
     async def disable(self) -> None:
         """Disable circuit breaker (all calls pass through without tracking)."""
-        async with self._state_lock:
-            await self._transition_to("disabled")
+        await self._command("disabled")
 
     async def metrics_only(self) -> None:
         """Enable metrics-only mode (track metrics but never open circuit)."""
-        async with self._state_lock:
-            await self._transition_to("metrics_only")
+        await self._command("metrics_only")
 
     async def force_open(self) -> None:
         """Force circuit breaker to OPEN state (all calls blocked)."""
-        async with self._state_lock:
-            await self._transition_to("forced_open")
+        await self._command("forced_open")
+
+    async def _command(self, target: State) -> None:
+        async with self._lock:
+            signal = self._transition_to(target)
+        await self._notify(signal)
 
     def _record_success(self, duration: float) -> None:
-        """Record a successful call. Caller must hold ``_window_lock``."""
+        """Record a successful call. Caller must hold ``_lock``."""
         self._window.record(
             Record(
                 success=True,
@@ -810,51 +873,14 @@ class AsyncCircuitBreaker:
         self._consecutive_failures = 0
 
     def _record_failure(self) -> None:
-        """Record a failed call. Caller must hold ``_window_lock``."""
+        """Record a failed call. Caller must hold ``_lock``."""
         self._consecutive_failures += 1
         self._window.record(Record(success=False))
 
-    async def _try_transition_to_open(self, metric: Metric, from_state: State) -> bool:
-        async with self._state_lock:
-            current_state = self._state.state
-            if current_state != from_state:
-                return False
-            if not self._tripper(
-                CallContext(
-                    metric=metric,
-                    state=current_state,
-                    consecutive_failures=self._consecutive_failures,
-                )
-            ):
-                return False
-            await self._transition_to("open")
-            return True
-
-    async def _try_transition_to_half_open(self) -> bool:
-        async with self._state_lock:
-            current_state = self._state.state
-            if current_state != "open":
-                return False
-            await self._transition_to("half_open")
-            return True
-
-    async def _try_transition_to_closed(self, metric: Metric) -> bool:
-        async with self._state_lock:
-            current_state = self._state.state
-            if current_state != "half_open":
-                return False
-            if self._tripper(
-                CallContext(
-                    metric=metric,
-                    state=current_state,
-                    consecutive_failures=self._consecutive_failures,
-                )
-            ):
-                return False
-            await self._transition_to("closed")
-            return True
-
-    async def _transition_to(self, state: State) -> None:
+    def _transition_to(self, state: State) -> Signal:
+        """Apply a state transition. Caller must hold ``_lock`` and
+        ``_notify`` the returned signal *outside* the lock.
+        """
         current_state = self._state.state
 
         if state == "open" and current_state == "half_open":
@@ -865,15 +891,13 @@ class AsyncCircuitBreaker:
 
         self._state = self._handlers[state]
         self._changed_at = time.time()
-        async with self._window_lock:
-            self._window.reset()
+        self._window.reset()
 
-        signal = Signal(
+        return Signal(
             old_state=current_state,
             new_state=state,
             timestamp=self._changed_at,
         )
-        await self._notify(signal)
 
     async def _notify(self, signal: Signal) -> None:
         async def _safe_call(listener: Listener | AsyncListener) -> None:

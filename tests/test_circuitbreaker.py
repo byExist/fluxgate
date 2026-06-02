@@ -919,3 +919,93 @@ async def test_async_max_half_open_calls_limits_concurrency():
 
     successful = sum(1 for r in results if r == "ok")
     assert successful == 5
+
+
+async def test_async_concurrent_failures_open_circuit():
+    """Concurrent failures from CLOSED transition the circuit to OPEN."""
+    signals: list[Signal] = []
+
+    def listener(s: Signal) -> None:
+        signals.append(s)
+
+    cb = AsyncCircuitBreaker(
+        tripper=MinRequests(1) & FailureRate(0.5),
+        listeners=(listener,),
+    )
+
+    tasks = [asyncio.create_task(cb.call(async_failing_func)) for _ in range(10)]
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    assert cb.info().state == "open"
+    closed_to_open = [
+        s for s in signals if s.old_state == "closed" and s.new_state == "open"
+    ]
+    assert len(closed_to_open) >= 1
+
+
+async def test_async_listener_runs_outside_lock():
+    """A slow listener must not hold the internal lock; info() stays responsive."""
+    listener_entered = asyncio.Event()
+    proceed = asyncio.Event()
+
+    async def slow_listener(_: Signal) -> None:
+        listener_entered.set()
+        await proceed.wait()
+
+    cb = AsyncCircuitBreaker(
+        tripper=FailureStreak(1),
+        listeners=(slow_listener,),
+    )
+
+    trigger = asyncio.create_task(cb.call(async_failing_func))
+    await listener_entered.wait()
+
+    # The lock should not be held by the listener; info() returns immediately.
+    assert cb.info().state == "open"
+
+    # A subsequent call should not hang waiting for the listener.
+    with pytest.raises(CallNotPermittedError):
+        await asyncio.wait_for(cb.call(async_success_func), timeout=1.0)
+
+    proceed.set()
+    with pytest.raises(ValueError):
+        await trigger
+
+
+async def test_async_command_during_inflight_call():
+    """An explicit command (disable) can run while a call is in flight."""
+    cb = AsyncCircuitBreaker(
+        tripper=MinRequests(100) & FailureRate(0.5),
+    )
+
+    blocker = asyncio.Event()
+
+    async def slow_call() -> str:
+        await blocker.wait()
+        return "ok"
+
+    task = asyncio.create_task(cb.call(slow_call))
+    await asyncio.sleep(0)  # let the task reach the await
+
+    await cb.disable()
+    assert cb.info().state == "disabled"
+
+    blocker.set()
+    assert await task == "ok"
+    assert cb.info().state == "disabled"
+
+
+async def test_async_stale_outcome_does_not_pollute_new_window():
+    """After a trip, late outcomes from the previous state are discarded
+    rather than recorded into the new state's freshly reset window."""
+    cb = AsyncCircuitBreaker(
+        tripper=MinRequests(1) & FailureRate(0.5),
+    )
+
+    tasks = [asyncio.create_task(cb.call(async_failing_func)) for _ in range(20)]
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    info = cb.info()
+    assert info.state == "open"
+    assert info.metrics.total_count == 0
+    assert info.metrics.failure_count == 0

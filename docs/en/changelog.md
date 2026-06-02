@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.4] - 2026.06.02
+
+### Added
+
+- **`PrometheusListener(name, registry=...)`**. Pass a dedicated `CollectorRegistry` to redirect fluxgate's metrics off the default global one. Resolves `Duplicated timeseries` under `importlib.reload` / `uvicorn --reload`, or when another component owns the same metric name. `registry=None` (default) keeps the previous behaviour.
+- **`PrometheusListener.close()`**. Drops every labelset this listener registered for its `circuit_name`. Idempotent. For transient breakers (per-tenant / per-test) whose timeseries would otherwise leak.
+
+### Fixed
+
+- **`consecutive_failures` resets when the breaker enters `HALF_OPEN`** (sync and async). `FailureStreak(N)` previously carried the counter at `N` into HALF_OPEN, so the first probe failure re-tripped the breaker immediately instead of being treated as one probe.
+- **Async `_HalfOpen.execute` releases its semaphore slot before dispatching**. When state changed before the slot was acquired, dispatch ran *inside* the slot — a slow CLOSED probe dispatched out of HALF_OPEN throttled every subsequent admission, turning `max_half_open_calls=N` into "N minus in-flight dispatches". The slot now only covers the probe path.
+- **`_SlackBase.__init__` no longer accepts a dead `token` argument**. The base stored it as `self._token` but never used the value; each subclass already holds the token in its httpx client's `Authorization` header. Signature honesty cleanup — not a security fix, since httpx masks `Authorization` in `__repr__`.
+- **`LogListener` default logger changed from the root logger to `logging.getLogger("fluxgate.listeners.log")`**, so `logging.getLogger("fluxgate").setLevel(...)` scopes fluxgate output. A `logger=` kwarg still overrides.
+
 ## [0.9.3] - 2026.06.02
 
 ### Fixed

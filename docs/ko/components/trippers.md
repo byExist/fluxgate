@@ -185,7 +185,7 @@ tripper = MinRequests(10) & FailureRate(0.5)
 ```python
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate
 
-# 최소 10개의 호출 이후, 실패율이 50%를 초과하거나 느린 호출 비율이 30%를 초과하는 경우 trip됩니다.
+# 최소 10개의 호출 이후, 실패율이 50%에 도달하거나 느린 호출 비율이 30%에 도달하는 경우 trip됩니다.
 tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))
 ```
 

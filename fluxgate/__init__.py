@@ -5,7 +5,6 @@ Examples:
     >>> from fluxgate.trippers import MinRequests, FailureRate, SlowRate
     >>>
     >>> cb = CircuitBreaker(
-    ...     name="api",
     ...     tripper=MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0)),
     ... )
 """

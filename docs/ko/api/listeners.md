@@ -23,3 +23,5 @@ Listener 사용 및 사용자 정의에 대한 개요는 [Listener 컴포넌트 
 ::: fluxgate.listeners.slack.SlackListener
 
 ::: fluxgate.listeners.slack.AsyncSlackListener
+
+::: fluxgate.listeners.slack.Template

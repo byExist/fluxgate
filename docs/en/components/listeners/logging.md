@@ -103,7 +103,7 @@ class JsonLogListener(Listener):
         self.name = name
         self.logger = logger
 
-    def __call__(self, signal: Signal) -> None:
+    def __call__(self, signal: Signal, /) -> None:
         log_data = {
             "message": "Circuit breaker transition",
             "circuit_name": self.name,

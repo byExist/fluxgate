@@ -23,3 +23,5 @@ For a high-level guide on using and customizing listeners, see the [Listeners Co
 ::: fluxgate.listeners.slack.SlackListener
 
 ::: fluxgate.listeners.slack.AsyncSlackListener
+
+::: fluxgate.listeners.slack.Template

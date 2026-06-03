@@ -186,7 +186,7 @@ A robust configuration often combines multiple conditions.
 ```python
 from fluxgate.trippers import MinRequests, FailureRate, SlowRate
 
-# Trip if, after at least 10 calls, the failure rate exceeds 50% OR the slow rate exceeds 30%.
+# Trip if, after at least 10 calls, the failure rate reaches 50% OR the slow rate reaches 30%.
 tripper = MinRequests(10) & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))
 ```
 

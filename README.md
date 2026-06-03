@@ -76,7 +76,7 @@ stateDiagram-v2
     HALF_OPEN --> OPEN: tripper
 ```
 
-Three additional states (`METRICS_ONLY`, `DISABLED`, `FORCED_OPEN`) are documented in [Operational Controls](#operational-controls).
+Three additional states (`metrics_only`, `disabled`, `forced_open`) are documented in [Operational Controls](#operational-controls).
 
 ## Composable Rules
 
@@ -101,10 +101,10 @@ tripper = FailureStreak(5) | (MinRequests(20) & (
 | Component | Role | Examples |
 |-----------|------|----------|
 | `Window` | Track recent calls (count- or time-based) | `CountWindow(100)`, `TimeWindow(60)` |
-| `Tracker` | Classify which exceptions count as failures | `All()`, `TypeOf(HTTPError)`, `Custom(fn)`; combine with `&` / `\|` / `~` |
+| `Tracker` | Classify which exceptions count as failures | `All()`, `TypeOf(HTTPError)`, `Custom(func)`; combine with `&` / `\|` / `~` |
 | `Tripper` | Decide when to open the circuit | `MinRequests`, `FailureRate`, `SlowRate`, `AvgLatency`, `FailureStreak`, `Closed`/`HalfOpened`; combine with `&` / `\|` |
 | `Retry` | Trigger `OPEN → HALF_OPEN` | `Cooldown`, `Backoff`, `Always`, `Never` |
-| `Permit` | Admit calls in `HALF_OPEN` | `All`, `Random(p)`, `RampUp(start, end, duration)` |
+| `Permit` | Admit calls in `HALF_OPEN` | `All`, `Random(ratio)`, `RampUp(initial, final, duration)` |
 | `Listener` | React to state transitions | `LogListener`, `PrometheusListener`, `SlackListener` |
 
 All components are abstract base classes (`abc.ABC`) with input validation — misconfigurations fail fast at construction time. Subclass to write your own.

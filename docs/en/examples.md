@@ -13,7 +13,7 @@ With default settings, Fluxgate will:
 - Track failures over the last 100 calls
 - Trip at 50% failure rate (after 100 calls minimum)
 - Wait 60 seconds before recovery
-- Allow 50% of calls during recovery
+- Ramp admitted calls from 10% to 100% over the first 60 seconds of recovery
 
 ```python
 import httpx

@@ -92,7 +92,7 @@ Full support for asyncio applications:
 import asyncio
 from fluxgate import AsyncCircuitBreaker
 
-cb = CircuitBreaker()
+cb = AsyncCircuitBreaker()
 
 @cb
 async def call_async_api():

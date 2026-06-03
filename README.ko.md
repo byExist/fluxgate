@@ -76,7 +76,7 @@ stateDiagram-v2
     HALF_OPEN --> OPEN: tripper
 ```
 
-세 가지 추가 상태(`METRICS_ONLY`, `DISABLED`, `FORCED_OPEN`)는 [운영 제어](#운영-제어) 섹션에서 다룹니다.
+세 가지 추가 상태(`metrics_only`, `disabled`, `forced_open`)는 [운영 제어](#운영-제어) 섹션에서 다룹니다.
 
 ## 조합 가능한 규칙
 
@@ -101,10 +101,10 @@ tripper = FailureStreak(5) | (MinRequests(20) & (
 | 컴포넌트 | 역할 | 예시 |
 |----------|------|------|
 | `Window` | 최근 호출 추적 (건수 또는 시간 기반) | `CountWindow(100)`, `TimeWindow(60)` |
-| `Tracker` | 어떤 예외를 실패로 카운트할지 분류 | `All()`, `TypeOf(HTTPError)`, `Custom(fn)`; `&` / `\|` / `~` 로 조합 |
+| `Tracker` | 어떤 예외를 실패로 카운트할지 분류 | `All()`, `TypeOf(HTTPError)`, `Custom(func)`; `&` / `\|` / `~` 로 조합 |
 | `Tripper` | 회로를 언제 열지 결정 | `MinRequests`, `FailureRate`, `SlowRate`, `AvgLatency`, `FailureStreak`, `Closed`/`HalfOpened`; `&` / `\|` 로 조합 |
 | `Retry` | `OPEN → HALF_OPEN` 전환 트리거 | `Cooldown`, `Backoff`, `Always`, `Never` |
-| `Permit` | `HALF_OPEN` 상태에서 호출 허용 | `All`, `Random(p)`, `RampUp(start, end, duration)` |
+| `Permit` | `HALF_OPEN` 상태에서 호출 허용 | `All`, `Random(ratio)`, `RampUp(initial, final, duration)` |
 | `Listener` | 상태 전환에 반응 | `LogListener`, `PrometheusListener`, `SlackListener` |
 
 모든 컴포넌트는 입력 검증을 포함한 추상 기본 클래스(`abc.ABC`)입니다 — 잘못된 설정은 생성 시점에 즉시 실패합니다. 직접 컴포넌트를 작성하려면 상속하세요.

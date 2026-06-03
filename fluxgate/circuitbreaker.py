@@ -381,7 +381,7 @@ class CircuitBreaker:
         """Get current circuit breaker state and metrics.
 
         Returns:
-            Dictionary with circuit breaker state information
+            CircuitBreakerInfo with state, changed_at, reopens, and metrics.
         """
         return CircuitBreakerInfo(
             state=self._state.state,
@@ -854,7 +854,7 @@ class AsyncCircuitBreaker:
         """Get current circuit breaker state and metrics.
 
         Returns:
-            Dictionary with circuit breaker state information
+            CircuitBreakerInfo with state, changed_at, reopens, and metrics.
         """
         return CircuitBreakerInfo(
             state=self._state.state,

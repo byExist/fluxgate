@@ -52,7 +52,7 @@ tripper = MinRequests(10) & FailureRate(0.5)
 
 ### FailureRate
 
-`FailureRate(rate)`는 실패한 호출 대 총 호출 수의 비율이 `rate`를 초과하면(`0.5`는 50%) `True`를 반환합니다.
+`FailureRate(rate)`는 실패한 호출 대 총 호출 수의 비율이 `rate`에 도달하면(`0.5`는 50%) `True`를 반환합니다.
 
 ```python
 from fluxgate.trippers import FailureRate
@@ -63,12 +63,12 @@ tripper = FailureRate(0.5)
 
 ### AvgLatency
 
-`AvgLatency(seconds)`는 Window 내 모든 호출의 평균 응답 시간이 `seconds`를 초과하면 `True`를 반환합니다.
+`AvgLatency(seconds)`는 Window 내 모든 호출의 평균 응답 시간이 `seconds`에 도달하면 `True`를 반환합니다.
 
 ```python
 from fluxgate.trippers import AvgLatency
 
-# 평균 응답 시간이 2초를 초과하면 트립됩니다.
+# 평균 응답 시간이 2초 이상이면 트립됩니다.
 tripper = AvgLatency(2.0)
 ```
 

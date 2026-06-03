@@ -37,7 +37,7 @@ When the circuit breaker changes state, it will produce a log record like this:
 
 ## Custom Logger {#custom-logger}
 
-By default, `LogListener` uses the root logger. You can inject your own logger for better control over log routing and formatting.
+`LogListener` defaults to `logging.getLogger("fluxgate.listeners.log")`. Inject your own logger to customize routing or formatting.
 
 ```python
 import logging
@@ -138,12 +138,11 @@ handler.setFormatter(logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 ))
 
-# Add the handler to the root logger
-root_logger = logging.getLogger()
-root_logger.addHandler(handler)
-root_logger.setLevel(logging.INFO)
+# Attach the handler to the "fluxgate" logger
+fluxgate_logger = logging.getLogger("fluxgate")
+fluxgate_logger.addHandler(handler)
+fluxgate_logger.setLevel(logging.INFO)
 
-# LogListener will now write to the file via the root logger.
 log_listener = LogListener(name="payment_api")
 ```
 

@@ -52,7 +52,7 @@ def call_payment_api(amount: float):
 | `tracker` | `All()` |
 | `tripper` | `MinRequests(100) & FailureRate(0.5)` |
 | `retry` | `Cooldown(60.0)` |
-| `permit` | `RampUp(0.0, 1.0, 60.0)` |
+| `permit` | `RampUp(0.1, 1.0, 60.0)` |
 
 ### 작동 방식
 

@@ -45,7 +45,7 @@ class CustomListener(Listener):
     def __init__(self, name: str) -> None:
         self._name = name
 
-    def __call__(self, signal: Signal) -> None:
+    def __call__(self, signal: Signal, /) -> None:
         print(f"{self._name}: {signal.old_state} → {signal.new_state}")
 ```
 
@@ -60,7 +60,7 @@ from fluxgate.listeners import AsyncListener
 from fluxgate.signal import Signal
 
 class CustomAsyncListener(AsyncListener):
-    async def __call__(self, signal: Signal) -> None:
+    async def __call__(self, signal: Signal, /) -> None:
         await send_notification(signal)
 ```
 
@@ -126,7 +126,7 @@ class DatabaseListener(Listener):
         self._name = name
         self.db = db_connection
 
-    def __call__(self, signal: Signal) -> None:
+    def __call__(self, signal: Signal, /) -> None:
         if signal.new_state == "open":
             self.db.execute(
                 "INSERT INTO circuit_events (name, timestamp) VALUES (?, ?)",
@@ -147,7 +147,7 @@ class WebhookListener(AsyncListener):
         self.url = webhook_url
         self.client = httpx.AsyncClient()
 
-    async def __call__(self, signal: Signal) -> None:
+    async def __call__(self, signal: Signal, /) -> None:
         payload = {
             "circuit": self._name,
             "transition": f"{signal.old_state} -> {signal.new_state}",

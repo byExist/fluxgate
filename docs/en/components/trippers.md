@@ -52,23 +52,23 @@ tripper = MinRequests(10) & FailureRate(0.5)
 
 ### FailureRate
 
-`FailureRate(rate)` returns `True` if the ratio of failed calls to total calls exceeds the `rate` (e.g., `0.5` for 50%).
+`FailureRate(rate)` returns `True` if the ratio of failed calls to total calls reaches `rate` (e.g., `0.5` for 50%).
 
 ```python
 from fluxgate.trippers import FailureRate
 
-# Trip if more than 50% of calls are failing.
+# Trip when at least 50% of calls are failing.
 tripper = FailureRate(0.5)
 ```
 
 ### AvgLatency
 
-`AvgLatency(seconds)` returns `True` if the average response time of all calls in the window exceeds `seconds`.
+`AvgLatency(seconds)` returns `True` if the average response time of all calls in the window reaches `seconds`.
 
 ```python
 from fluxgate.trippers import AvgLatency
 
-# Trip if the average response time is greater than 2 seconds.
+# Trip when the average response time is 2 seconds or more.
 tripper = AvgLatency(2.0)
 ```
 

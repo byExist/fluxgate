@@ -295,7 +295,7 @@ except Exception as e:
 
 ```python
 import httpx
-from fluxgate import CircuitBreaker
+from fluxgate import CircuitBreaker, CallNotPermittedError
 from fluxgate.trackers import Custom
 from fluxgate.trippers import Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak
 from fluxgate.retries import Backoff

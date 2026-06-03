@@ -59,7 +59,7 @@ class Cooldown(Retry):
 
     Args:
         duration: Cooldown duration in seconds
-        jitter_ratio: Random jitter ratio (0.0 to 1.0, default 0.0)
+        jitter_ratio: Random jitter ratio (0.0 ≤ jitter_ratio < 1.0, default 0.0)
     """
 
     def __init__(self, duration: float, jitter_ratio: float = 0.0) -> None:
@@ -98,7 +98,7 @@ class Backoff(Retry):
         initial: Initial wait duration in seconds
         multiplier: Backoff multiplier (must be > 1.0)
         max_duration: Maximum wait duration in seconds
-        jitter_ratio: Random jitter ratio (0.0 to 1.0, default 0.0)
+        jitter_ratio: Random jitter ratio (0.0 ≤ jitter_ratio < 1.0, default 0.0)
     """
 
     def __init__(

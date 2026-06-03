@@ -1961,17 +1961,17 @@
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="failurerate">FailureRate<a class="headerlink" href="#failurerate" title="Permanent link">&para;</a></h3>
-<p><code>FailureRate(rate)</code> returns <code>True</code> if the ratio of failed calls to total calls exceeds the <code>rate</code> (e.g., <code>0.5</code> for 50%).</p>
+<p><code>FailureRate(rate)</code> returns <code>True</code> if the ratio of failed calls to total calls reaches <code>rate</code> (e.g., <code>0.5</code> for 50%).</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">FailureRate</span>
 
-<span class="c1"># Trip if more than 50% of calls are failing.</span>
+<span class="c1"># Trip when at least 50% of calls are failing.</span>
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="avglatency">AvgLatency<a class="headerlink" href="#avglatency" title="Permanent link">&para;</a></h3>
-<p><code>AvgLatency(seconds)</code> returns <code>True</code> if the average response time of all calls in the window exceeds <code>seconds</code>.</p>
+<p><code>AvgLatency(seconds)</code> returns <code>True</code> if the average response time of all calls in the window reaches <code>seconds</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AvgLatency</span>
 
-<span class="c1"># Trip if the average response time is greater than 2 seconds.</span>
+<span class="c1"># Trip when the average response time is 2 seconds or more.</span>
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">AvgLatency</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="slowrate">SlowRate<a class="headerlink" href="#slowrate" title="Permanent link">&para;</a></h3>

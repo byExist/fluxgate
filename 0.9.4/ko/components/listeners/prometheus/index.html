@@ -1007,6 +1007,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        커스텀 Registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        정리
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#grafana" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1737,6 +1759,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        커스텀 Registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        정리
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#grafana" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1949,6 +1993,31 @@
     <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">PrometheusListener</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;inventory_api&quot;</span><span class="p">)],</span>
 <span class="p">)</span>
 </code></pre></div>
+<hr />
+<h2 id="custom-registry">커스텀 Registry<a class="headerlink" href="#custom-registry" title="Permanent link">&para;</a></h2>
+<p>기본적으로 <code>PrometheusListener</code>는 <code>prometheus_client.REGISTRY</code>의 모듈 수준 Gauge/Counter에 기록합니다. 별도의 <code>CollectorRegistry</code>를 <code>registry=</code>로 주입하면 fluxgate 메트릭을 격리할 수 있습니다 — <code>importlib.reload</code> / <code>uvicorn --reload</code> 환경, 테스트, 또는 다른 컴포넌트가 이미 <code>circuit_breaker_state</code>라는 메트릭을 노출 중일 때 유용합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">CollectorRegistry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.prometheus</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrometheusListener</span>
+
+<span class="n">custom_registry</span> <span class="o">=</span> <span class="n">CollectorRegistry</span><span class="p">()</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">PrometheusListener</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">custom_registry</span><span class="p">)],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>같은 listener는 여전히 <code>CircuitBreaker</code>와 <code>AsyncCircuitBreaker</code> 양쪽에서 사용 가능합니다.</p>
+<hr />
+<h2 id="cleanup">정리<a class="headerlink" href="#cleanup" title="Permanent link">&para;</a></h2>
+<p><code>PrometheusListener.close()</code>는 해당 listener가 자기 <code>circuit_name</code>으로 등록한 모든 labelset을 제거합니다. 멱등하게 동작합니다. 일시적인 breaker(테넌트별/테스트별)처럼 시계열이 누적되면 곤란한 경우에 호출하세요.</p>
+<div class="highlight"><pre><span></span><code><span class="n">listener</span> <span class="o">=</span> <span class="n">PrometheusListener</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ephemeral&quot;</span><span class="p">)</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">listeners</span><span class="o">=</span><span class="p">[</span><span class="n">listener</span><span class="p">])</span>
+
+<span class="c1"># ... breaker 가 동작하며 state transition 발생 ...</span>
+
+<span class="n">listener</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># &quot;circuit_name=ephemeral&quot; 시계열 전부 제거</span>
+</code></pre></div>
+<p><code>close()</code> 호출 후에도 listener는 여전히 호출 가능하며, 다음 state transition 시 labelset을 다시 생성합니다.</p>
 <hr />
 <h2 id="grafana">Grafana 대시보드 예시<a class="headerlink" href="#grafana" title="Permanent link">&para;</a></h2>
 <p>다음은 Grafana 대시보드에서 이러한 메트릭을 시각화하는 방법의 몇 가지 예시입니다.</p>

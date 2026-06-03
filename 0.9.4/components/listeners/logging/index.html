@@ -1641,7 +1641,7 @@
 </code></pre></div>
 <hr />
 <h2 id="custom-logger">Custom Logger<a class="headerlink" href="#custom-logger" title="Permanent link">&para;</a></h2>
-<p>By default, <code>LogListener</code> uses the root logger. You can inject your own logger for better control over log routing and formatting.</p>
+<p><code>LogListener</code> defaults to <code>logging.getLogger("fluxgate.listeners.log")</code>. Inject your own logger to customize routing or formatting.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
@@ -1723,12 +1723,11 @@
     <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">))</span>
 
-<span class="c1"># Add the handler to the root logger</span>
-<span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
-<span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-<span class="n">root_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="c1"># Attach the handler to the &quot;fluxgate&quot; logger</span>
+<span class="n">fluxgate_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fluxgate&quot;</span><span class="p">)</span>
+<span class="n">fluxgate_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">fluxgate_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-<span class="c1"># LogListener will now write to the file via the root logger.</span>
 <span class="n">log_listener</span> <span class="o">=</span> <span class="n">LogListener</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;payment_api&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

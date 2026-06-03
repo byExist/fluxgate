@@ -1643,7 +1643,7 @@
 </code></pre></div>
 <hr />
 <h2 id="custom-logger">커스텀 Logger<a class="headerlink" href="#custom-logger" title="Permanent link">&para;</a></h2>
-<p>기본적으로 <code>LogListener</code>는 루트 logger를 사용합니다. 로그 라우팅과 포맷팅을 더 세밀하게 제어하려면 직접 logger를 주입할 수 있습니다.</p>
+<p><code>LogListener</code>는 기본적으로 <code>logging.getLogger("fluxgate.listeners.log")</code>를 사용합니다. 라우팅이나 포맷팅을 커스터마이즈하려면 직접 logger를 주입하세요.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.listeners.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogListener</span>
@@ -1725,12 +1725,11 @@
     <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
 <span class="p">))</span>
 
-<span class="c1"># 루트 로거에 핸들러 추가</span>
-<span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
-<span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-<span class="n">root_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="c1"># &quot;fluxgate&quot; 로거에 핸들러 추가</span>
+<span class="n">fluxgate_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fluxgate&quot;</span><span class="p">)</span>
+<span class="n">fluxgate_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">fluxgate_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-<span class="c1"># LogListener는 이제 루트 로거를 통해 파일에 기록합니다.</span>
 <span class="n">log_listener</span> <span class="o">=</span> <span class="n">LogListener</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;payment_api&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-steps">다음 단계<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

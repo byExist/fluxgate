@@ -2178,7 +2178,7 @@
 <h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <p>Here is a complete example of a fully configured circuit breaker to protect a critical payment API.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span><span class="p">,</span> <span class="n">CallNotPermittedError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trackers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Custom</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Closed</span><span class="p">,</span> <span class="n">HalfOpened</span><span class="p">,</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span><span class="p">,</span> <span class="n">SlowRate</span><span class="p">,</span> <span class="n">FailureStreak</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.retries</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backoff</span>

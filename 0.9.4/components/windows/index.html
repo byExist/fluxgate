@@ -1957,9 +1957,9 @@
 <li><code>failure_count</code>: Number of calls tracked as failures.</li>
 <li><code>total_duration</code>: Sum of the durations of all calls.</li>
 <li><code>slow_counts</code>: A mapping (<code>dict[float, int]</code>) of slow-call counters keyed by each registered <code>SlowRate</code> threshold.</li>
-<li><code>avg_duration</code>: The average response time (<code>total_duration / total_count</code>).</li>
-<li><code>failure_rate</code>: The ratio of failed calls (<code>failure_count / total_count</code>).</li>
-<li><code>slow_rate(threshold)</code>: The ratio of slow calls for the given threshold.</li>
+<li><code>avg_duration</code>: The average response time (<code>total_duration / total_count</code>). <code>None</code> when <code>total_count == 0</code>.</li>
+<li><code>failure_rate</code>: The ratio of failed calls (<code>failure_count / total_count</code>). <code>None</code> when <code>total_count == 0</code>.</li>
+<li><code>slow_rate(threshold)</code>: The ratio of slow calls for the given threshold. <code>None</code> when <code>total_count == 0</code>.</li>
 </ul>
 <hr />
 <h2 id="auto-reset">Automatic Reset<a class="headerlink" href="#auto-reset" title="Permanent link">&para;</a></h2>

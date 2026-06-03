@@ -2881,7 +2881,7 @@ as argument and should return a fallback value or re-raise.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Dictionary with circuit breaker state information</p>
+                <p>CircuitBreakerInfo with state, changed_at, reopens, and metrics.</p>
               </div>
             </td>
           </tr>
@@ -2906,7 +2906,7 @@ as argument and should return a fallback value or re-raise.</p>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get current circuit breaker state and metrics.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Dictionary with circuit breaker state information</span>
+<span class="sd">        CircuitBreakerInfo with state, changed_at, reopens, and metrics.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">CircuitBreakerInfo</span><span class="p">(</span>
         <span class="n">state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
@@ -4003,7 +4003,7 @@ as argument and should return a fallback value or re-raise.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Dictionary with circuit breaker state information</p>
+                <p>CircuitBreakerInfo with state, changed_at, reopens, and metrics.</p>
               </div>
             </td>
           </tr>
@@ -4028,7 +4028,7 @@ as argument and should return a fallback value or re-raise.</p>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get current circuit breaker state and metrics.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Dictionary with circuit breaker state information</span>
+<span class="sd">        CircuitBreakerInfo with state, changed_at, reopens, and metrics.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">CircuitBreakerInfo</span><span class="p">(</span>
         <span class="n">state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>

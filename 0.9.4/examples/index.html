@@ -1770,7 +1770,7 @@
 <li>Track failures over the last 100 calls</li>
 <li>Trip at 50% failure rate (after 100 calls minimum)</li>
 <li>Wait 60 seconds before recovery</li>
-<li>Allow 50% of calls during recovery</li>
+<li>Ramp admitted calls from 10% to 100% over the first 60 seconds of recovery</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>

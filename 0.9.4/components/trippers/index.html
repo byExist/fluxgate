@@ -2097,7 +2097,7 @@
 <p>A robust configuration often combines multiple conditions.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fluxgate.trippers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinRequests</span><span class="p">,</span> <span class="n">FailureRate</span><span class="p">,</span> <span class="n">SlowRate</span>
 
-<span class="c1"># Trip if, after at least 10 calls, the failure rate exceeds 50% OR the slow rate exceeds 30%.</span>
+<span class="c1"># Trip if, after at least 10 calls, the failure rate reaches 50% OR the slow rate reaches 30%.</span>
 <span class="n">tripper</span> <span class="o">=</span> <span class="n">MinRequests</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">FailureRate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">|</span> <span class="n">SlowRate</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

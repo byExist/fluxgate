@@ -150,6 +150,43 @@ inventory_cb = CircuitBreaker(
 
 ---
 
+## 커스텀 Registry {#custom-registry}
+
+기본적으로 `PrometheusListener`는 `prometheus_client.REGISTRY`의 모듈 수준 Gauge/Counter에 기록합니다. 별도의 `CollectorRegistry`를 `registry=`로 주입하면 fluxgate 메트릭을 격리할 수 있습니다 — `importlib.reload` / `uvicorn --reload` 환경, 테스트, 또는 다른 컴포넌트가 이미 `circuit_breaker_state`라는 메트릭을 노출 중일 때 유용합니다.
+
+```python
+from prometheus_client import CollectorRegistry
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.prometheus import PrometheusListener
+
+custom_registry = CollectorRegistry()
+cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="api", registry=custom_registry)],
+)
+```
+
+같은 listener는 여전히 `CircuitBreaker`와 `AsyncCircuitBreaker` 양쪽에서 사용 가능합니다.
+
+---
+
+## 정리 {#cleanup}
+
+`PrometheusListener.close()`는 해당 listener가 자기 `circuit_name`으로 등록한 모든 labelset을 제거합니다. 멱등하게 동작합니다. 일시적인 breaker(테넌트별/테스트별)처럼 시계열이 누적되면 곤란한 경우에 호출하세요.
+
+```python
+listener = PrometheusListener(name="ephemeral")
+cb = CircuitBreaker(..., listeners=[listener])
+
+# ... breaker 가 동작하며 state transition 발생 ...
+
+listener.close()  # "circuit_name=ephemeral" 시계열 전부 제거
+```
+
+`close()` 호출 후에도 listener는 여전히 호출 가능하며, 다음 state transition 시 labelset을 다시 생성합니다.
+
+---
+
 ## Grafana 대시보드 예시
 
 다음은 Grafana 대시보드에서 이러한 메트릭을 시각화하는 방법의 몇 가지 예시입니다.

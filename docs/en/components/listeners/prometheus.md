@@ -151,6 +151,43 @@ inventory_cb = CircuitBreaker(
 
 ---
 
+## Custom Registry {#custom-registry}
+
+By default, `PrometheusListener` writes to the module-level Gauge/Counter on `prometheus_client.REGISTRY`. Pass a dedicated `CollectorRegistry` via `registry=` to isolate fluxgate's metrics — useful under `importlib.reload` / `uvicorn --reload`, in tests, or when another component already exposes a metric named `circuit_breaker_state`.
+
+```python
+from prometheus_client import CollectorRegistry
+from fluxgate import CircuitBreaker
+from fluxgate.listeners.prometheus import PrometheusListener
+
+custom_registry = CollectorRegistry()
+cb = CircuitBreaker(
+    ...,
+    listeners=[PrometheusListener(name="api", registry=custom_registry)],
+)
+```
+
+The same listener still works with both `CircuitBreaker` and `AsyncCircuitBreaker`.
+
+---
+
+## Cleanup {#cleanup}
+
+`PrometheusListener.close()` drops every labelset this listener registered for its `circuit_name`. It is idempotent. Call it for transient breakers (per-tenant, per-test) whose timeseries would otherwise leak indefinitely.
+
+```python
+listener = PrometheusListener(name="ephemeral")
+cb = CircuitBreaker(..., listeners=[listener])
+
+# ... breaker runs, emits state transitions ...
+
+listener.close()  # remove every "circuit_name=ephemeral" series
+```
+
+After `close()`, the listener may still be invoked; it will recreate its labelsets on the next state transition.
+
+---
+
 ## Grafana Dashboard Example
 
 Here are some examples of how you could visualize these metrics in a Grafana dashboard.

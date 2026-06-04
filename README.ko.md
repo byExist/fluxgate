@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  동기와 비동기를 모두 first-class로 지원하는 조합 가능한 Python <b>circuit breaker</b> 라이브러리.
+  슬라이딩 윈도우 기반 실패율·지연·연속 실패 규칙을 조합 가능한 <b>Python circuit breaker 라이브러리</b>.
 </p>
 
 <p align="center">
@@ -19,18 +19,9 @@
 
 ## 왜 Fluxgate인가?
 
-Circuit breaker는 서비스 상태를 모니터링하고 실패하는 의존 서비스 호출을 일시적으로 차단하여 연쇄적인 장애를 방지합니다. 대부분의 Python 라이브러리는 **연속 실패** 기준으로 회로를 여는데, 간헐적인 에러가 있는 서비스에는 취약합니다. Fluxgate는 **슬라이딩 윈도우 기반 실패율**로 회로를 열며, 규칙은 직접 조합할 수 있는 first-class value입니다.
+Circuit breaker는 실패하는 의존 서비스로의 호출을 일시적으로 차단해 연쇄 장애를 막습니다. 기존 Python circuit breaker 대부분은 **연속 실패 횟수**로 회로를 여는데, 이는 취약합니다. 서비스가 여전히 불안정해도 한 번의 성공으로 카운터가 초기화되기 때문입니다.
 
-```python
-from fluxgate import CircuitBreaker
-from fluxgate.trippers import MinRequests, FailureRate, SlowRate, FailureStreak
-
-cb = CircuitBreaker(
-    tripper=FailureStreak(5) | (MinRequests(20) & (
-        FailureRate(0.5) | SlowRate(0.3, threshold=1.0)
-    )),
-)
-```
+Fluxgate는 **슬라이딩 윈도우 기반 실패율**로 회로를 엽니다 — Java 진영의 [Resilience4j](https://resilience4j.readme.io/)가 검증한 접근 방식과 동일합니다 — 그리고 **지연 기반 트리거**, **조합 가능한 규칙**(`&` / `|`), **점진적 복구**(`RampUp`)를 지원합니다. `CircuitBreaker`(동기)와 `AsyncCircuitBreaker`(비동기) 모두 first-class입니다.
 
 > **참고:** 상태는 프로세스 로컬이며 스레드 안전하지 않습니다. 동시성이 필요하면 스레드 대신 `asyncio` + `AsyncCircuitBreaker`를 사용하세요.
 
@@ -47,20 +38,38 @@ pip install "fluxgate[slack]"         # +SlackListener
 ```python
 import httpx
 from fluxgate import AsyncCircuitBreaker
+from fluxgate.windows import TimeWindow
 from fluxgate.trackers import TypeOf
+from fluxgate.trippers import MinRequests, FailureRate, SlowRate, FailureStreak
+from fluxgate.retries import Backoff
+from fluxgate.permits import RampUp
+from fluxgate.listeners.log import LogListener
 
-cb = AsyncCircuitBreaker(
-    tracker=TypeOf(httpx.ConnectError, httpx.TimeoutException),
-    max_half_open_calls=10,
+# 외부 결제 API 호출을 보호합니다.
+payments_cb = AsyncCircuitBreaker(
+    window=TimeWindow(size=60),                            # 60초 슬라이딩 윈도우
+    tracker=TypeOf(httpx.HTTPError),                       # HTTP/네트워크 에러만 실패로 카운트
+    tripper=FailureStreak(5) | (                           # 연속 5회 실패 시 즉시 오픈,
+        MinRequests(20) & (                                # 또는 윈도우 내 20+ 요청 기준:
+            FailureRate(0.5) |                             #   실패율이 50% 초과거나
+            SlowRate(0.3, threshold=1.0)                   #   30% 이상이 1초보다 느리면 오픈
+        )
+    ),
+    retry=Backoff(initial=10.0, max_duration=600.0),       # 재시도까지 지수 백오프
+    permit=RampUp(initial=0.1, final=1.0, duration=60.0),  # 복구 트래픽을 60초간 10% → 100%로 증가
+    listeners=[LogListener(name="payments-api")],          # 상태 전환마다 로깅
 )
 
-@cb
-async def fetch(url):
-    async with httpx.AsyncClient() as client:
-        return (await client.get(url)).json()
+
+@payments_cb
+async def check_payment_status(payment_id: str) -> dict:
+    async with httpx.AsyncClient(timeout=2.0) as client:
+        response = await client.get(f"https://api.example.com/payments/{payment_id}")
+        response.raise_for_status()
+        return response.json()
 ```
 
-`CircuitBreaker`가 동기 코드용 동일 인터페이스를 제공합니다. 회로가 열린 상태에서는 즉시 `CallNotPermittedError`가 발생하며, `@cb(fallback=...)`을 지정하면 graceful degradation이 가능합니다.
+동기 코드에는 `CircuitBreaker`가 동일한 설정 방식을 제공합니다. 회로가 열린 상태에서는 `CallNotPermittedError`가 발생하며, 호출자는 `try`/`except`나 데코레이터의 `fallback=` 인자로 이를 처리할 수 있습니다.
 
 ## 동작 방식
 
@@ -78,36 +87,20 @@ stateDiagram-v2
 
 세 가지 추가 상태(`metrics_only`, `disabled`, `forced_open`)는 [운영 제어](#운영-제어) 섹션에서 다룹니다.
 
-## 조합 가능한 규칙
-
-모든 조건은 값이며 `&` / `|` 로 조합됩니다.
-
-```python
-from fluxgate.trippers import (
-    Closed, HalfOpened, MinRequests, FailureRate, SlowRate, FailureStreak,
-)
-
-# 상태별 규칙: 복구를 확인할 때는 더 엄격하게.
-tripper = FailureStreak(5) | (MinRequests(20) & (
-    (Closed()    & (FailureRate(0.5) | SlowRate(0.3, threshold=1.0))) |
-    (HalfOpened() & (FailureRate(0.3) | SlowRate(0.2, threshold=1.0)))
-))
-```
-
-`Tracker`(실패 분류)도 같은 패턴을 따르며 `&` / `|` / `~` 로 조합됩니다.
-
 ## 컴포넌트
 
-| 컴포넌트 | 역할 | 예시 |
-|----------|------|------|
-| `Window` | 최근 호출 추적 (건수 또는 시간 기반) | `CountWindow(100)`, `TimeWindow(60)` |
-| `Tracker` | 어떤 예외를 실패로 카운트할지 분류 | `All()`, `TypeOf(HTTPError)`, `Custom(func)`; `&` / `\|` / `~` 로 조합 |
-| `Tripper` | 회로를 언제 열지 결정 | `MinRequests`, `FailureRate`, `SlowRate`, `AvgLatency`, `FailureStreak`, `Closed`/`HalfOpened`; `&` / `\|` 로 조합 |
-| `Retry` | `OPEN → HALF_OPEN` 전환 트리거 | `Cooldown`, `Backoff`, `Always`, `Never` |
-| `Permit` | `HALF_OPEN` 상태에서 호출 허용 | `All`, `Random(ratio)`, `RampUp(initial, final, duration)` |
-| `Listener` | 상태 전환에 반응 | `LogListener`, `PrometheusListener`, `SlackListener` |
+| 컴포넌트 | 지원 연산자 | 역할 | 예시 |
+|----------|-------------|------|------|
+| `Window` | — | 최근 호출 추적 (건수 또는 시간 기반) | `CountWindow(100)`, `TimeWindow(60)` |
+| `Tracker` | `&` `\|` `~` | 어떤 예외를 실패로 카운트할지 분류 | `All()`, `TypeOf(HTTPError)`, `Custom(func)` |
+| `Tripper` | `&` `\|` | 회로를 언제 열지 결정 | `MinRequests`, `FailureRate`, `SlowRate`, `AvgLatency`, `FailureStreak`, `Closed`/`HalfOpened` |
+| `Retry` | — | `OPEN → HALF_OPEN` 전환 트리거 | `Cooldown`, `Backoff`, `Always`, `Never` |
+| `Permit` | — | `HALF_OPEN` 상태에서 호출 허용 | `All`, `Random(ratio)`, `RampUp(initial, final, duration)` |
+| `Listener` | — | 상태 전환에 반응 | `LogListener`, `PrometheusListener`, `SlackListener` |
 
-모든 컴포넌트는 입력 검증을 포함한 추상 기본 클래스(`abc.ABC`)입니다 — 잘못된 설정은 생성 시점에 즉시 실패합니다. 직접 컴포넌트를 작성하려면 상속하세요.
+`Window`, `Tracker`, `Tripper`, `Retry`, `Permit`는 입력 검증을 포함한 추상 기본 클래스(`abc.ABC`)입니다 — 잘못된 설정은 생성 시점에 즉시 실패합니다. 직접 만들려면 상속하세요.
+
+`Listener`와 `AsyncListener`는 사용자 정의 함수나 타입을 위해 `Protocol`로 정의되어 있습니다.
 
 ## 운영 제어
 
@@ -118,14 +111,10 @@ tripper = FailureStreak(5) | (MinRequests(20) & (
 - **`cb.info()`** — 현재 상태, 메트릭, 재오픈 횟수의 스냅샷.
 - **`cb.reset()`** — CLOSED로 복귀하고 메트릭을 초기화합니다.
 
-## 모니터링
-
-`listeners=...` 옵션으로 리스너를 전달하세요 — 내장: `LogListener`, `PrometheusListener` (옵션), `SlackListener` (옵션). 각 리스너는 로그/Prometheus 라벨/Slack 메시지에서 사용되는 `name=` 식별자를 받습니다. 상태 전환은 `Signal` 이벤트를 발생시키며, `AsyncCircuitBreaker`는 `AsyncListener`도 받습니다.
-
 ## 문서
 
 - [전체 문서](https://byExist.github.io/fluxgate/latest/) — 개념, 컴포넌트, 예제, API 레퍼런스
-- [다른 라이브러리와의 비교](https://byExist.github.io/fluxgate/latest/about/comparison/) — `pybreaker`, `circuitbreaker`, `aiobreaker`와 비교
+- [라이브러리 비교](https://byExist.github.io/fluxgate/latest/about/comparison/) — 다른 Python circuit breaker와의 설계 트레이드오프
 - [체인지로그](https://byExist.github.io/fluxgate/latest/changelog/) — 버전 기록 및 마이그레이션 가이드
 
 ## 개발

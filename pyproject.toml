@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "fluxgate"
 version = "0.9.4"
-description = "A modern, composable circuit breaker library for Python"
+description = "Composable Python circuit breaker library — sliding-window failure rate, latency, and consecutive-failure rules."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [

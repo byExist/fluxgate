@@ -18,8 +18,10 @@ from fluxgate.signal import Signal
 from fluxgate.trackers import TypeOf
 from fluxgate.trippers import (
     AvgLatency,
+    CallContext,
     FailureRate,
     FailureStreak,
+    HalfOpened,
     MinRequests,
     SlowRate,
 )
@@ -1232,3 +1234,98 @@ async def test_half_open_semaphore_released_during_dispatch():
     assert result2 == 2  # pyright: ignore[reportPossiblyUnbound]
     blocker.set()
     assert await task1 == "ok"
+
+
+def test_non_iterable_tripper_contributes_no_slow_thresholds():
+    """A tripper that doesn't implement __iter__ yields no SlowRate thresholds."""
+
+    class _CallableTripper:
+        def __call__(self, ctx: CallContext) -> bool:
+            return False
+
+    cb = CircuitBreaker(tripper=_CallableTripper())  # type: ignore[arg-type]
+    assert cb._slow_thresholds == ()  # type: ignore[reportPrivateUsage]
+
+
+def test_metrics_only_records_successful_calls():
+    """metrics_only() records successes without altering state."""
+    cb = CircuitBreaker(tripper=MinRequests(2) & FailureRate(0.5))
+    cb.metrics_only()
+
+    for _ in range(3):
+        assert cb.call(success_func) == 2
+
+    info = cb.info()
+    assert info.state == "metrics_only"
+    assert info.metrics.total_count == 3
+    assert info.metrics.failure_count == 0
+
+
+def test_metrics_only_propagates_untracked_exceptions():
+    """metrics_only() lets untracked exceptions propagate without recording."""
+    cb = CircuitBreaker(tracker=TypeOf(ValueError))
+    cb.metrics_only()
+
+    def raises_type_error() -> None:
+        raise TypeError("not tracked")
+
+    with pytest.raises(TypeError):
+        cb.call(raises_type_error)
+
+    info = cb.info()
+    assert info.metrics.total_count == 0
+    assert info.metrics.failure_count == 0
+
+
+async def test_async_metrics_only_records_successful_calls():
+    """Async metrics_only() records successes without altering state."""
+    cb = AsyncCircuitBreaker(tripper=MinRequests(2) & FailureRate(0.5))
+    await cb.metrics_only()
+
+    for _ in range(3):
+        assert await cb.call(async_success_func) == 2
+
+    info = cb.info()
+    assert info.state == "metrics_only"
+    assert info.metrics.total_count == 3
+    assert info.metrics.failure_count == 0
+
+
+async def test_async_open_execute_dispatches_when_state_already_changed():
+    """Calling _Open.execute when state isn't open dispatches without emitting a signal."""
+    cb = AsyncCircuitBreaker(retry=Cooldown(60))
+    open_handler = cb._handlers["open"]  # type: ignore[reportPrivateUsage]
+
+    # State stayed "closed", so the open handler will see state != self
+    # inside its lock and fall through to dispatch.
+    result = await open_handler.execute(async_success_func)
+    assert result == 2
+
+
+async def test_async_half_open_skips_signal_when_state_changed_mid_failure():
+    """If state changes between scheduling and lock acquisition during a HALF_OPEN failure, no signal is emitted."""
+    cb = AsyncCircuitBreaker(permit=All())
+    half_open_handler = cb._handlers["half_open"]  # type: ignore[reportPrivateUsage]
+    closed_handler = cb._handlers["closed"]  # type: ignore[reportPrivateUsage]
+
+    # Enter HALF_OPEN so the outer state check passes.
+    cb._state = half_open_handler  # type: ignore[reportPrivateUsage]
+
+    async def fail_and_swap_state() -> None:
+        cb._state = closed_handler  # type: ignore[reportPrivateUsage]
+        raise ValueError("fail")
+
+    with pytest.raises(ValueError):
+        await half_open_handler.execute(fail_and_swap_state)
+
+
+async def test_async_half_open_success_stays_when_tripper_still_active():
+    """A successful HALF_OPEN call that doesn't satisfy the tripper keeps the breaker in HALF_OPEN."""
+    cb = AsyncCircuitBreaker(tripper=HalfOpened(), permit=All())
+    half_open_handler = cb._handlers["half_open"]  # type: ignore[reportPrivateUsage]
+
+    cb._state = half_open_handler  # type: ignore[reportPrivateUsage]
+
+    assert await half_open_handler.execute(async_success_func) == 2
+    # HalfOpened() always trips while state is half_open, so no closed transition.
+    assert cb.info().state == "half_open"
